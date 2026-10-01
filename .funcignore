@@ -1,0 +1,10 @@
+.git*
+.vscode
+.venv
+.env
+.env.*
+local.settings.json
+__pycache__
+tests
+docs
+notebooks
