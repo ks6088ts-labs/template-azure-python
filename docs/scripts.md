@@ -181,6 +181,62 @@ uv run --locked python -m scripts.cli_foundry chat-agent \
 Use `--endpoint` to override `FOUNDRY_PROJECT_ENDPOINT`. Run each command with
 `--help` for all options and defaults.
 
+## Azure Cosmos DB CLI
+
+The `scripts.cli_cosmosdb` module collects the Python SDK operations from the
+[Azure Cosmos DB for NoSQL Python quickstart](https://learn.microsoft.com/en-us/azure/cosmos-db/quickstart-python)
+as separate commands. Copy the environment template, set the account endpoint,
+and authenticate with Microsoft Entra ID:
+
+```shell
+cp .env.template .env
+az login
+uv run --locked python -m scripts.cli_cosmosdb --help
+```
+
+`DefaultAzureCredential` uses the signed-in Azure CLI identity locally. Grant
+that identity the least-privileged Azure Cosmos DB data-plane permissions needed
+to create databases and containers and to write, read, and query items.
+
+The CLI defaults to the quickstart's `cosmicworks` database, `products`
+container, and `/category` partition key. Each command creates the database and
+container when needed. Dedicated throughput is omitted by default for
+serverless and shared-throughput configurations; use `--throughput` to set RU/s
+when a new container requires dedicated throughput.
+
+Create the tutorial item, or replace the item with the same ID:
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb upsert-item
+uv run --locked python -m scripts.cli_cosmosdb upsert-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards \
+  --name "Yamba Surfboard" \
+  --quantity 12 \
+  --no-sale
+```
+
+Perform a point read using the item ID and partition key:
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb read-item
+uv run --locked python -m scripts.cli_cosmosdb read-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards
+```
+
+Run the quickstart's parameterized, partition-scoped category query:
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb query-items
+uv run --locked python -m scripts.cli_cosmosdb query-items \
+  --category gear-surf-surfboards
+```
+
+Use `--endpoint`, `--database`, and `--container` to override the environment
+values `AZURE_COSMOS_DB_ENDPOINT`, `AZURE_COSMOS_DB_DATABASE`, and
+`AZURE_COSMOS_DB_CONTAINER`. Run each command with `--help` for all options.
+
 ## Docker development
 
 ```shell

@@ -182,6 +182,65 @@ uv run --locked python -m scripts.cli_foundry chat-agent \
 `FOUNDRY_PROJECT_ENDPOINT` を上書きするには `--endpoint` を使用します。
 すべてのオプションと既定値は各コマンドの `--help` で確認できます。
 
+## Azure Cosmos DB CLI
+
+`scripts.cli_cosmosdb` モジュールは
+[Azure Cosmos DB for NoSQL Python クイックスタート](https://learn.microsoft.com/ja-jp/azure/cosmos-db/quickstart-python)
+の Python SDK 操作を個別コマンドとして集約します。環境変数テンプレートを
+コピーしてアカウントエンドポイントを設定し、Microsoft Entra ID で認証します。
+
+```shell
+cp .env.template .env
+az login
+uv run --locked python -m scripts.cli_cosmosdb --help
+```
+
+ローカルでは `DefaultAzureCredential` が Azure CLI でサインインした ID を
+使用します。この ID には、データベースとコンテナーの作成、およびアイテムの
+書き込み、読み取り、クエリに必要な最小権限の Azure Cosmos DB データプレーン
+アクセス許可を付与してください。
+
+既定値はクイックスタートと同じ `cosmicworks` データベース、`products`
+コンテナー、`/category` パーティションキーです。各コマンドは必要に応じて
+データベースとコンテナーを作成します。サーバーレス構成と共有スループット構成
+に対応するため、専用スループットは既定では指定しません。新しいコンテナーに
+専用スループットが必要な場合は、`--throughput` で RU/s を指定します。
+
+チュートリアルのアイテムを作成します。同じ ID が存在する場合は置き換えます。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb upsert-item
+uv run --locked python -m scripts.cli_cosmosdb upsert-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards \
+  --name "Yamba Surfboard" \
+  --quantity 12 \
+  --no-sale
+```
+
+アイテム ID とパーティションキーを使ってポイント読み取りを実行します。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb read-item
+uv run --locked python -m scripts.cli_cosmosdb read-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards
+```
+
+クイックスタートのパラメーター化されたパーティション内カテゴリクエリを
+実行します。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb query-items
+uv run --locked python -m scripts.cli_cosmosdb query-items \
+  --category gear-surf-surfboards
+```
+
+環境変数 `AZURE_COSMOS_DB_ENDPOINT`、`AZURE_COSMOS_DB_DATABASE`、
+`AZURE_COSMOS_DB_CONTAINER` の値を上書きするには、`--endpoint`、
+`--database`、`--container` を使用します。すべてのオプションは各コマンドの
+`--help` で確認できます。
+
 ## Docker 開発
 
 ```shell
