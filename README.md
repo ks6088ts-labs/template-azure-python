@@ -201,6 +201,106 @@ internal ingress or appropriate access controls where required. Both
 deployments use the routes in `template_azure_python/api.py` without copying
 or changing application code.
 
+#### Reusing the `azure_container_apps` Terraform scenario
+
+If the [azure_container_apps scenario](https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_container_apps)
+has already been applied, reuse its ACR and **replace its existing Container
+App** rather than creating another app. The scenario manages that app with
+Terraform, so deploy through Terraform instead of `az containerapp update`
+(which a later apply could undo). Follow the scenario's README to provision it
+first if necessary.
+
+Run these commands from the root of this repository. Set `SCENARIO_DIR` to the
+local scenario directory with access to the same Terraform state used for the
+initial deployment. You need Terraform, a running Docker daemon, Azure CLI,
+`jq`, and `curl`. Sign in with an identity granted `AcrPush` on the scenario's
+registry; by default the scenario grants it to the Terraform identity. The
+Container App already has a managed identity with `AcrPull`.
+
+```shell
+SCENARIO_DIR=/absolute/path/to/template-terraform/infra/scenarios/azure_container_apps
+az login
+ACR_ID=$(terraform -chdir="$SCENARIO_DIR" output -raw acr_id)
+ACR_NAME=$(terraform -chdir="$SCENARIO_DIR" output -raw acr_name)
+ACR_LOGIN_SERVER=$(terraform -chdir="$SCENARIO_DIR" output -raw acr_login_server)
+SUBSCRIPTION_ID=$(printf '%s' "$ACR_ID" | cut -d/ -f3)
+az account set --subscription "$SUBSCRIPTION_ID"
+"$SCENARIO_DIR/scripts/validate_prerequisites.sh"
+
+IMAGE_REPOSITORY=template-azure-python
+IMAGE_TAG=$(git rev-parse --short HEAD)
+IMAGE="$ACR_LOGIN_SERVER/$IMAGE_REPOSITORY:$IMAGE_TAG"
+docker build --platform linux/amd64 --tag "$IMAGE" .
+az acr login --name "$ACR_NAME" --subscription "$SUBSCRIPTION_ID"
+docker push "$IMAGE"
+```
+
+Pin the pushed image by digest in the scenario's ignored
+`deployment.auto.tfvars.json`. If the scenario previously deployed its bundled
+MCP server, preserve any other settings already in that file while changing
+the image, ingress/probe port to **8000**, probe path to `/`, and container
+command to the Dockerfile default. Its `build_image.sh` and `deploy_image.sh`
+target the bundled `src/` and configure port 8080 and `/health`, so do not use
+them for this image.
+
+```shell
+(
+  set -eu
+  IMAGE_DIGEST=$(az acr repository show --name "$ACR_NAME" --subscription "$SUBSCRIPTION_ID" --image "$IMAGE_REPOSITORY:$IMAGE_TAG" --query digest -o tsv)
+  if ! jq -n -e --arg digest "$IMAGE_DIGEST" '$digest | test("^sha256:[0-9a-fA-F]{64}$")' >/dev/null; then
+    printf 'ACR did not return a SHA-256 digest\n' >&2
+    exit 1
+  fi
+  IMAGE_BY_DIGEST="$ACR_LOGIN_SERVER/$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+  VARS_FILE="$SCENARIO_DIR/deployment.auto.tfvars.json"
+  if [ ! -f "$VARS_FILE" ]; then
+    printf '{}\n' > "$VARS_FILE"
+  fi
+  TEMP_FILE=$(mktemp "${VARS_FILE}.XXXXXX")
+  trap 'rm -f "$TEMP_FILE"' EXIT
+  jq -e --arg image "$IMAGE_BY_DIGEST" \
+    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/" | .container_command = []' \
+    "$VARS_FILE" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$VARS_FILE"
+)
+```
+
+Keep the same Terraform variable files and command-line options used for the
+initial deployment (in particular `enable_authentication=true` if set via
+`-var` or `-var-file`). Check the plan before applying it: only the intended
+image, port, probes, and command should change.
+
+```shell
+terraform -chdir="$SCENARIO_DIR" plan
+terraform -chdir="$SCENARIO_DIR" apply
+```
+
+Verify the FastAPI routes rather than the scenario's MCP-specific
+`verify_deployment.sh`, which expects `/health` and `/mcp`:
+
+```shell
+CONTAINER_APP_URL=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_url)
+curl --fail --show-error "$CONTAINER_APP_URL/"
+# {"Hello":"World"}
+curl --fail --show-error --output /dev/null "$CONTAINER_APP_URL/docs"
+```
+
+If the scenario enabled Microsoft Entra authentication, both routes require
+an access token. Instead of the unauthenticated `curl` commands above, use:
+
+```shell
+AUTH_RESOURCE=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_authentication_identifier_uri)
+ACCESS_TOKEN=$(az account get-access-token --subscription "$SUBSCRIPTION_ID" --resource "$AUTH_RESOURCE" --query accessToken -o tsv)
+curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/"
+curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/docs"
+unset ACCESS_TOKEN
+```
+
+The scenario's external ingress exposes this app publicly unless authentication
+or other access controls are enabled. Keep `deployment.auto.tfvars.json` for
+subsequent Terraform applies; running the scenario's MCP deployment script
+again would replace these image and port settings.
+
 ### Docker Hub
 
 To publish the docker image to Docker Hub, you need to [create access token](https://app.docker.com/settings/personal-access-tokens/create) and set the following secrets in the repository settings.
