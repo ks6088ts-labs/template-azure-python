@@ -149,6 +149,117 @@ az login
 uv run --locked python -m scripts.cli_foundry --help
 ```
 
+### Required Foundry RBAC
+
+The project endpoint uses Microsoft Entra ID authentication through
+`DefaultAzureCredential`. Before running the commands, assign the
+[Foundry User role](https://learn.microsoft.com/azure/foundry/concepts/rbac-foundry)
+on the Foundry account to both:
+
+- the user or service principal that runs the CLI; and
+- the Foundry project's managed identity.
+
+`Foundry User` was previously named `Azure AI User`, so the old name might
+still appear while the rename rolls out. Azure `Owner` and `Contributor` roles
+do not replace this role: they grant management-plane access but not all
+project data-plane permissions. Projects created in the Foundry portal can
+receive the assignments automatically when the creator is allowed to assign
+roles. Projects created another way might require the assignments below.
+
+The caller must have permission to create role assignments. Replace the
+placeholder values, then grant access at the Foundry account scope:
+
+```shell
+SUBSCRIPTION_ID="$(az account show --query id --output tsv)"
+RESOURCE_GROUP="<foundry-resource-group>"
+FOUNDRY_ACCOUNT="<foundry-account-name>"
+FOUNDRY_PROJECT="<foundry-project-name>"
+
+FOUNDRY_SCOPE="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.CognitiveServices/accounts/${FOUNDRY_ACCOUNT}"
+PROJECT_SCOPE="${FOUNDRY_SCOPE}/projects/${FOUNDRY_PROJECT}"
+
+USER_OBJECT_ID="$(az ad signed-in-user show --query id --output tsv)"
+PROJECT_PRINCIPAL_ID="$(az resource show \
+  --ids "${PROJECT_SCOPE}" \
+  --query identity.principalId \
+  --output tsv)"
+
+az role assignment create \
+  --assignee-object-id "${USER_OBJECT_ID}" \
+  --assignee-principal-type User \
+  --role "Foundry User" \
+  --scope "${FOUNDRY_SCOPE}"
+
+az role assignment create \
+  --assignee-object-id "${PROJECT_PRINCIPAL_ID}" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Foundry User" \
+  --scope "${FOUNDRY_SCOPE}"
+```
+
+If `PROJECT_PRINCIPAL_ID` is empty, configure a managed identity for the
+project before continuing. Verify that both assignments are visible:
+
+```shell
+az role assignment list \
+  --scope "${FOUNDRY_SCOPE}" \
+  --include-inherited \
+  --query "[?roleDefinitionName=='Foundry User' && (principalId=='${USER_OBJECT_ID}' || principalId=='${PROJECT_PRINCIPAL_ID}')].{principalType:principalType,role:roleDefinitionName,scope:scope}" \
+  --output table
+```
+
+### Troubleshoot `PermissionDeniedError: 403`
+
+A missing project data-plane role can make a command end with an error like
+this, sometimes without a response body:
+
+```text
+PermissionDeniedError: Error code: 403
+```
+
+Use the following checks before changing code:
+
+1. Confirm that Azure CLI is using the expected subscription, tenant, and
+   identity:
+
+   ```shell
+   az account show \
+     --query "{subscription:name,tenantId:tenantId,user:user.name}" \
+     --output table
+   ```
+
+2. Confirm that `FOUNDRY_PROJECT_ENDPOINT` is the project URL, in the form
+   `https://<account>.services.ai.azure.com/api/projects/<project>`.
+3. Confirm that the deployment exists, is ready, and supports the Responses
+   API:
+
+   ```shell
+   az cognitiveservices account deployment show \
+     --resource-group "${RESOURCE_GROUP}" \
+     --name "${FOUNDRY_ACCOUNT}" \
+     --deployment-name "gpt-5-mini" \
+     --query "{state:properties.provisioningState,responses:properties.capabilities.responses,model:properties.model.name,version:properties.model.version}" \
+     --output table
+   ```
+
+4. Run the role-assignment query above. If either the calling identity or the
+   project managed identity is absent, create the missing `Foundry User`
+   assignment.
+5. Allow several minutes for RBAC propagation, then retry:
+
+   ```shell
+   uv run --locked python -m scripts.cli_foundry chat-model
+   ```
+
+If the deployment is ready and both role assignments are present but the
+request still returns 403, inspect the Foundry account's firewall, virtual
+network, and private endpoint configuration. See Microsoft's
+[HTTP error troubleshooting guide](https://learn.microsoft.com/azure/foundry/openai/how-to/troubleshoot-errors)
+for network denial and resource suspension checks. Do not replace the project
+endpoint with a resource-level OpenAI endpoint for `create-agent` or
+`chat-agent`; that bypasses project-scoped capabilities instead of correcting
+the project access configuration.
+
 Send one prompt directly to a model:
 
 ```shell
