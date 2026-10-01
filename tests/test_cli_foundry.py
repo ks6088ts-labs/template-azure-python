@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from click import unstyle
 from typer.testing import CliRunner
 
 from scripts.cli_foundry import (
@@ -188,7 +189,7 @@ def test_chat_model_requires_endpoint():
     )
 
     assert result.exit_code == 2
-    assert "Missing option '--endpoint'" in result.output
+    assert "Missing option '--endpoint'" in unstyle(result.output)
 
 
 def test_chat_model_rejects_invalid_endpoint():
