@@ -53,6 +53,31 @@ notebook group remains available through `make jupyterlab`.
 high-severity GitHub Actions configuration findings. Run
 `uv run --locked zizmor --offline .` to review lower-severity findings as well.
 
+### API server
+
+Start the minimal FastAPI server with the existing CLI:
+
+```shell
+uv run --locked python scripts/template.py serve
+```
+
+It listens on `http://127.0.0.1:8000` by default. Use `--host` and `--port`
+to change the listening address, for example:
+
+```shell
+uv run --locked python scripts/template.py serve --host 0.0.0.0 --port 8080
+```
+
+Check the default server from another terminal:
+
+```shell
+curl http://127.0.0.1:8000/
+# {"Hello":"World"}
+```
+
+Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
+The Docker and Compose commands retain their existing behavior.
+
 ### Docker development
 
 ```shell
