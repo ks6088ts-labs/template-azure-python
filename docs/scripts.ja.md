@@ -149,6 +149,117 @@ az login
 uv run --locked python -m scripts.cli_foundry --help
 ```
 
+### 必要な Foundry RBAC
+
+プロジェクトエンドポイントは `DefaultAzureCredential` を介して Microsoft
+Entra ID 認証を使用します。コマンドを実行する前に、Foundry アカウントで
+[Foundry User ロール](https://learn.microsoft.com/ja-jp/azure/foundry/concepts/rbac-foundry)
+を次の両方に割り当ててください。
+
+- CLI を実行するユーザーまたはサービスプリンシパル
+- Foundry プロジェクトのマネージド ID
+
+`Foundry User` の旧名称は `Azure AI User` です。名称変更の反映中は旧名称が
+表示される場合があります。Azure の `Owner` と `Contributor` は管理プレーンの
+アクセス権を付与しますが、プロジェクトの全データプレーン権限は付与しないため、
+このロールの代わりにはなりません。Foundry ポータルでプロジェクトを作成し、
+作成者がロールを割り当てられる場合は自動的に設定されることがあります。それ以外の
+方法で作成したプロジェクトでは、次の割り当てが必要になる場合があります。
+
+実行者にはロール割り当てを作成する権限が必要です。プレースホルダーを置き換え、
+Foundry アカウントのスコープでアクセス権を付与します。
+
+```shell
+SUBSCRIPTION_ID="$(az account show --query id --output tsv)"
+RESOURCE_GROUP="<foundry-resource-group>"
+FOUNDRY_ACCOUNT="<foundry-account-name>"
+FOUNDRY_PROJECT="<foundry-project-name>"
+
+FOUNDRY_SCOPE="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.CognitiveServices/accounts/${FOUNDRY_ACCOUNT}"
+PROJECT_SCOPE="${FOUNDRY_SCOPE}/projects/${FOUNDRY_PROJECT}"
+
+USER_OBJECT_ID="$(az ad signed-in-user show --query id --output tsv)"
+PROJECT_PRINCIPAL_ID="$(az resource show \
+  --ids "${PROJECT_SCOPE}" \
+  --query identity.principalId \
+  --output tsv)"
+
+az role assignment create \
+  --assignee-object-id "${USER_OBJECT_ID}" \
+  --assignee-principal-type User \
+  --role "Foundry User" \
+  --scope "${FOUNDRY_SCOPE}"
+
+az role assignment create \
+  --assignee-object-id "${PROJECT_PRINCIPAL_ID}" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Foundry User" \
+  --scope "${FOUNDRY_SCOPE}"
+```
+
+`PROJECT_PRINCIPAL_ID` が空の場合は、続行する前にプロジェクトのマネージド ID を
+構成してください。両方の割り当てが表示されることを確認します。
+
+```shell
+az role assignment list \
+  --scope "${FOUNDRY_SCOPE}" \
+  --include-inherited \
+  --query "[?roleDefinitionName=='Foundry User' && (principalId=='${USER_OBJECT_ID}' || principalId=='${PROJECT_PRINCIPAL_ID}')].{principalType:principalType,role:roleDefinitionName,scope:scope}" \
+  --output table
+```
+
+### `PermissionDeniedError: 403` のトラブルシューティング
+
+プロジェクトのデータプレーンロールが不足していると、コマンドが次のようなエラーで
+終了することがあります。レスポンス本文が空の場合もあります。
+
+```text
+PermissionDeniedError: Error code: 403
+```
+
+コードを変更する前に、次の順序で確認してください。
+
+1. Azure CLI が意図したサブスクリプション、テナント、ID を使用していることを
+   確認します。
+
+   ```shell
+   az account show \
+     --query "{subscription:name,tenantId:tenantId,user:user.name}" \
+     --output table
+   ```
+
+2. `FOUNDRY_PROJECT_ENDPOINT` が
+   `https://<account>.services.ai.azure.com/api/projects/<project>` 形式の
+   プロジェクト URL であることを確認します。
+3. デプロイが存在して準備済みであり、Responses API に対応していることを
+   確認します。
+
+   ```shell
+   az cognitiveservices account deployment show \
+     --resource-group "${RESOURCE_GROUP}" \
+     --name "${FOUNDRY_ACCOUNT}" \
+     --deployment-name "gpt-5-mini" \
+     --query "{state:properties.provisioningState,responses:properties.capabilities.responses,model:properties.model.name,version:properties.model.version}" \
+     --output table
+   ```
+
+4. 前述のロール割り当て確認コマンドを実行します。呼び出し元 ID または
+   プロジェクトのマネージド ID が表示されない場合は、不足している
+   `Foundry User` の割り当てを作成します。
+5. RBAC の反映に数分待ってから、再実行します。
+
+   ```shell
+   uv run --locked python -m scripts.cli_foundry chat-model
+   ```
+
+デプロイが準備済みで両方のロールが存在しているにもかかわらず 403 が続く場合は、
+Foundry アカウントのファイアウォール、仮想ネットワーク、プライベートエンドポイント
+設定を確認してください。ネットワーク拒否やリソース停止の確認方法は、Microsoft の
+[HTTP エラーのトラブルシューティングガイド](https://learn.microsoft.com/ja-jp/azure/foundry/openai/how-to/troubleshoot-errors)
+を参照してください。`create-agent` または `chat-agent` でプロジェクトエンドポイントを
+リソースレベルの OpenAI エンドポイントに置き換えないでください。これはプロジェクトの
+アクセス設定を修正せず、プロジェクト固有の機能を迂回します。
+
 モデルへ直接 1 つのプロンプトを送信します。
 
 ```shell
@@ -181,6 +292,65 @@ uv run --locked python -m scripts.cli_foundry chat-agent \
 
 `FOUNDRY_PROJECT_ENDPOINT` を上書きするには `--endpoint` を使用します。
 すべてのオプションと既定値は各コマンドの `--help` で確認できます。
+
+## Azure Cosmos DB CLI
+
+`scripts.cli_cosmosdb` モジュールは
+[Azure Cosmos DB for NoSQL Python クイックスタート](https://learn.microsoft.com/ja-jp/azure/cosmos-db/quickstart-python)
+の Python SDK 操作を個別コマンドとして集約します。環境変数テンプレートを
+コピーしてアカウントエンドポイントを設定し、Microsoft Entra ID で認証します。
+
+```shell
+cp .env.template .env
+az login
+uv run --locked python -m scripts.cli_cosmosdb --help
+```
+
+ローカルでは `DefaultAzureCredential` が Azure CLI でサインインした ID を
+使用します。この ID には、データベースとコンテナーの作成、およびアイテムの
+書き込み、読み取り、クエリに必要な最小権限の Azure Cosmos DB データプレーン
+アクセス許可を付与してください。
+
+既定値はクイックスタートと同じ `cosmicworks` データベース、`products`
+コンテナー、`/category` パーティションキーです。各コマンドは必要に応じて
+データベースとコンテナーを作成します。サーバーレス構成と共有スループット構成
+に対応するため、専用スループットは既定では指定しません。新しいコンテナーに
+専用スループットが必要な場合は、`--throughput` で RU/s を指定します。
+
+チュートリアルのアイテムを作成します。同じ ID が存在する場合は置き換えます。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb upsert-item
+uv run --locked python -m scripts.cli_cosmosdb upsert-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards \
+  --name "Yamba Surfboard" \
+  --quantity 12 \
+  --no-sale
+```
+
+アイテム ID とパーティションキーを使ってポイント読み取りを実行します。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb read-item
+uv run --locked python -m scripts.cli_cosmosdb read-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards
+```
+
+クイックスタートのパラメーター化されたパーティション内カテゴリクエリを
+実行します。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb query-items
+uv run --locked python -m scripts.cli_cosmosdb query-items \
+  --category gear-surf-surfboards
+```
+
+環境変数 `AZURE_COSMOS_DB_ENDPOINT`、`AZURE_COSMOS_DB_DATABASE`、
+`AZURE_COSMOS_DB_CONTAINER` の値を上書きするには、`--endpoint`、
+`--database`、`--container` を使用します。すべてのオプションは各コマンドの
+`--help` で確認できます。
 
 ## Docker 開発
 

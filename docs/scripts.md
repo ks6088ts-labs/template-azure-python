@@ -149,6 +149,117 @@ az login
 uv run --locked python -m scripts.cli_foundry --help
 ```
 
+### Required Foundry RBAC
+
+The project endpoint uses Microsoft Entra ID authentication through
+`DefaultAzureCredential`. Before running the commands, assign the
+[Foundry User role](https://learn.microsoft.com/azure/foundry/concepts/rbac-foundry)
+on the Foundry account to both:
+
+- the user or service principal that runs the CLI; and
+- the Foundry project's managed identity.
+
+`Foundry User` was previously named `Azure AI User`, so the old name might
+still appear while the rename rolls out. Azure `Owner` and `Contributor` roles
+do not replace this role: they grant management-plane access but not all
+project data-plane permissions. Projects created in the Foundry portal can
+receive the assignments automatically when the creator is allowed to assign
+roles. Projects created another way might require the assignments below.
+
+The caller must have permission to create role assignments. Replace the
+placeholder values, then grant access at the Foundry account scope:
+
+```shell
+SUBSCRIPTION_ID="$(az account show --query id --output tsv)"
+RESOURCE_GROUP="<foundry-resource-group>"
+FOUNDRY_ACCOUNT="<foundry-account-name>"
+FOUNDRY_PROJECT="<foundry-project-name>"
+
+FOUNDRY_SCOPE="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.CognitiveServices/accounts/${FOUNDRY_ACCOUNT}"
+PROJECT_SCOPE="${FOUNDRY_SCOPE}/projects/${FOUNDRY_PROJECT}"
+
+USER_OBJECT_ID="$(az ad signed-in-user show --query id --output tsv)"
+PROJECT_PRINCIPAL_ID="$(az resource show \
+  --ids "${PROJECT_SCOPE}" \
+  --query identity.principalId \
+  --output tsv)"
+
+az role assignment create \
+  --assignee-object-id "${USER_OBJECT_ID}" \
+  --assignee-principal-type User \
+  --role "Foundry User" \
+  --scope "${FOUNDRY_SCOPE}"
+
+az role assignment create \
+  --assignee-object-id "${PROJECT_PRINCIPAL_ID}" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Foundry User" \
+  --scope "${FOUNDRY_SCOPE}"
+```
+
+If `PROJECT_PRINCIPAL_ID` is empty, configure a managed identity for the
+project before continuing. Verify that both assignments are visible:
+
+```shell
+az role assignment list \
+  --scope "${FOUNDRY_SCOPE}" \
+  --include-inherited \
+  --query "[?roleDefinitionName=='Foundry User' && (principalId=='${USER_OBJECT_ID}' || principalId=='${PROJECT_PRINCIPAL_ID}')].{principalType:principalType,role:roleDefinitionName,scope:scope}" \
+  --output table
+```
+
+### Troubleshoot `PermissionDeniedError: 403`
+
+A missing project data-plane role can make a command end with an error like
+this, sometimes without a response body:
+
+```text
+PermissionDeniedError: Error code: 403
+```
+
+Use the following checks before changing code:
+
+1. Confirm that Azure CLI is using the expected subscription, tenant, and
+   identity:
+
+   ```shell
+   az account show \
+     --query "{subscription:name,tenantId:tenantId,user:user.name}" \
+     --output table
+   ```
+
+2. Confirm that `FOUNDRY_PROJECT_ENDPOINT` is the project URL, in the form
+   `https://<account>.services.ai.azure.com/api/projects/<project>`.
+3. Confirm that the deployment exists, is ready, and supports the Responses
+   API:
+
+   ```shell
+   az cognitiveservices account deployment show \
+     --resource-group "${RESOURCE_GROUP}" \
+     --name "${FOUNDRY_ACCOUNT}" \
+     --deployment-name "gpt-5-mini" \
+     --query "{state:properties.provisioningState,responses:properties.capabilities.responses,model:properties.model.name,version:properties.model.version}" \
+     --output table
+   ```
+
+4. Run the role-assignment query above. If either the calling identity or the
+   project managed identity is absent, create the missing `Foundry User`
+   assignment.
+5. Allow several minutes for RBAC propagation, then retry:
+
+   ```shell
+   uv run --locked python -m scripts.cli_foundry chat-model
+   ```
+
+If the deployment is ready and both role assignments are present but the
+request still returns 403, inspect the Foundry account's firewall, virtual
+network, and private endpoint configuration. See Microsoft's
+[HTTP error troubleshooting guide](https://learn.microsoft.com/azure/foundry/openai/how-to/troubleshoot-errors)
+for network denial and resource suspension checks. Do not replace the project
+endpoint with a resource-level OpenAI endpoint for `create-agent` or
+`chat-agent`; that bypasses project-scoped capabilities instead of correcting
+the project access configuration.
+
 Send one prompt directly to a model:
 
 ```shell
@@ -180,6 +291,62 @@ uv run --locked python -m scripts.cli_foundry chat-agent \
 
 Use `--endpoint` to override `FOUNDRY_PROJECT_ENDPOINT`. Run each command with
 `--help` for all options and defaults.
+
+## Azure Cosmos DB CLI
+
+The `scripts.cli_cosmosdb` module collects the Python SDK operations from the
+[Azure Cosmos DB for NoSQL Python quickstart](https://learn.microsoft.com/en-us/azure/cosmos-db/quickstart-python)
+as separate commands. Copy the environment template, set the account endpoint,
+and authenticate with Microsoft Entra ID:
+
+```shell
+cp .env.template .env
+az login
+uv run --locked python -m scripts.cli_cosmosdb --help
+```
+
+`DefaultAzureCredential` uses the signed-in Azure CLI identity locally. Grant
+that identity the least-privileged Azure Cosmos DB data-plane permissions needed
+to create databases and containers and to write, read, and query items.
+
+The CLI defaults to the quickstart's `cosmicworks` database, `products`
+container, and `/category` partition key. Each command creates the database and
+container when needed. Dedicated throughput is omitted by default for
+serverless and shared-throughput configurations; use `--throughput` to set RU/s
+when a new container requires dedicated throughput.
+
+Create the tutorial item, or replace the item with the same ID:
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb upsert-item
+uv run --locked python -m scripts.cli_cosmosdb upsert-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards \
+  --name "Yamba Surfboard" \
+  --quantity 12 \
+  --no-sale
+```
+
+Perform a point read using the item ID and partition key:
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb read-item
+uv run --locked python -m scripts.cli_cosmosdb read-item \
+  --item-id aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb \
+  --category gear-surf-surfboards
+```
+
+Run the quickstart's parameterized, partition-scoped category query:
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb query-items
+uv run --locked python -m scripts.cli_cosmosdb query-items \
+  --category gear-surf-surfboards
+```
+
+Use `--endpoint`, `--database`, and `--container` to override the environment
+values `AZURE_COSMOS_DB_ENDPOINT`, `AZURE_COSMOS_DB_DATABASE`, and
+`AZURE_COSMOS_DB_CONTAINER`. Run each command with `--help` for all options.
 
 ## Docker development
 
