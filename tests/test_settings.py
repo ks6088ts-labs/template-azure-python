@@ -19,5 +19,7 @@ def test_settings(caplog):
             verbose=True,
         ), "Failed to load environment variables from .env.template"
         settings = ProjectSettings()
-        assert settings.project_name == "template-azure-python", "Default project name should be 'template-azure-python'"
+        assert settings.project_name == "template-azure-python", (
+            "Default project name should be 'template-azure-python'"
+        )
         logger.debug(f"ProjectSettings initialized: {settings}")
