@@ -69,13 +69,13 @@ jupyterlab: ## run Jupyter Lab
 # Docker
 # ---
 DOCKER_REPO_NAME ?= ks6088ts
-DOCKER_IMAGE_NAME ?= template-python
+DOCKER_IMAGE_NAME ?= template-azure-python
 DOCKER_COMMAND ?=
 
 # Tools
 HADOLINT_VERSION ?= v2.15.1
 TRIVY_VERSION ?= 0.74.0
-TRIVY_CACHE_VOLUME ?= template-python-trivy-cache
+TRIVY_CACHE_VOLUME ?= template-azure-python-trivy-cache
 
 .PHONY: docker-build
 docker-build: ## build Docker image

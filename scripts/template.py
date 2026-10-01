@@ -10,7 +10,7 @@ from template_azure_python.settings import get_project_settings
 
 app = typer.Typer(
     add_completion=False,
-    help="template-python CLI",
+    help="template-azure-python CLI",
 )
 
 logger = get_logger(__name__)
