@@ -1,0 +1,13 @@
+services:
+  template-python:
+    container_name: template-python
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "http.server", "8000"]
+    env_file:
+      - .env
+    environment:
+      PROJECT_NAME: hello
+    ports:
+      - "8000:8000"

@@ -1,0 +1,85 @@
+name: test
+
+on:
+  push:
+    branches:
+      - "main"
+      - "feature/**"
+      - "copilot/**"
+  pull_request:
+    branches:
+      - "main"
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up uv with caching enabled
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.12.19"
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install actionlint
+        if: matrix.python-version == '3.13'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/actionlint"
+          gh release download v1.7.12 --repo rhysd/actionlint \
+            --pattern 'actionlint_1.7.12_linux_amd64.tar.gz' \
+            --pattern 'actionlint_1.7.12_checksums.txt' \
+            --dir "$RUNNER_TEMP/actionlint"
+          (cd "$RUNNER_TEMP/actionlint" && sha256sum -c --ignore-missing actionlint_1.7.12_checksums.txt)
+          tar -xzf "$RUNNER_TEMP/actionlint/actionlint_1.7.12_linux_amd64.tar.gz" -C "$RUNNER_TEMP/actionlint" actionlint
+          echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
+      - name: Run CI tests
+        if: matrix.python-version == '3.13'
+        shell: bash
+        run: |
+          make ci-test
+          make ci-test-docs
+      - name: Run Python compatibility tests
+        if: matrix.python-version != '3.13'
+        shell: bash
+        run: |
+          uv sync --locked --no-dev --group test
+          uv run --locked --no-dev --group test pytest --capture=no -vv
+  hooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up uv with caching enabled
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.12.19"
+          python-version: "3.13"
+      - name: Set up Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Run configured hooks
+        run: make hooks-check
