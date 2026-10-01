@@ -2,6 +2,7 @@ import logging
 from typing import Annotated
 
 import typer
+import uvicorn
 from dotenv import load_dotenv
 
 from template_azure_python.core import hello_world
@@ -46,6 +47,28 @@ def hello(
     hello_world()
     logger.debug(f"This is a debug message with name: {name}")
     logger.info(f"Settings from .env: {get_project_settings().model_dump_json(indent=2)}")
+
+
+@app.command()
+def serve(
+    host: Annotated[
+        str,
+        typer.Option(
+            "--host",
+            help="Host to bind the server to",
+        ),
+    ] = "127.0.0.1",
+    port: Annotated[
+        int,
+        typer.Option(
+            "--port",
+            min=1,
+            max=65535,
+            help="Port to bind the server to",
+        ),
+    ] = 8000,
+):
+    uvicorn.run("template_azure_python.api:app", host=host, port=port)
 
 
 if __name__ == "__main__":
