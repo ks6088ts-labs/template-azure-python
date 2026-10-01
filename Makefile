@@ -87,7 +87,28 @@ docker-build: ## build Docker image
 
 .PHONY: docker-run
 docker-run: ## run Docker container
-	docker run --rm $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) $(DOCKER_COMMAND)
+	docker run --rm -p 127.0.0.1:8000:8000 $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) $(DOCKER_COMMAND)
+
+.PHONY: docker-smoke-test
+docker-smoke-test: ## check the default Docker server over HTTP
+	@set -eu; \
+	container=$$(docker run -d -p 127.0.0.1::8000 $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)); \
+	trap 'docker rm -f "$$container" >/dev/null' EXIT; \
+	port=$$(docker port "$$container" 8000/tcp | sed 's/.*://'); \
+	attempt=0; \
+	while [ "$$attempt" -lt 30 ]; do \
+		if response=$$(curl --fail --silent "http://127.0.0.1:$$port/") && \
+			[ "$$response" = '{"Hello":"World"}' ] && \
+			curl --fail --silent -o /dev/null "http://127.0.0.1:$$port/docs"; then \
+			printf 'Container served / and /docs on port %s\n' "$$port"; \
+			exit 0; \
+		fi; \
+		attempt=$$((attempt + 1)); \
+		sleep 1; \
+	done; \
+	printf 'Container did not serve / and /docs on port %s\n' "$$port" >&2; \
+	docker logs "$$container"; \
+	exit 1
 
 .PHONY: docker-lint
 docker-lint: ## lint Dockerfile
@@ -101,7 +122,7 @@ docker-scan: ## scan Docker image
 		aquasec/trivy:$(TRIVY_VERSION) image $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)
 
 .PHONY: ci-test-docker
-ci-test-docker: docker-lint docker-build docker-scan docker-run ## run CI test for Docker
+ci-test-docker: docker-lint docker-build docker-scan docker-smoke-test ## run CI test for Docker
 
 # ---
 # Docs

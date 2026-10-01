@@ -12,6 +12,8 @@ vendor
 .env
 .env.*
 *.local
+local.settings.json
+requirements.txt
 
 # Ignore git-related files
 .git

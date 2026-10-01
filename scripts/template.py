@@ -1,4 +1,6 @@
 import logging
+import subprocess
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -50,7 +52,7 @@ def hello(
 
 
 @app.command()
-def serve(
+def serve_container_apps(
     host: Annotated[
         str,
         typer.Option(
@@ -69,6 +71,33 @@ def serve(
     ] = 8000,
 ):
     uvicorn.run("template_azure_python.api:app", host=host, port=port)
+
+
+@app.command()
+def serve_functions(
+    port: Annotated[
+        int,
+        typer.Option(
+            "--port",
+            min=1,
+            max=65535,
+            help="Port to bind the Functions host to",
+        ),
+    ] = 7071,
+):
+    try:
+        result = subprocess.run(
+            ["func", "start", "--port", str(port)],
+            cwd=Path(__file__).resolve().parents[1],
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        typer.echo("Azure Functions Core Tools (func) not found. Install Core Tools v4.", err=True)
+        raise typer.Exit(code=1) from exc
+
+    if result.returncode != 0:
+        typer.echo(f"Azure Functions host exited with status {result.returncode}.", err=True)
+        raise typer.Exit(code=result.returncode)
 
 
 if __name__ == "__main__":
