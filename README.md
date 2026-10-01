@@ -175,6 +175,68 @@ Remote build installs `requirements.txt`; no second FastAPI implementation or
 Functions-specific Docker image is required. Set any application settings in
 Azure rather than publishing `local.settings.json`.
 
+#### Reusing the `azure_functions_flex_consumption` Terraform scenario
+
+If the
+[azure_functions_flex_consumption scenario](https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_functions_flex_consumption)
+has already been applied, publish this repository to its existing Function App.
+Terraform provisions the infrastructure but does not publish application code.
+Run these commands from the root of this repository, and set `SCENARIO_DIR` to
+the local scenario directory connected to the same Terraform state used for the
+deployment. In addition to the prerequisites above, Terraform must be installed
+and initialized for that state.
+
+```shell
+SCENARIO_DIR=/absolute/path/to/template-terraform/infra/scenarios/azure_functions_flex_consumption
+az login
+SUBSCRIPTION_ID=$(terraform -chdir="$SCENARIO_DIR" output -raw subscription_id)
+FUNCTION_APP_ID=$(terraform -chdir="$SCENARIO_DIR" output -raw function_app_id)
+FUNCTION_APP_NAME=$(terraform -chdir="$SCENARIO_DIR" output -raw function_app_name)
+FUNCTION_APP_URL=$(terraform -chdir="$SCENARIO_DIR" output -raw function_app_url)
+az account set --subscription "$SUBSCRIPTION_ID"
+az functionapp show --ids "$FUNCTION_APP_ID" --query "{name:name,state:state,defaultHostName:defaultHostName}" --output table
+```
+
+Confirm that the displayed app is the intended target. Then export the locked
+runtime dependencies and publish with a Flex-compatible remote build:
+
+```shell
+uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTION_ID" --build remote --python
+```
+
+Do not use the Terraform scenario's `scripts/publish_code.sh` for this
+application: that script stages and publishes the scenario's bundled `src/`
+sample instead of this repository's `function_app.py` and
+`template_azure_python/` package. Re-run the export and publish commands after
+changing the application or its dependencies.
+
+The scenario disables Microsoft Entra authentication by default. Verify that
+deployment with:
+
+```shell
+curl --fail --show-error "$FUNCTION_APP_URL/"
+# {"Hello":"World"}
+curl --fail --show-error --output /dev/null "$FUNCTION_APP_URL/docs"
+```
+
+If the scenario was applied with `enable_authentication=true`, acquire a token
+for the exact application ID URI from the same Terraform state and include it
+in both requests:
+
+```shell
+AUTH_RESOURCE=$(terraform -chdir="$SCENARIO_DIR" output -raw function_app_authentication_identifier_uri)
+ACCESS_TOKEN=$(az account get-access-token --subscription "$SUBSCRIPTION_ID" --resource "$AUTH_RESOURCE" --query accessToken --output tsv)
+curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/"
+# {"Hello":"World"}
+curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/docs"
+unset ACCESS_TOKEN
+```
+
+The published HTTP trigger is anonymous at the Functions host. With
+`enable_authentication=true`, the scenario's App Service authentication layer
+requires the bearer token before requests reach that trigger.
+
 ### Azure Container Apps (existing Container App)
 
 Push the Docker image to a registry that the existing Container App can pull
