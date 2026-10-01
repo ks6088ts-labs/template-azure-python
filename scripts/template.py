@@ -4,13 +4,13 @@ from typing import Annotated
 import typer
 from dotenv import load_dotenv
 
-from template_python.core import hello_world
-from template_python.loggers import get_logger
-from template_python.settings import get_project_settings
+from template_azure_python.core import hello_world
+from template_azure_python.loggers import get_logger
+from template_azure_python.settings import get_project_settings
 
 app = typer.Typer(
     add_completion=False,
-    help="template-python CLI",
+    help="template-azure-python CLI",
 )
 
 logger = get_logger(__name__)

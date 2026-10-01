@@ -1,6 +1,6 @@
 services:
-  template-python:
-    container_name: template-python
+  template-azure-python:
+    container_name: template-azure-python
     build:
       context: .
       dockerfile: Dockerfile

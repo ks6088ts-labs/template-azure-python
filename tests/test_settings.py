@@ -2,8 +2,8 @@ from logging import DEBUG
 
 from dotenv import load_dotenv
 
-from template_python.loggers import get_logger
-from template_python.settings import ProjectSettings
+from template_azure_python.loggers import get_logger
+from template_azure_python.settings import ProjectSettings
 
 logger = get_logger(__name__)
 
@@ -19,5 +19,7 @@ def test_settings(caplog):
             verbose=True,
         ), "Failed to load environment variables from .env.template"
         settings = ProjectSettings()
-        assert settings.project_name == "template-python", "Default project name should be 'template-python'"
+        assert settings.project_name == "template-azure-python", (
+            "Default project name should be 'template-azure-python'"
+        )
         logger.debug(f"ProjectSettings initialized: {settings}")

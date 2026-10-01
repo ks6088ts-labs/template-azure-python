@@ -1,3 +1,3 @@
-# template-python
+# template-azure-python
 
 このリポジトリは、Python プロジェクトのためのテンプレートリポジトリです。

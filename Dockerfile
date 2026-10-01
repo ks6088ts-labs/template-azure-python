@@ -24,4 +24,4 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 # Copy application code after dependencies are installed
 COPY . .
 
-CMD ["python", "-m", "template_python.core"]
+CMD ["python", "-m", "template_azure_python.core"]

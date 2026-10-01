@@ -2,8 +2,8 @@ import logging
 
 import pytest
 
-from template_python.core import hello_world
-from template_python.loggers import get_logger
+from template_azure_python.core import hello_world
+from template_azure_python.loggers import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,7 +26,7 @@ def test_hello_world_logs_message(caplog):
     Test that hello_world logs the expected message at INFO level.
     """
     logger.info("[TEST] Running test_hello_world_logs_message")
-    with caplog.at_level(logging.INFO, logger="template_python.core"):
+    with caplog.at_level(logging.INFO, logger="template_azure_python.core"):
         hello_world()
     assert "Hello World" in caplog.text
 
@@ -44,6 +44,6 @@ def test_hello_world_parametrized(caplog, log_level):
     The message 'Hello World' should appear when capturing at INFO or lower.
     """
     logger.info(f"[TEST] Running test_hello_world_parametrized with log_level={log_level}")
-    with caplog.at_level(log_level, logger="template_python.core"):
+    with caplog.at_level(log_level, logger="template_azure_python.core"):
         hello_world()
     assert "Hello World" in caplog.text
