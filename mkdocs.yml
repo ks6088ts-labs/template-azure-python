@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
 site_name: template-azure-python
 site_url: https://ks6088ts-labs.github.io/template-azure-python
-repo_url: https://github.com/ks6088ts/template-azure-python
-repo_name: ks6088ts/template-azure-python
+repo_url: https://github.com/ks6088ts-labs/template-azure-python
+repo_name: ks6088ts-labs/template-azure-python
 nav:
   - Home: index.md
   - Scripts and development: scripts.md
