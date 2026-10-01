@@ -5,6 +5,8 @@ repo_url: https://github.com/ks6088ts/template-azure-python
 repo_name: ks6088ts/template-azure-python
 nav:
   - Home: index.md
+  - Scripts and development: scripts.md
+  - Deployment: deployment.md
 theme:
   name: material
   # https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/#automatic-light-dark-mode
@@ -53,3 +55,7 @@ plugins:
         - locale: ja
           name: 日本語
           build: true
+          nav_translations:
+            Home: ホーム
+            Scripts and development: スクリプトと開発
+            Deployment: デプロイ
