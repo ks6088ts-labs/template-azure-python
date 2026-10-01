@@ -2,8 +2,8 @@ from logging import DEBUG
 
 from dotenv import load_dotenv
 
-from template_python.loggers import get_logger
-from template_python.settings import ProjectSettings
+from template_azure_python.loggers import get_logger
+from template_azure_python.settings import ProjectSettings
 
 logger = get_logger(__name__)
 
