@@ -45,6 +45,15 @@ class TelemetryTable(str, Enum):
     TRACES = "AppTraces"
     METRICS = "AppMetrics"
 
+    @property
+    def resource_table(self) -> str:
+        return {
+            TelemetryTable.REQUESTS: "requests",
+            TelemetryTable.DEPENDENCIES: "dependencies",
+            TelemetryTable.TRACES: "traces",
+            TelemetryTable.METRICS: "customMetrics",
+        }[self]
+
 
 app = typer.Typer(
     add_completion=False,
@@ -59,7 +68,9 @@ ResourceOption = Annotated[
 ]
 HoursOption = Annotated[int, typer.Option("--hours", min=1, max=168)]
 LimitOption = Annotated[int, typer.Option("--limit", min=1, max=1000)]
-TableOption = Annotated[TelemetryTable, typer.Option("--table", help="Workspace telemetry table.")]
+TableOption = Annotated[
+    TelemetryTable, typer.Option("--table", help="Workspace table alias mapped to the Application Insights schema.")
+]
 RunOption = Annotated[str | None, typer.Option("--run-id", help="Filter the generated run UUID.")]
 CountOption = Annotated[int, typer.Option("--count", min=1, max=100)]
 
@@ -76,10 +87,10 @@ def query_telemetry(
     validate_arm_id(resource_id, "Microsoft.Insights", "components")
     if run_id is not None:
         run_id = validate_guid(run_id)
-    query = f"{table.value} | where TimeGenerated >= ago({hours}h)"
+    query = f"{table.resource_table} | where timestamp >= ago({hours}h)"
     if run_id is not None:
-        query += f' | where tostring(Properties["run_id"]) == "{run_id}"'
-    query += f" | order by TimeGenerated desc | take {limit}"
+        query += f' | where tostring(customDimensions["run_id"]) == "{run_id}"'
+    query += f" | order by timestamp desc | take {limit}"
     try:
         with closing(DefaultAzureCredential()) as credential, closing(LogsQueryClient(credential)) as client:
             result = client.query_resource(resource_id, query, timespan=timedelta(hours=hours), server_timeout=30)

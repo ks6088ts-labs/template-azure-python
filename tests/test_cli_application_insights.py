@@ -34,9 +34,17 @@ def clients():
         yield SimpleNamespace(credential=credential, client=client, auth=auth, factory=factory)
 
 
-@pytest.mark.parametrize("table", ["AppRequests", "AppDependencies", "AppTraces", "AppMetrics"])
+@pytest.mark.parametrize(
+    ("table", "resource_table"),
+    [
+        ("AppRequests", "requests"),
+        ("AppDependencies", "dependencies"),
+        ("AppTraces", "traces"),
+        ("AppMetrics", "customMetrics"),
+    ],
+)
 @pytest.mark.parametrize("filtered", [False, True])
-def test_query(table: str, filtered: bool, clients: SimpleNamespace):
+def test_query(table: str, resource_table: str, filtered: bool, clients: SimpleNamespace):
     args = ["query-telemetry", "--resource-id", RESOURCE_ID, "--table", table, "--hours", "168", "--limit", "1000"]
     if filtered:
         args += ["--run-id", GUID]
@@ -45,9 +53,11 @@ def test_query(table: str, filtered: bool, clients: SimpleNamespace):
     assert json.loads(result.output) == {"tables": []}
     args, kwargs = clients.client.query_resource.call_args
     assert args[0] == RESOURCE_ID
-    assert args[1].startswith(f"{table} | where TimeGenerated >= ago(168h)")
-    assert args[1].endswith(" | order by TimeGenerated desc | take 1000")
-    assert (f'tostring(Properties["run_id"]) == "{GUID}"' in args[1]) == filtered
+    expected_query = f"{resource_table} | where timestamp >= ago(168h)"
+    if filtered:
+        expected_query += f' | where tostring(customDimensions["run_id"]) == "{GUID}"'
+    expected_query += " | order by timestamp desc | take 1000"
+    assert args[1] == expected_query
     assert kwargs == {"timespan": timedelta(hours=168), "server_timeout": 30}
     clients.factory.assert_called_once_with(clients.credential)
     clients.client.close.assert_called_once()
@@ -62,7 +72,7 @@ def test_query_defaults_environment_and_override(explicit: bool, clients: Simple
     assert result.exit_code == 0
     args, kwargs = clients.client.query_resource.call_args
     assert args[0] == (RESOURCE_ID if explicit else other)
-    assert args[1] == "AppRequests | where TimeGenerated >= ago(24h) | order by TimeGenerated desc | take 100"
+    assert args[1] == "requests | where timestamp >= ago(24h) | order by timestamp desc | take 100"
     assert kwargs["timespan"] == timedelta(hours=24)
 
 

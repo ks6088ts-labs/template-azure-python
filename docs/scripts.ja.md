@@ -870,7 +870,11 @@ uv run --locked python -m scripts.cli_application_insights query-telemetry \
 ```
 
 指定できるテーブルは `AppRequests`、`AppTraces`、`AppMetrics`、
-`AppDependencies` の 4 種類のみです。最後のテーブルは既存の依存関係テレメトリを
+`AppDependencies` の 4 種類のみです。CLI はこれらの別名を、リソース中心 API の
+`requests`、`traces`、`customMetrics`、`dependencies` に対応付けます。
+JSON の列名は API のスキーマをそのまま返すため、時刻は `timestamp`、
+実行 ID は `customDimensions.run_id`、メトリックの集計値は `valueSum` です。
+最後のテーブルは既存の依存関係テレメトリを
 検索できますが、この送信コマンドは dependency span を生成しません。
 `--run-id` は省略可能ですが、
 指定する場合は UUID が必要です。メトリックは集約されるため、増分との比較には
@@ -885,6 +889,39 @@ RBAC、取り込み / ネットワーク障害を確認してください。無�
 [取り込み遅延](https://learn.microsoft.com/azure/azure-monitor/logs/data-ingestion-time)
 も参照してください。終了後はローカルの接続文字列を削除します。
 ローカル設定の削除だけでは Azure リソースの課金は停止しません。
+
+### 可観測性 CLI のトラブルシューティング
+
+- `Missing option` が出る場合は、上の対応表に従って ID を設定するか、
+  CLI オプションで指定します。`az login` は `.env` にリソース ID や
+  `AZURE_SUBSCRIPTION_ID` を設定しません。既存の `.env` をテンプレートで
+  上書きしないでください。`AZURE_RESOURCE_GROUP` が設定されていると
+  Watcher 一覧と Activity Log はそのグループに限定されます。
+  古いテンプレートから作成した `.env` には、新しい変数が自動追加されません。
+  不足する変数を既存の `.env` に追記し、実際の ID を設定してください。
+  たとえば `AZURE_MONITOR_ID=/subscriptions/<subscription-id>/resourceGroups/<group>/providers/Microsoft.Monitor/accounts/<workspace-name>`
+  を設定すると、`show-workspace` をオプションなしで実行できます。
+  CLI オプションや実行プロセス内だけの環境変数では、後から起動するターミナルの
+  設定は永続化されません。設定後は、通常のターミナルでドキュメントのコマンドを
+  そのまま実行して確認してください。
+- Application Insights のクエリが失敗する場合は、リソース中心 API と
+  ワークスペース API のスキーマを混同していないか確認します。
+  `query_resource` では `requests | where timestamp >= ago(1h)` と
+  `customDimensions["run_id"]` を使います。`AppRequests`、
+  `TimeGenerated`、`Properties` はワークスペース用です。古い CLI で
+  `AppRequests` の解決エラーが出る場合は、修正版へ更新してください。
+  [Application Insights のクエリスキーマ](https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete)
+  を参照してください。
+- Prometheus の `status: success` と空の `result` は、コレクター未設定なら
+  正常です。Log Analytics の空行と、テーブル未作成によるクエリエラーは
+  区別してください。`AzureActivity` には診断エクスポートと取り込み待ちが必要です。
+- テレメトリ送信直後の空行だけで失敗と判断しないでください。同じ `run_id`
+  で待って再クエリし、`AppRequests`、`AppTraces`、`AppMetrics` の
+  すべてに到達したことを確認します。到着には数分以上かかる場合があり、
+  各シグナルが同時に見えるとは限りません。メトリック `quickstart.events` は、
+  対象実行の `valueSum` の合計を送信した `--count` と比較します。
+  `flushed: true` のみでは取り込み確認になりません。SDK 警告や HTTP 失敗、
+  403 が出る場合は送信先、読み取り権限、ネットワーク制限を確認します。
 
 ## Docker 開発
 

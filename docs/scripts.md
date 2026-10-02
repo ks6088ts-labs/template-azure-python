@@ -866,7 +866,11 @@ uv run --locked python -m scripts.cli_application_insights query-telemetry \
 ```
 
 Queries allow `AppRequests`, `AppTraces`, `AppMetrics`, and `AppDependencies`;
-the last table is supported for existing dependency telemetry, but this emitter
+the CLI maps these aliases to the resource-centric API's `requests`, `traces`,
+`customMetrics`, and `dependencies`. JSON columns retain the API schema:
+time is `timestamp`, the run ID is in `customDimensions.run_id`, and the
+metric aggregate is `valueSum`.
+The last table is supported for existing dependency telemetry, but this emitter
 does not create dependency spans. `--run-id` is optional but must be a UUID
 when provided. Metrics are aggregated: compare counter values/aggregates,
 not metric row counts, with emitted increments. The scenario's Application
@@ -880,6 +884,39 @@ unbounded traffic. See [sampling](https://learn.microsoft.com/azure/azure-monito
 and [ingestion latency](https://learn.microsoft.com/azure/azure-monitor/logs/data-ingestion-time).
 Remove the local connection string when finished; deleting local settings does
 not stop Azure resource charges.
+
+### Troubleshoot observability CLIs
+
+- For `Missing option`, configure the IDs in the table above or pass explicit
+  CLI options. `az login` does not populate resource IDs or
+  `AZURE_SUBSCRIPTION_ID` in `.env`. Do not overwrite an existing `.env` with
+  the template. A configured `AZURE_RESOURCE_GROUP` restricts watcher lists
+  and Activity Log reads to that group.
+  An `.env` created from an older template does not automatically receive new
+  variables. Add missing variables to the existing `.env` and set their actual
+  IDs. For example, setting
+  `AZURE_MONITOR_ID=/subscriptions/<subscription-id>/resourceGroups/<group>/providers/Microsoft.Monitor/accounts/<workspace-name>`
+  lets you run `show-workspace` without an option. CLI options and environment
+  variables set only inside an execution process do not persist settings for
+  later terminals. After configuration, run the documented commands unchanged
+  in a normal terminal to verify the setup.
+- If an Application Insights query fails, distinguish the resource-centric
+  API schema from the workspace API schema. `query_resource` uses
+  `requests | where timestamp >= ago(1h)` and `customDimensions["run_id"]`.
+  `AppRequests`, `TimeGenerated`, and `Properties` belong to the workspace
+  schema. Update older CLI versions that fail to resolve `AppRequests`.
+  See the [Application Insights query schema](https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete).
+- Prometheus `status: success` with an empty `result` is normal without a
+  collector. Distinguish empty Log Analytics rows from query errors caused
+  by missing tables. `AzureActivity` needs diagnostic export and ingestion time.
+- Empty rows immediately after emission do not establish failure. Wait and
+  query again with the same `run_id`; verify arrival in `AppRequests`,
+  `AppTraces`, and `AppMetrics`. Arrival can take several minutes or longer,
+  and the signals need not appear simultaneously. For the `quickstart.events` metric, compare
+  the sum of `valueSum` for that run with the emitted `--count`.
+  `flushed: true` alone does not verify ingestion. For SDK warnings, HTTP
+  failures, or 403 responses, check the destination, read permissions, and
+  network restrictions.
 
 ## Docker development
 
