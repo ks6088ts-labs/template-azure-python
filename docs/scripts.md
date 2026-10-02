@@ -846,9 +846,11 @@ uv run --locked python -m scripts.cli_application_insights emit-telemetry --coun
 ```
 
 `--count` accepts `1..100` (default `10`). The command emits sample server
-spans, correlated logs, and metric increments, flushes the exporters, and
-reports a unique `run_id`; flush failures are explicit. Successful flushing
-does **not** guarantee ingestion. Allow ingestion time, then locate that run in
+spans, correlated logs, and metric increments, flushes the providers, and
+reports a unique `run_id`. `flushed` means provider flushing completed, **not**
+that Azure accepted or ingested the telemetry: background HTTP failures can
+still occur. Provider false returns/exceptions and observed SDK warnings are
+reported. Allow ingestion time, then locate that run in
 recent requests and filter each signal using the printed UUID:
 
 ```shell
