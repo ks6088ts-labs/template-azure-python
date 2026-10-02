@@ -354,6 +354,11 @@ uv run --locked python -m scripts.cli_cosmosdb query-items \
 
 ## Azure メッセージング CLI
 
+Event Grid、Event Hubs、Service Bus、Queue Storage の各 CLI は `.env` から
+サービス設定を読み込み、`DefaultAzureCredential` で認証します。接続文字列や
+共有キーは受け付けません。ローカルで使用する場合はリポジトリルートからコマンドを
+実行し、`az login` でサインインしてください。
+
 4 つの独立したモジュールで、次の記事のパスワードレスの例を実行できます。
 
 - [Event Grid Python SDK](https://learn.microsoft.com/en-us/python/api/overview/azure/eventgrid-readme?view=azure-python)
@@ -701,6 +706,23 @@ uv run --locked python -m scripts.cli_queue_storage delete-queue --queue "$SCRAT
 上記クリーンアップで検証用キューを Terraform 管理下のキューに置き換えないで
 ください。`--endpoint` で Queue サービスのエンドポイントを上書きできます。
 各コマンドの `--help` で全オプションと既定値を確認できます。
+
+### トラブルシューティング
+
+| 症状 | 確認事項 |
+| --- | --- |
+| `--endpoint`、`--fully-qualified-namespace`、またはキューのオプションが不足している | 対応する `.env` 変数を設定してください。既存のファイルをテンプレートで置き換えないでください。 |
+| 更新した `.env` の値が使用されない | `load_dotenv(override=False)` は既存値を維持するため、シェルで export 済みの環境変数が優先され、明示的な CLI オプションはその両方より優先されます。古い export を削除するか、使用するオプションを明示してください。 |
+| `terraform output` が `Required plugins are not installed` と報告する | Terraform シナリオで `terraform init` を実行するか、「Azure から設定を再取得する」の手順で設定を直接取得してください。既存リソースの読み取りに `terraform apply` は不要です。 |
+| unauthorized または forbidden エラーが発生する | `DefaultAzureCredential` が選択した ID、テナント、「必要なメッセージング RBAC」に示すデータプレーン RBAC を確認してください。`Owner`/`Contributor` だけでは不十分です。ネットワーク制限も確認してください。 |
+| 保持中のイベントがあるのに Event Hubs が `{"received": 0}` を返す | 既定の 15 秒のタイムアウトには、最初の認証、接続、パーティション探索も含まれます。`--max-wait-time 30 --starting-position '-1'` を試してください。`@latest` は新しいイベントだけを読み取ります。 |
+| Event Grid がイベントスキーマを拒否する | トピックの `inputSchema` に `--schema` を合わせてください。`EventGridSchema` には `event-grid`、`CloudEventSchemaV1_0` には `cloud-event` を指定します。 |
+| Queue Storage の update/delete が失敗する | receive または update が返した最新の `pop_receipt` を使用してください。どちらの操作でも以前の receipt は無効になります。 |
+
+ライフサイクル確認には専用の検証用キューを使用してください。Service Bus の receive
+はメッセージを complete して削除し、Queue Storage のキュー削除は全メッセージを
+削除します。破壊的なスモークテストに既存のアプリケーションキューを使用しないで
+ください。
 
 ## Azure 可観測性 CLI
 
