@@ -174,7 +174,7 @@ def receive_messages(
             visibility_timeout=visibility_timeout,
         )
         results = [_message_json(message) for message in islice(messages, max_messages)]
-    print_json(results)
+    print_json({"received": len(results), "messages": results})
 
 
 @app.command()

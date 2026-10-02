@@ -492,7 +492,8 @@ uv run --locked python -m scripts.cli_event_grid publish-event \
 
 `--data-version` は Event Grid スキーマ用メタデータであり、CloudEvent の
 バージョン指定ではありません。`publish-events --count` は全イベントをリストで
-1 回だけ送信します。`CustomEventSchema` と Namespace のコンシューマー操作
+1 回だけ送信します。発行結果は `schema`、`count`、`ids` を含む 1 つの JSON
+オブジェクトです。`CustomEventSchema` と Namespace のコンシューマー操作
 （receive、acknowledge、release、reject、renew lock）は対象外です。シナリオは
 Event Grid Namespace ではなく Basic Custom Topic を作成し、イベント
 サブスクリプションも作成しません。発行成功だけでは後続の配信先は構成されません。
@@ -500,7 +501,7 @@ Event Grid Namespace ではなく Basic Custom Topic を作成し、イベント
 ### Event Hubs
 
 既定ではクイックスタートの 3 イベントを送信します。`--message` を繰り返すと
-任意のイベントで 1 つの batch を作成できます。
+任意のイベントで 1 つの batch を作成できます。送信結果は `{"sent": N}` です。
 
 ```shell
 uv run --locked python -m scripts.cli_event_hubs send-events
@@ -514,9 +515,12 @@ uv run --locked python -m scripts.cli_event_hubs receive-events \
 ```
 
 受信の既定値は最大 100 件、アイドルタイムアウト 5 秒です。
+`--max-events` は 1～10,000 を指定できます。
 `--max-events` 件に達するか、全パーティションを通じて
 `--max-wait-time` 秒間イベントが届かなくなると終了し、ペイロードと
 パーティション・シーケンスのメタデータを JSON 行で表示した後に受信件数を表示します。
+イベントのフィールドは `body`、`partition_id`、`offset`、`sequence_number`、
+`enqueued_time` で、最後は 0 件の場合も含めて `{"received": N}` です。
 実イベントの受信ごとにタイムアウトをリセットします。コールバックが届かない場合や
 パーティションが見つからない場合もタイムアウトします。別のパーティションで受信が
 続いていれば、空のパーティションだけを理由に終了しません。
@@ -549,7 +553,10 @@ uv run --locked python -m scripts.cli_service_bus receive-messages \
 `send-message-list` はリストを `send_messages` に 1 回渡します。
 `send-message-batch` は `ServiceBusMessageBatch` に追加し、容量を超えた場合は
 メッセージを黙って欠落させず明示的に報告します。その場合は `--count` または本文
-サイズを減らしてください。受信は件数・待機時間で制限され、受信件数を表示します。
+サイズを減らしてください。受信は件数・待機時間で制限されます。送信は
+`{"sent": N}`、受信は各メッセージの `body`、`message_id`、メタデータを含む
+JSON オブジェクトを表示した後、`{"received": N}` を表示します。
+各オブジェクトはインデント付きの複数行ではなく 1 行で出力されます。
 正常に表示した各メッセージは **complete** され、キューから削除されます。
 Event Hubs や Queue Storage の受信とは異なります。シナリオは Topic と
 Subscription もデプロイしますが、この CLI は Queue のみを対象とします。
@@ -584,8 +591,12 @@ uv run --locked python -m scripts.cli_queue_storage receive-messages \
   --queue "$SCRATCH_QUEUE" --max-messages 2 --visibility-timeout 120
 ```
 
-send、receive、update は、後続操作に必要なメッセージ ID と pop receipt を
-JSON で返します。peek は可視性を変更せずメッセージを消費しません。receive は
+send、receive、update は、後続操作に必要な `id` と `pop_receipt` を
+JSON で返します。send/update は 1 つのメタデータオブジェクト、
+receive は各メッセージのメタデータを含む集約オブジェクト
+`{"received": N, "messages": [...]}` を出力します。空の受信結果は
+`{"received": 0, "messages": []}` です。JSONL として処理できるように、
+各結果は 1 行で完結します。peek は可視性を変更せずメッセージを消費しません。receive は
 指定時間だけ非表示にしますが、**削除はしません**。削除しなければ再び表示されます。
 キュー長はサービスの概算件数であり、現在表示されるメッセージだけの件数ではありません。
 

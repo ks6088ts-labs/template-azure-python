@@ -150,7 +150,11 @@ def test_read_messages_metadata_and_total_limit(clients, command, limit):
         assert len(list(messages)) == 3
     else:
         method.assert_called_once_with(max_messages=limit)
-    assert json.loads(result.output) == [expected] * limit
+    expected_messages = [expected] * limit
+    expected_output = (
+        {"received": limit, "messages": expected_messages} if command == "receive-messages" else expected_messages
+    )
+    assert json.loads(result.output) == expected_output
     clients.client.delete_message.assert_not_called()
     clients.client.update_message.assert_not_called()
     assert_closed(clients)
@@ -161,7 +165,7 @@ def test_receive_visibility_boundaries(clients, timeout):
     clients.client.receive_messages.return_value = iter([])
     result = invoke("receive-messages", "--visibility-timeout", str(timeout))
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output) == []
+    assert json.loads(result.output) == {"received": 0, "messages": []}
     clients.client.receive_messages.assert_called_once_with(
         messages_per_page=1, max_messages=1, visibility_timeout=timeout
     )

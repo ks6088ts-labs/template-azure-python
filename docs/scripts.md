@@ -491,6 +491,7 @@ uv run --locked python -m scripts.cli_event_grid publish-event \
 
 `--data-version` is Event Grid schema metadata, not a CloudEvent version
 selector. `publish-events --count` sends the entire event list in one call.
+Publishing prints one JSON object with `schema`, `count`, and `ids` fields.
 The CLI does not support `CustomEventSchema` or Namespace consumer operations
 (receive, acknowledge, release, reject, renew lock). This scenario creates a
 Basic Custom Topic, not an Event Grid Namespace, and no event subscriptions:
@@ -499,7 +500,7 @@ successful publishing does not by itself establish downstream delivery.
 ### Event Hubs
 
 Send the three quickstart events by default, or supply repeatable `--message`
-options to build one batch:
+options to build one batch. Sending prints `{"sent": N}`:
 
 ```shell
 uv run --locked python -m scripts.cli_event_hubs send-events
@@ -513,9 +514,12 @@ uv run --locked python -m scripts.cli_event_hubs receive-events \
 ```
 
 The receiver defaults to at most 100 events and a 5-second idle timeout.
+`--max-events` accepts 1–10,000.
 It stops at `--max-events` or after `--max-wait-time` seconds of
 global inactivity across partitions, and displays payload and
 partition/sequence metadata as JSON lines followed by a received-count summary.
+Event objects contain `body`, `partition_id`, `offset`, `sequence_number`,
+and `enqueued_time`; the final object is `{"received": N}`, including zero.
 Any real event resets the idle timeout; reception also times out when no
 callbacks arrive or no partitions are discovered. An idle partition does not
 stop reception while other partitions remain active. `--starting-position` defaults to `-1`
@@ -548,8 +552,10 @@ uv run --locked python -m scripts.cli_service_bus receive-messages \
 `send-message-batch` adds messages to a `ServiceBusMessageBatch` and explicitly
 reports capacity overflow rather than silently dropping messages. Reduce
 `--count` or message size if the batch is too large. Receiving is bounded by
-the requested count/wait and reports the received count; each successfully
-displayed message is **completed**, removing it from the queue. This differs
+the requested count/wait. Send commands print `{"sent": N}`; receive prints
+one JSON object per message with `body`, `message_id`, and metadata, followed
+by `{"received": N}`. Each object occupies one line, not an indented block.
+Each successfully displayed message is **completed**, removing it from the queue. This differs
 from Event Hubs and Queue Storage receive behavior. Only Queues are supported,
 even though the scenario also deploys a Topic and Subscription.
 
@@ -583,8 +589,12 @@ uv run --locked python -m scripts.cli_queue_storage receive-messages \
   --queue "$SCRATCH_QUEUE" --max-messages 2 --visibility-timeout 120
 ```
 
-Send, receive, and update return JSON containing the message ID and pop receipt
-needed for subsequent operations. Peek does not change visibility or consume
+Send, receive, and update return JSON containing `id` and `pop_receipt`
+needed for subsequent operations. Send/update output one metadata object;
+receive outputs one aggregate object, `{"received": N, "messages": [...]}`,
+with metadata for each message. An empty receive returns
+`{"received": 0, "messages": []}`. Each result is complete on a single line
+for JSONL processing. Peek does not change visibility or consume
 a message. Receive hides messages for the visibility timeout but **does not
 delete them**; they become visible again if not deleted. The queue length is
 an approximate service count, not a count of currently visible messages.

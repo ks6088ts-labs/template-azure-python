@@ -188,7 +188,10 @@ def test_invalid_endpoint_before_auth(command: str, endpoint: str, event_grid_cl
 
 
 @pytest.mark.parametrize("command", COMMANDS)
-@pytest.mark.parametrize("data", ["{", "[]", '"text"', "1", "true", "null", " ", '{"value": NaN}'])
+@pytest.mark.parametrize(
+    "data",
+    ["{", "[]", '"text"', "1", "true", "null", " ", '{"value": NaN}', '{"value": Infinity}', '{"value": 1e999}'],
+)
 def test_invalid_json_before_auth(command: str, data: str, event_grid_clients: SimpleNamespace):
     result = CliRunner().invoke(app, [command, "--endpoint", ENDPOINT, "--data", data])
 

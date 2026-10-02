@@ -187,7 +187,9 @@ def test_invalid_options_precede_auth(clients, command, option, value):
 @pytest.mark.parametrize("command", ["send-events", "receive-events"])
 def test_help_without_auth(clients, command, monkeypatch):
     monkeypatch.setattr("typer.rich_utils.MAX_WIDTH", 240)
-    result = CliRunner().invoke(app, [command, "--help"], env={"COLUMNS": "240"}, terminal_width=240)
+    result = CliRunner().invoke(
+        app, [command, "--help"], env={"COLUMNS": "240", "TERM": "xterm-256color"}, terminal_width=240
+    )
     assert result.exit_code == 0, result.output
     assert "AZURE_EVENT_HUBS_FULLY_QUALIFIED_NAMESPACE" in result.output
     assert "AZURE_EVENT_HUB_NAME" in result.output
