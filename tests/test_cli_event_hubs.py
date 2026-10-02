@@ -36,7 +36,7 @@ def clients():
     with (
         patch("scripts._azure_messaging.DefaultAzureCredential", return_value=credential) as credential_type,
         patch(
-            "scripts.cli_event_hubs.AsyncDefaultAzureCredential", return_value=async_credential
+            "scripts._azure_messaging.AsyncDefaultAzureCredential", return_value=async_credential
         ) as async_credential_type,
         patch("scripts.cli_event_hubs.EventHubProducerClient", return_value=producer) as producer_type,
         patch("scripts.cli_event_hubs.EventHubConsumerClient", return_value=consumer) as consumer_type,
@@ -399,6 +399,50 @@ def test_real_sdk_discovery_is_bounded_and_leaves_no_tasks(discovery):
                     assert await asyncio.wait_for(operation, timeout=1) == 0
             finally:
                 await consumer.close()
+        assert asyncio.all_tasks() == pending_before
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("outcome", ["idle", "limit", "error"])
+def test_real_sdk_partition_shutdown_cancels_load_balancing_sleep(outcome):
+    async def run():
+        consumer = EventHubConsumerClient(
+            fully_qualified_namespace=NAMESPACE,
+            eventhub_name="events",
+            consumer_group=DEFAULT_CONSUMER_GROUP,
+            credential=MagicMock(),
+        )
+        partition_consumer = MagicMock()
+        partition_consumer.close = AsyncMock()
+        pending_before = asyncio.all_tasks()
+
+        def create_consumer(_group, _partition_id, _position, on_event, **_kwargs):
+            async def receive(*_args):
+                if outcome == "limit":
+                    await on_event(event())
+                elif outcome == "error":
+                    raise AzureError("partition failed")
+                await asyncio.Event().wait()
+
+            partition_consumer.receive = AsyncMock(side_effect=receive)
+            return partition_consumer
+
+        with (
+            patch.object(consumer, "get_partition_ids", new=AsyncMock(return_value=["0"])),
+            patch.object(consumer, "_create_consumer", side_effect=create_consumer),
+        ):
+            try:
+                operation = _receive_bounded(consumer, 1, 0.015, "-1")
+                if outcome == "error":
+                    with pytest.raises(AzureError, match="partition failed"):
+                        await asyncio.wait_for(operation, timeout=2)
+                else:
+                    assert await asyncio.wait_for(operation, timeout=2) == (1 if outcome == "limit" else 0)
+            finally:
+                await consumer.close()
+        partition_consumer.close.assert_awaited_once_with()
+        await asyncio.sleep(0)
         assert asyncio.all_tasks() == pending_before
 
     asyncio.run(run())

@@ -579,7 +579,8 @@ uv run --locked python -m scripts.cli_queue_storage receive-messages --queue "$S
 
 本文、非表示時間（秒）、取得件数を変更できます。peek/receive の既定の取得件数は
 1 件、receive の既定の非表示時間は 30 秒です。send/update の非表示時間は
-既定で 0 秒です。peek/receive の
+既定で 0 秒です。非表示時間はメッセージの残りの有効期間より短くしてください
+（メッセージの既定の有効期間は 7 日です）。peek/receive の
 `--max-messages` は **1～32** です。
 
 ```shell
@@ -596,7 +597,8 @@ JSON で返します。send/update は 1 つのメタデータオブジェクト
 receive は各メッセージのメタデータを含む集約オブジェクト
 `{"received": N, "messages": [...]}` を出力します。空の受信結果は
 `{"received": 0, "messages": []}` です。JSONL として処理できるように、
-各結果は 1 行で完結します。peek は可視性を変更せずメッセージを消費しません。receive は
+各結果は 1 行で完結します。peek は pop receipt を含まないメタデータの配列を返し、
+可視性を変更せずメッセージを消費しません。receive は
 指定時間だけ非表示にしますが、**削除はしません**。削除しなければ再び表示されます。
 キュー長はサービスの概算件数であり、現在表示されるメッセージだけの件数ではありません。
 

@@ -578,6 +578,8 @@ uv run --locked python -m scripts.cli_queue_storage receive-messages --queue "$S
 Customize the body, visibility timeout (seconds), and retrieval limit.
 Peek/receive default to one message; receive hides it for 30 seconds by
 default. Send/update default to a visibility timeout of zero.
+Keep the visibility timeout below the message's remaining lifetime
+(the default message lifetime is seven days).
 `--max-messages` for peek/receive must be between **1 and 32**:
 
 ```shell
@@ -594,7 +596,8 @@ needed for subsequent operations. Send/update output one metadata object;
 receive outputs one aggregate object, `{"received": N, "messages": [...]}`,
 with metadata for each message. An empty receive returns
 `{"received": 0, "messages": []}`. Each result is complete on a single line
-for JSONL processing. Peek does not change visibility or consume
+for JSONL processing. Peek returns an array of message metadata without pop
+receipts. It does not change visibility or consume
 a message. Receive hides messages for the visibility timeout but **does not
 delete them**; they become visible again if not deleted. The queue length is
 an approximate service count, not a count of currently visible messages.

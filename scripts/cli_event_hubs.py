@@ -7,10 +7,9 @@ from typing import Annotated
 import typer
 from azure.eventhub import EventData, EventHubProducerClient
 from azure.eventhub.aio import EventHubConsumerClient, PartitionContext
-from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
 from dotenv import load_dotenv
 
-from scripts._azure_messaging import managed_client, print_json, report_azure_errors, validate_name, validate_namespace
+from scripts._azure_messaging import async_managed_client, managed_client, print_json, validate_name, validate_namespace
 
 DEFAULT_MESSAGES = ("First event", "Second event", "Third event")
 DEFAULT_CONSUMER_GROUP = "$Default"
@@ -168,20 +167,16 @@ async def _receive_bounded(
 async def _receive_events(
     namespace: str, event_hub: str, consumer_group: str, max_events: int, max_wait_time: float, starting_position: str
 ) -> int:
-    credential = AsyncDefaultAzureCredential()
-    try:
-        consumer = EventHubConsumerClient(
+    async with async_managed_client(
+        "Azure Event Hubs",
+        lambda credential: EventHubConsumerClient(
             fully_qualified_namespace=namespace,
             eventhub_name=event_hub,
             consumer_group=consumer_group,
             credential=credential,
-        )
-        try:
-            return await _receive_bounded(consumer, max_events, max_wait_time, starting_position)
-        finally:
-            await consumer.close()
-    finally:
-        await credential.close()
+        ),
+    ) as consumer:
+        return await _receive_bounded(consumer, max_events, max_wait_time, starting_position)
 
 
 @app.command()
@@ -201,10 +196,9 @@ def receive_events(
         raise typer.BadParameter("must be a positive, finite number", param_hint="--max-wait-time")
     if not starting_position.strip():
         raise typer.BadParameter("must not be empty", param_hint="--starting-position")
-    with report_azure_errors("Azure Event Hubs"):
-        received = asyncio.run(
-            _receive_events(namespace, event_hub, consumer_group, max_events, max_wait_time, starting_position)
-        )
+    received = asyncio.run(
+        _receive_events(namespace, event_hub, consumer_group, max_events, max_wait_time, starting_position)
+    )
     print_json({"received": received})
 
 
