@@ -11,7 +11,7 @@
 - Functions のローカル実行用の
   [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
 - HTTP 確認用の `curl`
-- Microsoft Foundry サンプルと既存 Azure リソースへの発行用の
+- Azure SDK サンプルと既存 Azure リソースへの発行用の
   [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 
 ## Make ターゲット
@@ -351,6 +351,274 @@ uv run --locked python -m scripts.cli_cosmosdb query-items \
 `AZURE_COSMOS_DB_CONTAINER` の値を上書きするには、`--endpoint`、
 `--database`、`--container` を使用します。すべてのオプションは各コマンドの
 `--help` で確認できます。
+
+## Azure メッセージング CLI
+
+4 つの独立したモジュールで、次の記事のパスワードレスの例を実行できます。
+
+- [Event Grid Python SDK](https://learn.microsoft.com/en-us/python/api/overview/azure/eventgrid-readme?view=azure-python)
+- [Event Hubs Python クイックスタート](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-python-get-started-send?tabs=passwordless%2Croles-azure-portal)
+- [Service Bus Queue Python クイックスタート](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-python-how-to-use-queues?tabs=passwordless)
+- [Queue Storage Python クイックスタート](https://learn.microsoft.com/en-us/azure/storage/queues/storage-quickstart-queues-python?tabs=passwordless%2Croles-azure-portal%2Cenvironment-variable-windows%2Csign-in-azure-cli)
+
+### Terraform 出力と認証
+
+[`ks6088ts/template-terraform` の `infra/scenarios/azure_messaging`](https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_messaging)
+でデプロイ済みのリソースを使用します。各サービスは既定で無効のため、同リポジトリの
+手順で使用するサービスを有効にしてください。この Python リポジトリで Terraform を
+変更する必要はありません。Terraform のチェックアウト先で出力を確認します。
+
+```shell
+terraform -chdir=infra/scenarios/azure_messaging output
+# 1 つの値を引用符なしで表示:
+terraform -chdir=infra/scenarios/azure_messaging output -raw event_grid_topic_endpoint
+```
+
+この Python リポジトリでテンプレートを一度コピーし（既存の `.env` は上書きしない）、
+プレースホルダーを対応する出力に置き換えてサインインします。
+
+```shell
+cp .env.template .env
+az login
+uv run --locked python -m scripts.cli_event_grid --help
+uv run --locked python -m scripts.cli_event_hubs --help
+uv run --locked python -m scripts.cli_service_bus --help
+uv run --locked python -m scripts.cli_queue_storage --help
+```
+
+| Terraform 出力 | `.env` 変数 | CLI 上書きオプション |
+| --- | --- | --- |
+| `event_grid_topic_endpoint` | `AZURE_EVENT_GRID_TOPIC_ENDPOINT` | `--endpoint` |
+| `event_hubs_namespace_fqdn` | `AZURE_EVENT_HUBS_FULLY_QUALIFIED_NAMESPACE` | `--fully-qualified-namespace` |
+| `event_hub_name` | `AZURE_EVENT_HUB_NAME` | `--event-hub` |
+| `event_hub_consumer_group_name` | `AZURE_EVENT_HUB_CONSUMER_GROUP` | `--consumer-group` |
+| `service_bus_namespace_fqdn` | `AZURE_SERVICE_BUS_FULLY_QUALIFIED_NAMESPACE` | `--fully-qualified-namespace` |
+| `service_bus_queue_name` | `AZURE_SERVICE_BUS_QUEUE_NAME` | `--queue` |
+| `queue_storage_endpoint` | `AZURE_QUEUE_STORAGE_ENDPOINT` | `--endpoint` |
+| `queue_storage_queue_name` | `AZURE_QUEUE_STORAGE_QUEUE_NAME` | `--queue` |
+
+無効なサービスの出力は null または未表示のため、設定値として使わないでください。
+名前空間には `<namespace>.servicebus.windows.net` のようなホスト名だけを指定し、
+スキームやパスは含めません。エンドポイントは HTTPS URL です。Storage には
+Blob/DFS ではなく Queue エンドポイントを指定します。組み込みコンシューマー
+グループ名は文字列 `$Default` です。シェルでは `'$Default'` と引用してください。
+
+4 つの CLI は **`DefaultAzureCredential` のみ**を使用します。ローカルでは
+`az login` などの開発者資格情報、Azure ではホストのマネージド ID を利用できます。
+意図した ID を構成して下記のロールを付与してください。Azure のマネージド ID は
+ローカルユーザーの権限を継承しません。既定の資格情報チェーンで他の資格情報が
+設定されていると Azure CLI より優先される場合があります。接続文字列、アカウント
+キー、SAS のオプションはありません。Terraform シナリオもデータプレーンの
+共有キー・ローカル認証を無効にしています。
+
+### 必要なメッセージング RBAC
+
+シナリオは有効な各サービスについて次のロールを `operator_principal_id` 出力の
+プリンシパルに割り当てます。既定は Terraform 実行者で、同名の入力変数で別の
+プリンシパルを指定できます。
+
+| サービス | 割り当て済みデータプレーンロール | 割り当てスコープ（Terraform 出力） |
+| --- | --- | --- |
+| Event Grid | `EventGrid Data Sender` | Custom Topic (`event_grid_topic_id`) |
+| Event Hubs | `Azure Event Hubs Data Sender`, `Azure Event Hubs Data Receiver` | 名前空間 (`event_hubs_namespace_id`) |
+| Service Bus | `Azure Service Bus Data Sender`, `Azure Service Bus Data Receiver` | 名前空間 (`service_bus_namespace_id`) |
+| Queue Storage | `Storage Queue Data Contributor` | Storage アカウント (`queue_storage_account_id`) |
+
+呼び出し元が権限を付与された ID と一致することを確認します。割り当てを調べるには、
+Terraform 出力のリソース ID とプリンシパルのオブジェクト ID（Azure で実行する
+場合はマネージド ID のオブジェクト ID）を代入します。
+
+```shell
+az account show --query "{subscription:name,tenantId:tenantId,user:user.name}" --output table
+MESSAGING_SCOPE="<resource-ID-from-the-scope-column>"
+PRINCIPAL_ID="<calling-principal-object-ID>"
+az role assignment list \
+  --scope "$MESSAGING_SCOPE" --include-inherited \
+  --query "[?principalId=='${PRINCIPAL_ID}'].{role:roleDefinitionName,scope:scope}" \
+  --output table
+```
+
+実行時の ID がシナリオ実行者と異なる場合、権限を持つ管理者が必要なロールをその
+ID に付与してください。管理プレーンの `Owner`/`Contributor` だけでは
+データプレーンロールの代わりになりません。反映には数分かかります。認可に失敗する
+場合はテナント、エンドポイント、リソースのネットワーク制限も確認してください。
+
+### 記事の機能とコマンドの対応
+
+| 記事の機能 | モジュール | コマンド・シナリオ向けの調整 |
+| --- | --- | --- |
+| Event Grid: Send a Cloud Event | `scripts.cli_event_grid` | `publish-event`; トピックの入力スキーマを選択 |
+| Event Grid: Send Multiple Events | `scripts.cli_event_grid` | `publish-events`; リストを 1 回で送信 |
+| Event Grid: Namespace 受信・処理 | — | 対象外: Namespace、namespace topic、pull subscription がない |
+| Event Hubs: Send events | `scripts.cli_event_hubs` | `send-events`; 1 つの SDK batch |
+| Event Hubs: Receive events | `scripts.cli_event_hubs` | `receive-events`; 上限付き、Blob checkpoint なし |
+| Service Bus: Send single message | `scripts.cli_service_bus` | `send-message` |
+| Service Bus: Send a list | `scripts.cli_service_bus` | `send-message-list`; リストを 1 回で送信 |
+| Service Bus: Send a batch | `scripts.cli_service_bus` | `send-message-batch`; 明示的な SDK batch |
+| Service Bus: Receive/complete | `scripts.cli_service_bus` | `receive-messages`; 表示後に complete |
+| Queue Storage: Create queue | `scripts.cli_queue_storage` | `create-queue` |
+| Queue Storage: Add message | `scripts.cli_queue_storage` | `send-message` |
+| Queue Storage: Peek messages | `scripts.cli_queue_storage` | `peek-messages` |
+| Queue Storage: Update message | `scripts.cli_queue_storage` | `update-message` |
+| Queue Storage: Get queue length | `scripts.cli_queue_storage` | `get-queue-length`; 概算件数 |
+| Queue Storage: Receive messages | `scripts.cli_queue_storage` | `receive-messages`; 削除しない |
+| Queue Storage: Delete message | `scripts.cli_queue_storage` | `delete-message`; ID と pop receipt を指定 |
+| Queue Storage: Delete queue | `scripts.cli_queue_storage` | `delete-queue`; 確認または明示的な `--yes` |
+
+### Event Grid Basic Custom Topic
+
+既定のペイロードで単一または複数（既定は 3 件）のイベントを発行します。既定の
+`--schema event-grid` は Terraform の既定値 `EventGridSchema` に対応します。
+
+```shell
+uv run --locked python -m scripts.cli_event_grid publish-event
+uv run --locked python -m scripts.cli_event_grid publish-events
+uv run --locked python -m scripts.cli_event_grid publish-events \
+  --subject "samples/orders" --event-type "Sample.OrderCreated" \
+  --data '{"orderId":42,"status":"created"}' --data-version "1.0" --count 2
+```
+
+`--data` は JSON オブジェクトである必要があり、配列やスカラーは指定できません。
+`event_grid_input_schema = "CloudEventSchemaV1_0"` でデプロイしたトピックには
+`--schema cloud-event` を明示します。`--source` は CloudEvent の source です。
+
+```shell
+uv run --locked python -m scripts.cli_event_grid publish-event \
+  --endpoint "https://<topic>.<region>-1.eventgrid.azure.net/api/events" \
+  --schema cloud-event --source "/samples/orders" \
+  --subject "orders/42" --event-type "Sample.OrderCreated" \
+  --data '{"orderId":42}'
+```
+
+`--data-version` は Event Grid スキーマ用メタデータであり、CloudEvent の
+バージョン指定ではありません。`publish-events --count` は全イベントをリストで
+1 回だけ送信します。`CustomEventSchema` と Namespace のコンシューマー操作
+（receive、acknowledge、release、reject、renew lock）は対象外です。シナリオは
+Event Grid Namespace ではなく Basic Custom Topic を作成し、イベント
+サブスクリプションも作成しません。発行成功だけでは後続の配信先は構成されません。
+
+### Event Hubs
+
+既定ではクイックスタートの 3 イベントを送信します。`--message` を繰り返すと
+任意のイベントで 1 つの batch を作成できます。
+
+```shell
+uv run --locked python -m scripts.cli_event_hubs send-events
+uv run --locked python -m scripts.cli_event_hubs send-events \
+  --fully-qualified-namespace "<namespace>.servicebus.windows.net" \
+  --event-hub events --message "First event" --message '{"orderId":42}'
+uv run --locked python -m scripts.cli_event_hubs receive-events
+uv run --locked python -m scripts.cli_event_hubs receive-events \
+  --consumer-group '$Default' --starting-position '-1' \
+  --max-events 3 --max-wait-time 10
+```
+
+受信の既定値は最大 100 件、アイドルタイムアウト 5 秒です。
+`--max-events` 件に達するか、全パーティションを通じて
+`--max-wait-time` 秒間イベントが届かなくなると終了し、ペイロードと
+パーティション・シーケンスのメタデータを JSON 行で表示した後に受信件数を表示します。
+実イベントの受信ごとにタイムアウトをリセットします。コールバックが届かない場合や
+パーティションが見つからない場合もタイムアウトします。別のパーティションで受信が
+続いていれば、空のパーティションだけを理由に終了しません。
+`--starting-position` の既定値は `-1`（保持中のイベントの先頭）、
+`--consumer-group` の既定値は `$Default` です。受信は非破壊で、
+**checkpoint は保存しません**。同じ開始位置で再実行すると保持中のイベントを
+再読込することがあります。シナリオは Blob container と
+`Storage Blob Data Contributor` を用意しないため、記事の Blob checkpoint
+store は意図的に対象外としています。
+
+### Service Bus Queue
+
+3 種類の送信コマンドで異なる SDK 送信形式を確認できます。`--message` で本文、
+`--count` で list/batch の件数（既定は 3 件）を変更します。
+受信の既定値は最大 10 件、待機時間 5 秒です。
+
+```shell
+uv run --locked python -m scripts.cli_service_bus send-message
+uv run --locked python -m scripts.cli_service_bus send-message-list
+uv run --locked python -m scripts.cli_service_bus send-message-batch
+uv run --locked python -m scripts.cli_service_bus send-message --message "Hello queue"
+uv run --locked python -m scripts.cli_service_bus send-message-list --message "Order" --count 2
+uv run --locked python -m scripts.cli_service_bus send-message-batch --message "Order" --count 2
+uv run --locked python -m scripts.cli_service_bus receive-messages
+uv run --locked python -m scripts.cli_service_bus receive-messages \
+  --fully-qualified-namespace "<namespace>.servicebus.windows.net" \
+  --queue queue --max-messages 5 --max-wait-time 10
+```
+
+`send-message-list` はリストを `send_messages` に 1 回渡します。
+`send-message-batch` は `ServiceBusMessageBatch` に追加し、容量を超えた場合は
+メッセージを黙って欠落させず明示的に報告します。その場合は `--count` または本文
+サイズを減らしてください。受信は件数・待機時間で制限され、受信件数を表示します。
+正常に表示した各メッセージは **complete** され、キューから削除されます。
+Event Hubs や Queue Storage の受信とは異なります。シナリオは Topic と
+Subscription もデプロイしますが、この CLI は Queue のみを対象とします。
+
+### Queue Storage のライフサイクル（検証用キュー）
+
+例では一意な検証用（scratch）キューを使用します。削除時も含め、`--queue` で
+`.env` の Terraform 管理下のキューを上書きします。Azure Storage の有効な
+キュー名（小文字英数字とハイフン）を使用してください。`.env` にエンドポイントを
+設定した状態で、既定のメッセージと上限を試します。
+
+```shell
+SCRATCH_QUEUE="messaging-cli-scratch-$(date +%s)"
+uv run --locked python -m scripts.cli_queue_storage create-queue --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage send-message --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage peek-messages --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage get-queue-length --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage receive-messages --queue "$SCRATCH_QUEUE"
+```
+
+本文、非表示時間（秒）、取得件数を変更できます。peek/receive の既定の取得件数は
+1 件、receive の既定の非表示時間は 30 秒です。send/update の非表示時間は
+既定で 0 秒です。peek/receive の
+`--max-messages` は **1～32** です。
+
+```shell
+uv run --locked python -m scripts.cli_queue_storage send-message \
+  --queue "$SCRATCH_QUEUE" --message "Please update me" --visibility-timeout 0
+uv run --locked python -m scripts.cli_queue_storage peek-messages \
+  --queue "$SCRATCH_QUEUE" --max-messages 2
+uv run --locked python -m scripts.cli_queue_storage receive-messages \
+  --queue "$SCRATCH_QUEUE" --max-messages 2 --visibility-timeout 120
+```
+
+send、receive、update は、後続操作に必要なメッセージ ID と pop receipt を
+JSON で返します。peek は可視性を変更せずメッセージを消費しません。receive は
+指定時間だけ非表示にしますが、**削除はしません**。削除しなければ再び表示されます。
+キュー長はサービスの概算件数であり、現在表示されるメッセージだけの件数ではありません。
+
+最新の受信結果から ID と対応する pop receipt をコピーし、非表示時間内に
+更新します。
+
+```shell
+MESSAGE_ID="<message-ID-from-receive>"
+POP_RECEIPT="<matching-pop-receipt-from-receive>"
+uv run --locked python -m scripts.cli_queue_storage update-message \
+  --queue "$SCRATCH_QUEUE" --message-id "$MESSAGE_ID" --pop-receipt "$POP_RECEIPT" \
+  --message "Updated content" --visibility-timeout 120
+```
+
+更新は **新しい pop receipt** を返します。古い値を置き換えてください。
+再受信でも receipt が変わるため、同じメッセージの更新・削除には常に最新の値を
+使用します。
+
+```shell
+POP_RECEIPT="<new-pop-receipt-from-update>"
+uv run --locked python -m scripts.cli_queue_storage delete-message \
+  --queue "$SCRATCH_QUEUE" --message-id "$MESSAGE_ID" --pop-receipt "$POP_RECEIPT"
+# 検証用キューのみを削除（対話確認あり）:
+uv run --locked python -m scripts.cli_queue_storage delete-queue --queue "$SCRATCH_QUEUE"
+# 非対話クリーンアップの場合の代替コマンド（明示的な同意）:
+uv run --locked python -m scripts.cli_queue_storage delete-queue --queue "$SCRATCH_QUEUE" --yes
+```
+
+削除を拒否すると Azure API を呼ばずにキャンセルします。非対話実行でのキュー
+削除には `--yes` が必要です。キュー削除は残りのメッセージもすべて削除するため、
+上記クリーンアップで検証用キューを Terraform 管理下のキューに置き換えないで
+ください。`--endpoint` で Queue サービスのエンドポイントを上書きできます。
+各コマンドの `--help` で全オプションと既定値を確認できます。
 
 ## Docker 開発
 
