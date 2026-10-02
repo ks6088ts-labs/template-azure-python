@@ -523,6 +523,21 @@ uv run --locked python -m scripts.cli_event_grid publish-events \
   --data '{"orderId":42,"status":"created"}' --data-version "1.0" --count 2
 ```
 
+The Terraform default topic accepts only `EventGridSchema`. Against that topic,
+the following command fails with `BadRequest` because a CloudEvent contains
+properties such as `source` that are not valid in an Event Grid event:
+
+```shell
+uv run --locked python -m scripts.cli_event_grid publish-events \
+  --schema cloud-event --count 3
+```
+
+Omit `--schema`, or explicitly use `--schema event-grid`, for the default
+deployment. To publish CloudEvents, first set
+`event_grid_input_schema = "CloudEventSchemaV1_0"` in the Terraform scenario
+and apply that configuration to the topic. The publisher cannot select or
+convert the input schema for an already deployed topic.
+
 `--data` must be a JSON object, not an array or scalar. For a topic deployed
 with `event_grid_input_schema = "CloudEventSchemaV1_0"`, explicitly select
 `--schema cloud-event`; `--source` supplies the CloudEvent source:

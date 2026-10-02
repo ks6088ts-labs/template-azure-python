@@ -5,7 +5,7 @@
 #   az login
 #   uv run --locked python -m scripts.cli_event_grid --help
 #   uv run --locked python -m scripts.cli_event_grid publish-event
-#   uv run --locked python -m scripts.cli_event_grid publish-events --schema cloud-event --count 3
+#   uv run --locked python -m scripts.cli_event_grid publish-events --count 3
 
 from enum import Enum
 from typing import Annotated

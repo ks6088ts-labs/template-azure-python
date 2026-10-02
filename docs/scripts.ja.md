@@ -525,6 +525,21 @@ uv run --locked python -m scripts.cli_event_grid publish-events \
   --data '{"orderId":42,"status":"created"}' --data-version "1.0" --count 2
 ```
 
+Terraform の既定トピックが受け付けるのは `EventGridSchema` だけです。この
+トピックに次のコマンドを実行すると、CloudEvent の `source` などのプロパティが
+Event Grid イベントのスキーマに適合しないため `BadRequest` で失敗します。
+
+```shell
+uv run --locked python -m scripts.cli_event_grid publish-events \
+  --schema cloud-event --count 3
+```
+
+既定のデプロイでは `--schema` を省略するか、`--schema event-grid` を明示して
+ください。CloudEvent を発行するには、先に Terraform シナリオで
+`event_grid_input_schema = "CloudEventSchemaV1_0"` を設定し、その構成をトピックへ
+適用します。発行 CLI から、デプロイ済みトピックの入力スキーマを選択または変換する
+ことはできません。
+
 `--data` は JSON オブジェクトである必要があり、配列やスカラーは指定できません。
 `event_grid_input_schema = "CloudEventSchemaV1_0"` でデプロイしたトピックには
 `--schema cloud-event` を明示します。`--source` は CloudEvent の source です。
