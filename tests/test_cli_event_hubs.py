@@ -217,6 +217,21 @@ def test_receive_defaults_and_cleanup(clients):
     clients.credential_type.assert_not_called()
 
 
+def test_default_timeout_allows_initial_connection_delay(clients):
+    async def receive(**kwargs):
+        loop = asyncio.get_running_loop()
+        with patch.object(loop, "time", return_value=loop.time() + 10.0):
+            await kwargs["on_event"](SimpleNamespace(partition_id="0"), event())
+
+    clients.consumer.receive.side_effect = receive
+    result = CliRunner().invoke(app, ["receive-events", *RESOURCE_ARGS, "--max-events", "1"])
+
+    assert result.exit_code == 0, result.output
+    output = records(result.output)
+    assert output[0]["body"] == "hello"
+    assert output[-1] == {"received": 1}
+
+
 @pytest.mark.parametrize("limit", [1, 3, DEFAULT_MAX_EVENTS])
 def test_receive_total_limit_across_partitions_and_metadata(clients, limit):
     cancelled = []

@@ -409,6 +409,52 @@ precedence over Azure CLI credentials. No connection-string, account-key, or
 SAS options are provided. The Terraform scenario disables shared-key/local
 data-plane authentication.
 
+### Recover configuration from Azure
+
+If `terraform output` reports `Required plugins are not installed`, initialize
+the scenario from the Terraform checkout before reading its outputs:
+
+```shell
+terraform -chdir=infra/scenarios/azure_messaging init
+```
+
+Alternatively, retrieve the non-secret settings from Azure directly. Sign in,
+select the intended subscription, and replace these resource-name placeholders:
+
+```shell
+RESOURCE_GROUP="<messaging-resource-group>"
+EVENT_HUBS_NAMESPACE="<event-hubs-namespace>"
+EVENT_HUB="<event-hub-name>"
+SERVICE_BUS_NAMESPACE="<service-bus-namespace>"
+STORAGE_ACCOUNT="<queue-storage-account>"
+
+az eventgrid topic list --resource-group "$RESOURCE_GROUP" \
+  --query '[].{name:name,endpoint:endpoint,inputSchema:inputSchema}' --output table
+az eventhubs namespace show --resource-group "$RESOURCE_GROUP" \
+  --name "$EVENT_HUBS_NAMESPACE" --query serviceBusEndpoint --output tsv
+az eventhubs eventhub list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$EVENT_HUBS_NAMESPACE" --query '[].name' --output tsv
+az eventhubs eventhub consumer-group list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$EVENT_HUBS_NAMESPACE" --eventhub-name "$EVENT_HUB" \
+  --query '[].name' --output tsv
+az servicebus namespace show --resource-group "$RESOURCE_GROUP" \
+  --name "$SERVICE_BUS_NAMESPACE" --query serviceBusEndpoint --output tsv
+az servicebus queue list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$SERVICE_BUS_NAMESPACE" --query '[].name' --output tsv
+az storage account show --resource-group "$RESOURCE_GROUP" \
+  --name "$STORAGE_ACCOUNT" --query primaryEndpoints.queue --output tsv
+az storage queue list --account-name "$STORAGE_ACCOUNT" --auth-mode login \
+  --query '[].name' --output tsv
+```
+
+Use only the hostname from each namespace's `serviceBusEndpoint`: for example,
+`https://example.servicebus.windows.net:443/` becomes
+`example.servicebus.windows.net`. Keep the full HTTPS URL for Event Grid and
+Queue Storage. Update the variables in the mapping above without removing
+unrelated `.env` values. Keep `.env` local and Git-ignored; no account keys or
+SAS tokens are needed. Storage queue listing requires its data-plane role.
+Neither reading configuration nor testing the CLIs requires `terraform apply`.
+
 ### Required messaging RBAC
 
 For each enabled service, the scenario assigns these roles to its
@@ -513,7 +559,7 @@ uv run --locked python -m scripts.cli_event_hubs receive-events \
   --max-events 3 --max-wait-time 10
 ```
 
-The receiver defaults to at most 100 events and a 5-second idle timeout.
+The receiver defaults to at most 100 events and a 15-second idle timeout.
 `--max-events` accepts 1–10,000.
 It stops at `--max-events` or after `--max-wait-time` seconds of
 global inactivity across partitions, and displays payload and
@@ -528,6 +574,13 @@ Receiving is non-destructive and saves **no checkpoints**: another run with
 the same starting position can reread retained events. The article's Blob
 checkpoint store is intentionally excluded because the scenario provisions
 neither a Blob container nor `Storage Blob Data Contributor`.
+
+The initial timeout also includes authentication, connection, and partition
+discovery. A short timeout can return `{"received": 0}` before receiving any
+retained events. Retry with `--max-wait-time 30 --starting-position '-1'` and
+check the namespace, event hub, consumer group, and receiver RBAC. `@latest`
+does not read events already present when the receiver connects. Exported
+environment variables override `.env`; explicit CLI options override both.
 
 ### Service Bus Queue
 

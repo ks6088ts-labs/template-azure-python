@@ -411,6 +411,53 @@ Blob/DFS ではなく Queue エンドポイントを指定します。組み込�
 キー、SAS のオプションはありません。Terraform シナリオもデータプレーンの
 共有キー・ローカル認証を無効にしています。
 
+### Azure から設定を再取得する
+
+`terraform output` が `Required plugins are not installed` で失敗する場合は、
+Terraform のチェックアウト先でシナリオを初期化してから出力を取得します。
+
+```shell
+terraform -chdir=infra/scenarios/azure_messaging init
+```
+
+Terraform を使わず、Azure から秘密情報を含まない設定値を取得することもできます。
+サインインと対象サブスクリプションの選択を済ませ、リソース名を置き換えて実行します。
+
+```shell
+RESOURCE_GROUP="<messaging-resource-group>"
+EVENT_HUBS_NAMESPACE="<event-hubs-namespace>"
+EVENT_HUB="<event-hub-name>"
+SERVICE_BUS_NAMESPACE="<service-bus-namespace>"
+STORAGE_ACCOUNT="<queue-storage-account>"
+
+az eventgrid topic list --resource-group "$RESOURCE_GROUP" \
+  --query '[].{name:name,endpoint:endpoint,inputSchema:inputSchema}' --output table
+az eventhubs namespace show --resource-group "$RESOURCE_GROUP" \
+  --name "$EVENT_HUBS_NAMESPACE" --query serviceBusEndpoint --output tsv
+az eventhubs eventhub list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$EVENT_HUBS_NAMESPACE" --query '[].name' --output tsv
+az eventhubs eventhub consumer-group list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$EVENT_HUBS_NAMESPACE" --eventhub-name "$EVENT_HUB" \
+  --query '[].name' --output tsv
+az servicebus namespace show --resource-group "$RESOURCE_GROUP" \
+  --name "$SERVICE_BUS_NAMESPACE" --query serviceBusEndpoint --output tsv
+az servicebus queue list --resource-group "$RESOURCE_GROUP" \
+  --namespace-name "$SERVICE_BUS_NAMESPACE" --query '[].name' --output tsv
+az storage account show --resource-group "$RESOURCE_GROUP" \
+  --name "$STORAGE_ACCOUNT" --query primaryEndpoints.queue --output tsv
+az storage queue list --account-name "$STORAGE_ACCOUNT" --auth-mode login \
+  --query '[].name' --output tsv
+```
+
+名前空間の `serviceBusEndpoint` はホスト名だけを使います。たとえば
+`https://example.servicebus.windows.net:443/` は
+`example.servicebus.windows.net` にします。Event Grid と Queue Storage には
+HTTPS URL 全体を設定します。前述の対応表の変数だけを更新し、既存の `.env` の
+他の設定を削除しないでください。`.env` はローカルでのみ保持し、Git の無視対象に
+します。アカウントキーや SAS は不要です。Storage のキュー一覧取得には
+データプレーンロールが必要です。設定の取得や CLI の検証に `terraform apply` は
+必要ありません。
+
 ### 必要なメッセージング RBAC
 
 シナリオは有効な各サービスについて次のロールを `operator_principal_id` 出力の
@@ -514,7 +561,7 @@ uv run --locked python -m scripts.cli_event_hubs receive-events \
   --max-events 3 --max-wait-time 10
 ```
 
-受信の既定値は最大 100 件、アイドルタイムアウト 5 秒です。
+受信の既定値は最大 100 件、アイドルタイムアウト 15 秒です。
 `--max-events` は 1～10,000 を指定できます。
 `--max-events` 件に達するか、全パーティションを通じて
 `--max-wait-time` 秒間イベントが届かなくなると終了し、ペイロードと
@@ -530,6 +577,13 @@ uv run --locked python -m scripts.cli_event_hubs receive-events \
 再読込することがあります。シナリオは Blob container と
 `Storage Blob Data Contributor` を用意しないため、記事の Blob checkpoint
 store は意図的に対象外としています。
+
+最初のタイムアウトには認証、接続、パーティション探索の時間も含まれます。
+短すぎると保持中のイベントを受信する前に `{"received": 0}` で終了するため、
+`--max-wait-time 30 --starting-position '-1'` で再実行し、名前空間、Event Hub 名、
+コンシューマーグループ、受信の RBAC を確認してください。`@latest` は受信側の
+接続時点で既に存在するイベントを読みません。シェルで export 済みの環境変数は
+`.env` より優先され、明示的な CLI オプションはその両方より優先されます。
 
 ### Service Bus Queue
 

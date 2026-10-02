@@ -15,7 +15,7 @@ DEFAULT_MESSAGES = ("First event", "Second event", "Third event")
 DEFAULT_CONSUMER_GROUP = "$Default"
 DEFAULT_MAX_EVENTS = 100
 MAX_EVENTS = 10_000
-DEFAULT_MAX_WAIT_TIME = 5.0
+DEFAULT_MAX_WAIT_TIME = 15.0
 
 app = typer.Typer(
     add_completion=False,
