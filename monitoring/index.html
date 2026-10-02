@@ -1,0 +1,1346 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/monitoring/">
+      
+      
+        <link rel="prev" href="../messaging/">
+      
+      
+        <link rel="next" href="../deployment/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+          <link rel="alternate" href="../ja/monitoring/" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Monitoring and logs - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#monitoring-and-logs" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Monitoring and logs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../ja/monitoring/" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure samples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure samples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cosmosdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and logs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and logs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-set-the-read-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Set the read targets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-check-read-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Check read permissions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-the-data-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read the data you need
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Read the data you need">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-workspace-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus: workspace and metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-analytics-exported-activity-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Analytics: exported Activity Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-insights-requests-and-other-telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Insights: requests and other telemetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-watcher-location-and-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Watcher: location and settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activity-log-api-subscription-operation-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activity Log API: subscription operation history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filters-and-summary-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters and summary limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-emit-and-find-telemetry-optionally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Emit and find telemetry, optionally
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Emit and find telemetry, optionally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-the-connection-string-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set the connection string locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emit-a-sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Emit a sample
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-data-from-the-same-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find data from the same run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-set-the-read-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Set the read targets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-check-read-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Check read permissions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-the-data-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read the data you need
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Read the data you need">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-workspace-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus: workspace and metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-analytics-exported-activity-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Analytics: exported Activity Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-insights-requests-and-other-telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Insights: requests and other telemetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-watcher-location-and-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Watcher: location and settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activity-log-api-subscription-operation-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activity Log API: subscription operation history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filters-and-summary-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters and summary limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-emit-and-find-telemetry-optionally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Emit and find telemetry, optionally
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Emit and find telemetry, optionally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-the-connection-string-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set the connection string locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emit-a-sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Emit a sample
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-data-from-the-same-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find data from the same run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="monitoring-and-logs">Monitoring and logs</h1>
+<p>Read Azure monitoring data and logs from the CLI.
+All commands are read-only except the optional telemetry emission exercise.
+The CLIs do not assign roles, change diagnostic settings, or deploy collectors.</p>
+<h2 id="1-set-the-read-targets">1. Set the read targets</h2>
+<p>Complete the <a href="../scripts/">development and common Azure setup</a> and prepare the
+resources you need. All features in the
+<a href="https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_observability"><code>azure_observability</code> Terraform scenario</a>
+are off by default. Enable only the required features in that repository.</p>
+<table>
+<thead>
+<tr>
+<th>Data to read</th>
+<th>Required scenario features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Managed Prometheus</td>
+<td><code>features.azure_monitor</code></td>
+</tr>
+<tr>
+<td>Log Analytics <code>AzureActivity</code></td>
+<td><code>features.log_analytics</code> and <code>features.activity_log</code></td>
+</tr>
+<tr>
+<td>Application Insights</td>
+<td><code>features.application_insights</code> and <code>features.log_analytics</code></td>
+</tr>
+<tr>
+<td>Network Watcher</td>
+<td><code>features.network_watcher</code></td>
+</tr>
+<tr>
+<td>Subscription Activity Log API</td>
+<td>No feature flag; independent of workspaces</td>
+</tr>
+</tbody>
+</table>
+<p><code>features.activity_log</code> configures export; it does not enable the Activity Log API.
+Azure Monitor Workspace is for Prometheus and is separate from Log Analytics.</p>
+<p>Read nonsecret outputs from your Terraform checkout:</p>
+<pre><code class="language-shell">terraform -chdir=infra/scenarios/azure_observability output
+terraform -chdir=infra/scenarios/azure_observability output -raw azure_monitor_id
+</code></pre>
+<p>Set only the values you need in this Python repository's existing <code>.env</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th><code>.env</code> variable</th>
+<th>Value format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure_monitor_id</code></td>
+<td><code>AZURE_MONITOR_ID</code></td>
+<td>Azure Monitor Workspace ARM ID</td>
+</tr>
+<tr>
+<td><code>log_analytics_workspace_id</code></td>
+<td><code>AZURE_LOG_ANALYTICS_WORKSPACE_ID</code></td>
+<td>Workspace GUID</td>
+</tr>
+<tr>
+<td><code>application_insights_id</code></td>
+<td><code>AZURE_APPLICATION_INSIGHTS_ID</code></td>
+<td>Application Insights ARM ID</td>
+</tr>
+<tr>
+<td><code>network_watcher_id</code></td>
+<td><code>AZURE_NETWORK_WATCHER_ID</code></td>
+<td>Watcher ARM ID</td>
+</tr>
+<tr>
+<td><code>az account show --query id --output tsv</code></td>
+<td><code>AZURE_SUBSCRIPTION_ID</code></td>
+<td>Subscription GUID</td>
+</tr>
+<tr>
+<td><code>resource_group_name</code> or the watcher's actual group</td>
+<td><code>AZURE_RESOURCE_GROUP</code></td>
+<td>Optional filter; empty for subscription-wide reads</td>
+</tr>
+</tbody>
+</table>
+<p>An ARM ID is a path starting with <code>/subscriptions/&lt;id&gt;/resourceGroups/&lt;group&gt;/providers/</code>.
+A GUID has the form <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>.
+<strong>For Log Analytics, use the GUID, not the <code>log_analytics_id</code> ARM ID.</strong>
+<code>activity_log_id</code> identifies an export setting, not a subscription.
+Do not configure <code>null</code> outputs for disabled features; skip those exercises.</p>
+<p>To override settings, Monitor / Application Insights / Watcher use <code>--resource-id</code>,
+Log Analytics uses <code>--workspace-id</code>, and Activity Log uses <code>--subscription-id</code>.</p>
+<h2 id="2-check-read-permissions">2. Check read permissions</h2>
+<p>Ask an administrator to grant these permissions to the actual calling identity:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Role</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Workspace / Watcher metadata</td>
+<td><code>Reader</code></td>
+<td>Target resource; listing needs group or subscription access</td>
+</tr>
+<tr>
+<td>PromQL queries</td>
+<td><code>Monitoring Data Reader</code></td>
+<td>Azure Monitor Workspace</td>
+</tr>
+<tr>
+<td>Log Analytics queries</td>
+<td><code>Log Analytics Reader</code></td>
+<td>Log Analytics workspace</td>
+</tr>
+<tr>
+<td>Application Insights queries</td>
+<td><code>Reader</code> or workspace query access</td>
+<td>Application Insights or its backing workspace</td>
+</tr>
+<tr>
+<td>Activity Log API</td>
+<td><code>Reader</code>, including Activity Log read access</td>
+<td>Subscription</td>
+</tr>
+</tbody>
+</table>
+<p>PromQL's <code>Monitoring Data Reader</code> is not <code>Monitoring Reader</code>.
+Application Insights can use component-level <code>Reader</code> when the workspace permits
+resource-based access. Otherwise, grant query access such as <code>Log Analytics Reader</code>
+on the backing workspace.</p>
+<p>See <a href="https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-api-promql">Prometheus API access</a>
+and <a href="https://learn.microsoft.com/azure/azure-monitor/logs/manage-access">Log Analytics access</a>.</p>
+<h2 id="3-read-the-data-you-need">3. Read the data you need</h2>
+<p>Run the remaining commands from the root of this Python repository.
+Choose only available targets. Add <code>--help</code> to a command to see all options.</p>
+<h3 id="prometheus-workspace-and-metrics">Prometheus: workspace and metrics</h3>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_azure_monitor show-workspace
+uv run --locked python -m scripts.cli_azure_monitor query-prometheus --query 'up'
+</code></pre>
+<p>The scenario does not deploy a collector. Without a separate collection setup,
+<code>status: success</code> with an empty <code>result</code> is normal.</p>
+<h3 id="log-analytics-exported-activity-log">Log Analytics: exported Activity Log</h3>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_log_analytics query-logs --hours 24 --limit 100
+uv run --locked python -m scripts.cli_log_analytics summarize-activity --hours 24 --limit 100
+</code></pre>
+<p>These run fixed <code>AzureActivity</code> queries, not arbitrary KQL.
+Configure <a href="https://learn.microsoft.com/azure/azure-monitor/platform/activity-log#export-activity-log">diagnostic export</a>
+to the selected workspace and allow ingestion time. Without it, the table may be
+missing or empty.</p>
+<h3 id="application-insights-requests-and-other-telemetry">Application Insights: requests and other telemetry</h3>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 24 --limit 100
+</code></pre>
+<p>Reading does not need a connection string. <code>--table</code> accepts <code>AppRequests</code>,
+<code>AppTraces</code>, <code>AppMetrics</code>, and <code>AppDependencies</code>.</p>
+<h3 id="network-watcher-location-and-settings">Network Watcher: location and settings</h3>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_network_watcher list-watchers
+uv run --locked python -m scripts.cli_network_watcher show-watcher
+</code></pre>
+<p>The watcher may be in a different resource group from the scenario.
+Leave <code>AZURE_RESOURCE_GROUP</code> empty to discover across the subscription.
+Select an individual watcher with <code>show-watcher --resource-id "&lt;watcher-ARM-ID&gt;"</code>.
+These <a href="https://learn.microsoft.com/azure/network-watcher/network-watcher-overview">read-only operations</a>
+do not start packet captures or connectivity tests.</p>
+<h3 id="activity-log-api-subscription-operation-history">Activity Log API: subscription operation history</h3>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_activity_log list-events --hours 24 --limit 100
+uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 --limit 100
+</code></pre>
+<p>These work without workspace export. A quiet subscription can return no events.
+See the <a href="https://learn.microsoft.com/azure/azure-monitor/platform/activity-log">Activity Log overview</a>.</p>
+<h3 id="filters-and-summary-limits">Filters and summary limits</h3>
+<ul>
+<li>Log, telemetry, and Activity Log commands accept <code>--hours</code> from 1 to 168
+  (default 24) and <code>--limit</code> from 1 to 1,000 (default 100).</li>
+<li><code>list-watchers</code>, <code>list-events</code>, and <code>summarize-events</code> accept
+  <code>--resource-group "&lt;group&gt;"</code> or <code>AZURE_RESOURCE_GROUP</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What <code>--limit</code> limits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query-logs</code>, <code>query-telemetry</code></td>
+<td>Returned rows</td>
+</tr>
+<tr>
+<td>Log Analytics <code>summarize-activity</code></td>
+<td>Groups returned after aggregating all matching rows in the time window</td>
+</tr>
+<tr>
+<td>Activity Log <code>summarize-events</code></td>
+<td>Events retrieved and counted; not the total for the time window</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-emit-and-find-telemetry-optionally">4. Emit and find telemetry, optionally</h2>
+<p><strong>Only this step sends data. It may incur ingestion charges.</strong></p>
+<h3 id="set-the-connection-string-locally">Set the connection string locally</h3>
+<p>The scenario does not output the connection string. Copy it privately from
+Application Insights' Azure portal <strong>Overview</strong> into the Git-ignored <code>.env</code> as
+<code>APPLICATIONINSIGHTS_CONNECTION_STRING</code>, or set it using local secret management.</p>
+<p>Keep the template value empty. Never paste it into source, shell arguments or
+history, logs, screenshots, or shared output. There is no connection-string CLI
+option. See <a href="https://learn.microsoft.com/azure/azure-monitor/app/connection-strings">connection strings</a>
+and <a href="https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python">Python OpenTelemetry</a>.</p>
+<h3 id="emit-a-sample">Emit a sample</h3>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
+</code></pre>
+<p><code>--count</code> accepts 1 to 100 (default 10). The command emits server spans,
+correlated logs, and metric increments, then prints a unique <code>run_id</code>.
+It does not create dependency spans. Flush failures and observed SDK warnings
+are reported. <strong><code>flushed: true</code> means local provider flushing completed, not that
+Azure accepted or ingested the data.</strong></p>
+<h3 id="find-data-from-the-same-run">Find data from the same run</h3>
+<p>Allow ingestion time, then check recent requests and each signal using the printed UUID:</p>
+<pre><code class="language-shell">uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 1 --limit 100
+RUN_ID=&quot;&lt;run_id-UUID-printed-by-emit-telemetry&gt;&quot;
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --run-id &quot;$RUN_ID&quot; --hours 1 --limit 100
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppTraces --run-id &quot;$RUN_ID&quot; --hours 1 --limit 100
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppMetrics --run-id &quot;$RUN_ID&quot; --hours 1 --limit 100
+</code></pre>
+<p><code>--run-id</code> is optional, but must be a UUID when supplied.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Field or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time</td>
+<td><code>timestamp</code></td>
+</tr>
+<tr>
+<td>Run ID</td>
+<td><code>customDimensions.run_id</code></td>
+</tr>
+<tr>
+<td><code>quickstart.events</code> metric</td>
+<td>Compare the run's sum of <code>valueSum</code> with <code>--count</code></td>
+</tr>
+</tbody>
+</table>
+<p>The CLI maps table aliases to the resource API's <code>requests</code>, <code>traces</code>,
+<code>customMetrics</code>, and <code>dependencies</code>. JSON columns retain that API's format.
+Metrics are aggregated, so compare values rather than row counts.</p>
+<p>Scenario sampling defaults to 25%. Client-side sampling is separate; the emitter
+uses <code>always_on</code>. Span and log row counts may not equal <code>--count</code>, and signals
+may arrive at different times. See <a href="https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-sampling">sampling</a>
+and <a href="https://learn.microsoft.com/azure/azure-monitor/logs/data-ingestion-time">ingestion latency</a>.
+If data is missing, wait and query the same <code>run_id</code> again rather than resending without limits.</p>
+<p>Remove the local connection string when finished.
+<strong>Deleting local settings does not stop Azure charges.</strong></p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Missing option</code></td>
+<td>Add the IDs from the mapping to <code>.env</code> or pass CLI options; <code>az login</code> does not set them</td>
+</tr>
+<tr>
+<td>Variables missing from an old <code>.env</code></td>
+<td>Add them to the existing file; template updates are not applied automatically</td>
+</tr>
+<tr>
+<td>Only some resource groups appear</td>
+<td>Check the <code>AZURE_RESOURCE_GROUP</code> filter</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Check identity, tenant, role scope, propagation time, and network restrictions</td>
+</tr>
+<tr>
+<td>Missing <code>AzureActivity</code></td>
+<td>Check diagnostic export to the chosen workspace and ingestion</td>
+</tr>
+<tr>
+<td>Application Insights table error</td>
+<td>Update the CLI; resource and workspace APIs use different schemas</td>
+</tr>
+<tr>
+<td>Emitted data not found</td>
+<td>Query the same <code>run_id</code>; check destination, query target, sampling, SDK warnings, and network access</td>
+</tr>
+</tbody>
+</table>
+<p>CLI options and temporary environment variables do not persist to later terminals.
+After configuration, run the commands in a normal terminal again.
+In the <a href="https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete">Application Insights schema</a>,
+do not confuse resource API <code>timestamp</code> / <code>customDimensions</code> with workspace
+<code>TimeGenerated</code> / <code>Properties</code>.</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
