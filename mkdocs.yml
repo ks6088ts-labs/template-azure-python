@@ -4,8 +4,13 @@ site_url: https://ks6088ts-labs.github.io/template-azure-python
 repo_url: https://github.com/ks6088ts-labs/template-azure-python
 repo_name: ks6088ts-labs/template-azure-python
 nav:
-  - Home: index.md
-  - Scripts and development: scripts.md
+  - Getting started: index.md
+  - Local development: scripts.md
+  - Azure samples:
+      - Microsoft Foundry: foundry.md
+      - Azure Cosmos DB: cosmosdb.md
+      - Messaging: messaging.md
+      - Monitoring and logs: monitoring.md
   - Deployment: deployment.md
 theme:
   name: material
@@ -56,6 +61,9 @@ plugins:
           name: 日本語
           build: true
           nav_translations:
-            Home: ホーム
-            Scripts and development: スクリプトと開発
+            Getting started: はじめに
+            Local development: ローカル開発
+            Azure samples: Azure サンプル
+            Messaging: メッセージング
+            Monitoring and logs: 監視とログ
             Deployment: デプロイ
