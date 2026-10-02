@@ -702,6 +702,227 @@ uv run --locked python -m scripts.cli_queue_storage delete-queue --queue "$SCRAT
 ください。`--endpoint` で Queue サービスのエンドポイントを上書きできます。
 各コマンドの `--help` で全オプションと既定値を確認できます。
 
+## Azure 可観測性 CLI
+
+以下の短い実習は
+[`ks6088ts/template-terraform` の `infra/scenarios/azure_observability`](https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_observability)
+で作成済みのリソースを使用します。シナリオの機能は**すべて既定で無効**です。
+必要なリソースだけをそちらのリポジトリの `features.azure_monitor`、
+`features.log_analytics`、`features.application_insights`、
+`features.network_watcher` で有効化してください。Application Insights
+には Log Analytics も必要です。`features.activity_log` は診断エクスポートを
+構成し、こちらも `features.log_analytics` が必要です。
+ライブの Activity Log API の有効化ではありません。
+Azure Monitor Workspace は **マネージド
+Prometheus** 用であり、Log Analytics とは別です。シナリオは Prometheus
+コレクターを作成しないため、別途収集を構成していなければ `up` が空でも正常です。
+Network Watcher は別のリソースグループに存在する場合があります。
+サブスクリプションの Activity Log はワークスペースとは独立して存在します。
+
+### ID と読み取り権限の設定
+
+Terraform のチェックアウトで非シークレットの出力を確認します。
+
+```shell
+terraform -chdir=infra/scenarios/azure_observability output
+# 引用符なしで単一の値を取得:
+terraform -chdir=infra/scenarios/azure_observability output -raw azure_monitor_id
+```
+
+この Python リポジトリでは `.env` が未作成の場合のみテンプレートをコピーし、
+下表の ID を設定して認証します。
+
+```shell
+test -f .env || cp .env.template .env
+az login
+az account show --query '{subscription:id,tenant:tenantId}' --output table
+```
+
+| Terraform 出力 / 取得元 | リソース / 値 | `.env` 変数 | CLI による上書き |
+| --- | --- | --- | --- |
+| `azure_monitor_id` | Azure Monitor Workspace の ARM ID (`Microsoft.Monitor/accounts`) | `AZURE_MONITOR_ID` | `--resource-id` |
+| `log_analytics_workspace_id` | Log Analytics の workspace/customer **GUID**（ARM ID の `log_analytics_id` ではない） | `AZURE_LOG_ANALYTICS_WORKSPACE_ID` | `--workspace-id` |
+| `application_insights_id` | Application Insights の ARM ID (`Microsoft.Insights/components`) | `AZURE_APPLICATION_INSIGHTS_ID` | `--resource-id` |
+| `network_watcher_id` | Network Watcher の ARM ID (`Microsoft.Network/networkWatchers`) | `AZURE_NETWORK_WATCHER_ID` | `--resource-id` |
+| `az account show --query id --output tsv` | サブスクリプション GUID（シナリオ出力なし） | `AZURE_SUBSCRIPTION_ID` | `--subscription-id` |
+| `resource_group_name` または既存 Watcher の実際のグループ | 任意のグループフィルター。空ならサブスクリプション全体 | `AZURE_RESOURCE_GROUP` | `--resource-group` |
+
+ARM ID は `/subscriptions/<id>/resourceGroups/<group>/providers/` で始まり、
+ワークスペース GUID は `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 形式です。
+無効な機能の出力は null または未出力です。`null` を設定せず、対象の実習を省略してください。
+非シークレットの CLI オプションは環境変数 / `.env` を上書きします。各コマンドの
+`--help` も参照してください。読み取りには `DefaultAzureCredential` を使用し、
+ローカルでは `az login` の認証情報を利用できます。他の構成済み認証情報が
+優先される場合もあります。
+
+管理者に依頼し、実際に実行する ID に次のアクセス権を付与してください。
+
+| 操作 | 必要な権限とスコープ |
+| --- | --- |
+| ワークスペース / Watcher のメタデータ取得 | 対象リソースの管理プレーン `Reader`。Watcher 一覧には選択したリソースグループ / サブスクリプションのアクセス権が必要 |
+| PromQL クエリ | **Azure Monitor Workspace** の `Monitoring Data Reader` |
+| Log Analytics ワークスペースへのクエリ | Log Analytics ワークスペースの `Log Analytics Reader` |
+| Application Insights のリソース中心クエリ | ワークスペースのアクセスモードがリソース権限を許可する場合、Application Insights コンポーネントの `Reader`。それ以外では保存先ワークスペースの `Log Analytics Reader` などのクエリ権限が必要 |
+| サブスクリプション Activity Log | Activity Log 読み取り権限を含む、サブスクリプションスコープの `Reader` |
+
+PromQL の `Monitoring Data Reader` は汎用の `Monitoring Reader` とは別です。
+[Prometheus API アクセス](https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-api-promql)、
+[Log Analytics のアクセス管理](https://learn.microsoft.com/azure/azure-monitor/logs/manage-access)、
+[Activity Log](https://learn.microsoft.com/azure/azure-monitor/platform/activity-log)
+を参照してください。読み取り専用の Watcher コマンドについては
+[Network Watcher の概要](https://learn.microsoft.com/azure/network-watcher/network-watcher-overview)
+も参照してください。パケットキャプチャや接続テストは開始しません。
+403 の場合は ID / テナント、リソースのスコープ、
+ロール反映待ち、ネットワーク制限を確認します。これらの CLI はロール付与、
+コレクターのデプロイ、診断設定の書き込みを行いません。
+
+### 5 種類の対象を読み取る
+
+利用可能で読み取り権限のある対象だけを実行します。`AzureActivity` の実習には
+`features.activity_log` と `features.log_analytics` の両方を有効にして、
+選択したワークスペースへのエクスポートを構成する必要があります。
+ライブの Activity Log API にはシナリオの機能フラグは不要です。
+
+```shell
+# マネージド Prometheus: ワークスペースを確認し、即時クエリを実行
+uv run --locked python -m scripts.cli_azure_monitor show-workspace
+uv run --locked python -m scripts.cli_azure_monitor query-prometheus --query 'up'
+
+# Log Analytics: 任意のクエリ入力ではなく固定 AzureActivity KQL
+uv run --locked python -m scripts.cli_log_analytics query-logs --hours 24 --limit 100
+uv run --locked python -m scripts.cli_log_analytics summarize-activity --hours 24 --limit 100
+
+# ワークスペースベース Application Insights: 読み取りに接続文字列は不要
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 24 --limit 100
+
+# シナリオのリソースグループを仮定せず、サブスクリプション全体で探索
+uv run --locked python -m scripts.cli_network_watcher list-watchers
+uv run --locked python -m scripts.cli_network_watcher show-watcher
+
+# サブスクリプションの管理プレーン履歴: Log Analytics クエリとは別
+uv run --locked python -m scripts.cli_activity_log list-events --hours 24 --limit 100
+uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 --limit 100
+```
+
+`list-watchers`、`list-events`、`summarize-events` は
+`--resource-group "<group>"`（または `AZURE_RESOURCE_GROUP`）で対象を絞れます。
+サブスクリプション全体で探索する場合は、この環境変数を空にしてください。
+たとえば Watcher の設定を明示的な ID で上書きできます。
+
+```shell
+uv run --locked python -m scripts.cli_network_watcher show-watcher \
+  --resource-id "/subscriptions/<subscription-id>/resourceGroups/<watcher-group>/providers/Microsoft.Network/networkWatchers/<watcher-name>"
+```
+
+ログ / テレメトリのクエリと Activity Log コマンドには `--hours 1..168`
+（既定 `24`）、`--limit 1..1000`（既定 `100`）を指定できます。
+`query-logs` と `query-telemetry` は返す行数を制限します。
+Log Analytics の `summarize-activity` は**時間範囲内の一致する全行**を集計後、
+返すグループ数を制限します。一方、ライブ Activity Log の `summarize-events`
+は最大 `--limit` 件のイベントのみを集計し、その時間範囲内の全イベント数では
+ありません。いずれも期間無制限の総数ではありません。
+Log Analytics の `AzureActivity` は
+**サブスクリプションの診断設定で別途エクスポートされた** Activity Log のみを
+含みます。ライブの Activity Log API とは異なります。エクスポート未設定なら、
+`list-events` が成功してもテーブルは未作成または空です。操作のない
+サブスクリプションではイベント自体がない場合もあります。シナリオの
+`activity_log_id` はエクスポート用の診断設定 ID であり、サブスクリプション ID
+やクエリ先ワークスペースではありません。
+[Activity Log のエクスポート](https://learn.microsoft.com/azure/azure-monitor/platform/activity-log#export-activity-log)
+を参照してください。
+
+### Application Insights へ送信して確認する
+
+この実習のみデータを送信し、取り込み料金が発生する場合があります。シナリオは
+Application Insights の接続文字列を**出力しません**。リソースの Azure portal
+**概要**ページから安全に取得し、ローカルの Git 無視対象 `.env` の
+`APPLICATIONINSIGHTS_CONNECTION_STRING` に設定してください。またはローカルの
+シークレット管理手順で環境変数を設定します。テンプレートは空のままにします。
+ソース、シェルの引数 / 履歴、スクリーンショット、ログ、共有出力へ値を
+貼り付けないでください。接続文字列の CLI フラグはありません。
+[接続文字列](https://learn.microsoft.com/azure/azure-monitor/app/connection-strings)と
+[Python OpenTelemetry クイックスタート](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python)
+を参照してください。
+
+```shell
+uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
+```
+
+`--count` は `1..100`（既定 `10`）です。サンプルの server span、
+相関ログ、メトリック増分を送信し、プロバイダーを flush して、一意の `run_id`
+を表示します。`flushed` はプロバイダーの flush 完了を示すだけで、Azure による
+受理や取り込みを**保証しません**。バックグラウンドの HTTP 失敗は発生し得ます。
+プロバイダーの false 戻り値 / 例外および検知した SDK 警告は報告されます。
+取り込みを待ち、最近のリクエストで実行を探してから、
+表示された UUID で各シグナルを絞り込みます。
+
+```shell
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 1 --limit 100
+RUN_ID="<emit-telemetry-が表示した-run_id-UUID>"
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --run-id "$RUN_ID" --hours 1 --limit 100
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppTraces --run-id "$RUN_ID" --hours 1 --limit 100
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppMetrics --run-id "$RUN_ID" --hours 1 --limit 100
+```
+
+指定できるテーブルは `AppRequests`、`AppTraces`、`AppMetrics`、
+`AppDependencies` の 4 種類のみです。CLI はこれらの別名を、リソース中心 API の
+`requests`、`traces`、`customMetrics`、`dependencies` に対応付けます。
+JSON の列名は API のスキーマをそのまま返すため、時刻は `timestamp`、
+実行 ID は `customDimensions.run_id`、メトリックの集計値は `valueSum` です。
+最後のテーブルは既存の依存関係テレメトリを
+検索できますが、この送信コマンドは dependency span を生成しません。
+`--run-id` は省略可能ですが、
+指定する場合は UUID が必要です。メトリックは集約されるため、増分との比較には
+行数ではなくカウンター値 / 集約値を使います。シナリオの Application Insights
+サンプリングは既定 **25%** です。Azure Monitor OpenTelemetry distro の
+クライアント側サンプリングは別設定です（この送信コマンドは明示的に
+`always_on` を使用します）。サンプリング後の span / ログ行数や
+上限付きクエリの結果が `--count` と一致するとは限りません。実行が見つからない
+場合は時間範囲内で待って再試行し、サンプリング、送信先とクエリ先ワークスペース、
+RBAC、取り込み / ネットワーク障害を確認してください。無制限に再送しないでください。
+[サンプリング](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-sampling)と
+[取り込み遅延](https://learn.microsoft.com/azure/azure-monitor/logs/data-ingestion-time)
+も参照してください。終了後はローカルの接続文字列を削除します。
+ローカル設定の削除だけでは Azure リソースの課金は停止しません。
+
+### 可観測性 CLI のトラブルシューティング
+
+- `Missing option` が出る場合は、上の対応表に従って ID を設定するか、
+  CLI オプションで指定します。`az login` は `.env` にリソース ID や
+  `AZURE_SUBSCRIPTION_ID` を設定しません。既存の `.env` をテンプレートで
+  上書きしないでください。`AZURE_RESOURCE_GROUP` が設定されていると
+  Watcher 一覧と Activity Log はそのグループに限定されます。
+  古いテンプレートから作成した `.env` には、新しい変数が自動追加されません。
+  不足する変数を既存の `.env` に追記し、実際の ID を設定してください。
+  たとえば `AZURE_MONITOR_ID=/subscriptions/<subscription-id>/resourceGroups/<group>/providers/Microsoft.Monitor/accounts/<workspace-name>`
+  を設定すると、`show-workspace` をオプションなしで実行できます。
+  CLI オプションや実行プロセス内だけの環境変数では、後から起動するターミナルの
+  設定は永続化されません。設定後は、通常のターミナルでドキュメントのコマンドを
+  そのまま実行して確認してください。
+- Application Insights のクエリが失敗する場合は、リソース中心 API と
+  ワークスペース API のスキーマを混同していないか確認します。
+  `query_resource` では `requests | where timestamp >= ago(1h)` と
+  `customDimensions["run_id"]` を使います。`AppRequests`、
+  `TimeGenerated`、`Properties` はワークスペース用です。古い CLI で
+  `AppRequests` の解決エラーが出る場合は、修正版へ更新してください。
+  [Application Insights のクエリスキーマ](https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete)
+  を参照してください。
+- Prometheus の `status: success` と空の `result` は、コレクター未設定なら
+  正常です。Log Analytics の空行と、テーブル未作成によるクエリエラーは
+  区別してください。`AzureActivity` には診断エクスポートと取り込み待ちが必要です。
+- テレメトリ送信直後の空行だけで失敗と判断しないでください。同じ `run_id`
+  で待って再クエリし、`AppRequests`、`AppTraces`、`AppMetrics` の
+  すべてに到達したことを確認します。到着には数分以上かかる場合があり、
+  各シグナルが同時に見えるとは限りません。メトリック `quickstart.events` は、
+  対象実行の `valueSum` の合計を送信した `--count` と比較します。
+  `flushed: true` のみでは取り込み確認になりません。SDK 警告や HTTP 失敗、
+  403 が出る場合は送信先、読み取り権限、ネットワーク制限を確認します。
+
 ## Docker 開発
 
 ```shell

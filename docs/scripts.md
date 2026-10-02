@@ -701,6 +701,223 @@ never substitute the Terraform-managed queue for the scratch queue in these
 cleanup commands. Use `--endpoint` to override the Queue service endpoint and
 each command's `--help` to inspect all options and defaults.
 
+## Azure observability CLIs
+
+These short exercises use existing resources from
+[`ks6088ts/template-terraform`, `infra/scenarios/azure_observability`](https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_observability).
+All scenario features are **off by default**. Enable only the resources needed
+in that repository before continuing: `features.azure_monitor`,
+`features.log_analytics`, `features.application_insights`, and/or
+`features.network_watcher`. Application Insights also requires Log Analytics.
+`features.activity_log` configures diagnostic export and also requires
+`features.log_analytics`; it does not enable the live Activity Log API.
+Azure Monitor Workspace is the **managed Prometheus** workspace,
+not Log Analytics. The scenario does not deploy a Prometheus collector, so an
+empty `up` result is expected unless a separate collector already sends data.
+Network Watcher can belong to a different resource group. Subscription Activity
+Log exists independently of these workspaces.
+
+### Configure IDs and read access
+
+Read nonsecret outputs from your Terraform checkout:
+
+```shell
+terraform -chdir=infra/scenarios/azure_observability output
+# Single value without quotes:
+terraform -chdir=infra/scenarios/azure_observability output -raw azure_monitor_id
+```
+
+In this Python repository, copy the template only if `.env` does not already
+exist, fill in the IDs below, and authenticate:
+
+```shell
+test -f .env || cp .env.template .env
+az login
+az account show --query '{subscription:id,tenant:tenantId}' --output table
+```
+
+| Terraform output / source | Resource / value | `.env` variable | CLI override |
+| --- | --- | --- | --- |
+| `azure_monitor_id` | Azure Monitor Workspace ARM ID (`Microsoft.Monitor/accounts`) | `AZURE_MONITOR_ID` | `--resource-id` |
+| `log_analytics_workspace_id` | Log Analytics workspace/customer **GUID**, not `log_analytics_id` (ARM ID) | `AZURE_LOG_ANALYTICS_WORKSPACE_ID` | `--workspace-id` |
+| `application_insights_id` | Application Insights ARM ID (`Microsoft.Insights/components`) | `AZURE_APPLICATION_INSIGHTS_ID` | `--resource-id` |
+| `network_watcher_id` | Network Watcher ARM ID (`Microsoft.Network/networkWatchers`) | `AZURE_NETWORK_WATCHER_ID` | `--resource-id` |
+| `az account show --query id --output tsv` | Subscription GUID; no scenario output | `AZURE_SUBSCRIPTION_ID` | `--subscription-id` |
+| `resource_group_name`, or the existing watcher's actual group | Optional group filter; leave empty for subscription-wide reads | `AZURE_RESOURCE_GROUP` | `--resource-group` |
+
+An ARM ID starts with `/subscriptions/<id>/resourceGroups/<group>/providers/`;
+a workspace GUID has the form `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. Disabled
+features have null/absent outputs: skip their exercises rather than copying
+`null`. Nonsecret CLI options override environment/`.env` values; run any
+command with `--help`. Reads use `DefaultAzureCredential`, including `az login`
+locally; other configured credentials can take precedence.
+
+Have an administrator authorize the actual calling identity:
+
+| Operation | Required access and scope |
+| --- | --- |
+| Workspace metadata / watcher metadata | Management-plane `Reader` on the corresponding resource; watcher listing needs access at the selected resource-group/subscription scope |
+| PromQL query | `Monitoring Data Reader` on the **Azure Monitor Workspace** |
+| Log Analytics workspace queries | `Log Analytics Reader` on the Log Analytics workspace |
+| Application Insights resource-centric queries | `Reader` on the Application Insights component when the workspace access mode allows resource permissions; otherwise grant query access such as `Log Analytics Reader` on the backing workspace |
+| Subscription Activity Log | `Reader` at subscription scope, including Activity Log read access |
+
+PromQL's `Monitoring Data Reader` is not the general-purpose `Monitoring Reader`
+role. See [Prometheus API access](https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-api-promql),
+[Log Analytics access](https://learn.microsoft.com/azure/azure-monitor/logs/manage-access),
+and [Activity Log](https://learn.microsoft.com/azure/azure-monitor/platform/activity-log).
+The read-only watcher commands follow the
+[Network Watcher overview](https://learn.microsoft.com/azure/network-watcher/network-watcher-overview);
+they do not start packet captures or connectivity tests.
+For 403 responses, check the identity/tenant, resource scope, role propagation,
+and network restrictions. These CLIs do not assign roles, deploy collectors, or
+write diagnostic settings.
+
+### Read all five targets
+
+Run only the commands for available, authorized targets. The `AzureActivity`
+exercises require both `features.activity_log` and `features.log_analytics`
+to export into the selected workspace. The live Activity Log API needs no
+scenario feature flag.
+
+```shell
+# Managed Prometheus: inspect the workspace, then run an instant query.
+uv run --locked python -m scripts.cli_azure_monitor show-workspace
+uv run --locked python -m scripts.cli_azure_monitor query-prometheus --query 'up'
+
+# Log Analytics: fixed AzureActivity KQL, not arbitrary query input.
+uv run --locked python -m scripts.cli_log_analytics query-logs --hours 24 --limit 100
+uv run --locked python -m scripts.cli_log_analytics summarize-activity --hours 24 --limit 100
+
+# Workspace-based Application Insights; no connection string is needed to read.
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 24 --limit 100
+
+# Discover across the subscription before assuming the scenario's resource group.
+uv run --locked python -m scripts.cli_network_watcher list-watchers
+uv run --locked python -m scripts.cli_network_watcher show-watcher
+
+# Subscription control-plane history, not a Log Analytics query.
+uv run --locked python -m scripts.cli_activity_log list-events --hours 24 --limit 100
+uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 --limit 100
+```
+
+`list-watchers`, `list-events`, and `summarize-events` accept
+`--resource-group "<group>"` (or `AZURE_RESOURCE_GROUP`) to narrow their scope.
+Leave that environment variable empty for subscription-wide discovery.
+For example, an explicit ID
+overrides the configured watcher:
+
+```shell
+uv run --locked python -m scripts.cli_network_watcher show-watcher \
+  --resource-id "/subscriptions/<subscription-id>/resourceGroups/<watcher-group>/providers/Microsoft.Network/networkWatchers/<watcher-name>"
+```
+
+Log and telemetry queries and Activity Log commands accept `--hours 1..168`
+(default `24`) and `--limit 1..1000` (default `100`). `query-logs` and
+`query-telemetry` limit returned rows. Log Analytics `summarize-activity`
+aggregates **all matching rows in the time window**, then limits the returned
+groups. In contrast, live Activity Log `summarize-events` counts only a sample
+of up to `--limit` events, not all subscription events in that window.
+None of these results is an unrestricted lifetime total.
+Log Analytics `AzureActivity` contains only
+Activity Log events **separately exported by a subscription diagnostic setting**.
+It is not the live Activity Log API. Without export, the table may be missing
+or empty while `list-events` succeeds. A quiet subscription can also have no
+events. The scenario's `activity_log_id` identifies an export diagnostic
+setting, not a subscription ID or query workspace. See
+[Activity Log export](https://learn.microsoft.com/azure/azure-monitor/platform/activity-log#export-activity-log).
+
+### Emit and find Application Insights telemetry
+
+Only this exercise sends data and can incur ingestion charges. The scenario
+does **not** output an Application Insights connection string. Copy it privately
+from the resource's Azure portal **Overview** page into the local, Git-ignored
+`.env` as `APPLICATIONINSIGHTS_CONNECTION_STRING`. Alternatively, set that
+environment variable using your local secret-management process. Keep the
+template value empty; never paste the value into source, shell command
+arguments/history, screenshots, logs, or shared output. There is no
+connection-string CLI flag. See
+[connection strings](https://learn.microsoft.com/azure/azure-monitor/app/connection-strings)
+and the [Python OpenTelemetry quickstart](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python).
+
+```shell
+uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
+```
+
+`--count` accepts `1..100` (default `10`). The command emits sample server
+spans, correlated logs, and metric increments, flushes the providers, and
+reports a unique `run_id`. `flushed` means provider flushing completed, **not**
+that Azure accepted or ingested the telemetry: background HTTP failures can
+still occur. Provider false returns/exceptions and observed SDK warnings are
+reported. Allow ingestion time, then locate that run in
+recent requests and filter each signal using the printed UUID:
+
+```shell
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 1 --limit 100
+RUN_ID="<run_id-UUID-printed-by-emit-telemetry>"
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --run-id "$RUN_ID" --hours 1 --limit 100
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppTraces --run-id "$RUN_ID" --hours 1 --limit 100
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppMetrics --run-id "$RUN_ID" --hours 1 --limit 100
+```
+
+Queries allow `AppRequests`, `AppTraces`, `AppMetrics`, and `AppDependencies`;
+the CLI maps these aliases to the resource-centric API's `requests`, `traces`,
+`customMetrics`, and `dependencies`. JSON columns retain the API schema:
+time is `timestamp`, the run ID is in `customDimensions.run_id`, and the
+metric aggregate is `valueSum`.
+The last table is supported for existing dependency telemetry, but this emitter
+does not create dependency spans. `--run-id` is optional but must be a UUID
+when provided. Metrics are aggregated: compare counter values/aggregates,
+not metric row counts, with emitted increments. The scenario's Application
+Insights sampling defaults to **25%**; Azure Monitor OpenTelemetry distro
+client-side sampling is configured separately (this emitter explicitly uses
+`always_on`). Sampled span/log rows and
+bounded query results need not equal `--count`. If no run appears, wait
+and retry within the time window, then check sampling, the destination and
+query workspace, RBAC, and ingestion/network failures rather than generating
+unbounded traffic. See [sampling](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-sampling)
+and [ingestion latency](https://learn.microsoft.com/azure/azure-monitor/logs/data-ingestion-time).
+Remove the local connection string when finished; deleting local settings does
+not stop Azure resource charges.
+
+### Troubleshoot observability CLIs
+
+- For `Missing option`, configure the IDs in the table above or pass explicit
+  CLI options. `az login` does not populate resource IDs or
+  `AZURE_SUBSCRIPTION_ID` in `.env`. Do not overwrite an existing `.env` with
+  the template. A configured `AZURE_RESOURCE_GROUP` restricts watcher lists
+  and Activity Log reads to that group.
+  An `.env` created from an older template does not automatically receive new
+  variables. Add missing variables to the existing `.env` and set their actual
+  IDs. For example, setting
+  `AZURE_MONITOR_ID=/subscriptions/<subscription-id>/resourceGroups/<group>/providers/Microsoft.Monitor/accounts/<workspace-name>`
+  lets you run `show-workspace` without an option. CLI options and environment
+  variables set only inside an execution process do not persist settings for
+  later terminals. After configuration, run the documented commands unchanged
+  in a normal terminal to verify the setup.
+- If an Application Insights query fails, distinguish the resource-centric
+  API schema from the workspace API schema. `query_resource` uses
+  `requests | where timestamp >= ago(1h)` and `customDimensions["run_id"]`.
+  `AppRequests`, `TimeGenerated`, and `Properties` belong to the workspace
+  schema. Update older CLI versions that fail to resolve `AppRequests`.
+  See the [Application Insights query schema](https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete).
+- Prometheus `status: success` with an empty `result` is normal without a
+  collector. Distinguish empty Log Analytics rows from query errors caused
+  by missing tables. `AzureActivity` needs diagnostic export and ingestion time.
+- Empty rows immediately after emission do not establish failure. Wait and
+  query again with the same `run_id`; verify arrival in `AppRequests`,
+  `AppTraces`, and `AppMetrics`. Arrival can take several minutes or longer,
+  and the signals need not appear simultaneously. For the `quickstart.events` metric, compare
+  the sum of `valueSum` for that run with the emitted `--count`.
+  `flushed: true` alone does not verify ingestion. For SDK warnings, HTTP
+  failures, or 403 responses, check the destination, read permissions, and
+  network restrictions.
+
 ## Docker development
 
 ```shell
