@@ -248,6 +248,7 @@ def test_dotenv_values_and_cli_override(tmp_path, monkeypatch, override):
         args += ["--resource-id", RESOURCE_ID.replace("/demo", "/override")]
     monkeypatch.setattr(sys, "argv", args)
     with (
+        patch.dict("os.environ", {}),
         patch("dotenv.main.find_dotenv", return_value=str(dotenv_path)),
         patch("azure.identity.DefaultAzureCredential"),
         patch("azure.mgmt.monitor.MonitorManagementClient") as factory,

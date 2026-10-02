@@ -745,6 +745,7 @@ az account show --query '{subscription:id,tenant:tenantId}' --output table
 | `application_insights_id` | Application Insights の ARM ID (`Microsoft.Insights/components`) | `AZURE_APPLICATION_INSIGHTS_ID` | `--resource-id` |
 | `network_watcher_id` | Network Watcher の ARM ID (`Microsoft.Network/networkWatchers`) | `AZURE_NETWORK_WATCHER_ID` | `--resource-id` |
 | `az account show --query id --output tsv` | サブスクリプション GUID（シナリオ出力なし） | `AZURE_SUBSCRIPTION_ID` | `--subscription-id` |
+| `resource_group_name` または既存 Watcher の実際のグループ | 任意のグループフィルター。空ならサブスクリプション全体 | `AZURE_RESOURCE_GROUP` | `--resource-group` |
 
 ARM ID は `/subscriptions/<id>/resourceGroups/<group>/providers/` で始まり、
 ワークスペース GUID は `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` 形式です。
@@ -760,7 +761,8 @@ ARM ID は `/subscriptions/<id>/resourceGroups/<group>/providers/` で始まり�
 | --- | --- |
 | ワークスペース / Watcher のメタデータ取得 | 対象リソースの管理プレーン `Reader`。Watcher 一覧には選択したリソースグループ / サブスクリプションのアクセス権が必要 |
 | PromQL クエリ | **Azure Monitor Workspace** の `Monitoring Data Reader` |
-| Log Analytics / ワークスペースベース Application Insights のクエリ | 保存先 Log Analytics ワークスペースの `Log Analytics Reader`。メタデータ取得用に Application Insights コンポーネントの `Reader` も必要 |
+| Log Analytics ワークスペースへのクエリ | Log Analytics ワークスペースの `Log Analytics Reader` |
+| Application Insights のリソース中心クエリ | ワークスペースのアクセスモードがリソース権限を許可する場合、Application Insights コンポーネントの `Reader`。それ以外では保存先ワークスペースの `Log Analytics Reader` などのクエリ権限が必要 |
 | サブスクリプション Activity Log | Activity Log 読み取り権限を含む、サブスクリプションスコープの `Reader` |
 
 PromQL の `Monitoring Data Reader` は汎用の `Monitoring Reader` とは別です。
@@ -776,7 +778,10 @@ PromQL の `Monitoring Data Reader` は汎用の `Monitoring Reader` とは別�
 
 ### 5 種類の対象を読み取る
 
-有効化済みで読み取り権限のある対象だけを実行します。
+利用可能で読み取り権限のある対象だけを実行します。`AzureActivity` の実習には
+`features.activity_log` と `features.log_analytics` の両方を有効にして、
+選択したワークスペースへのエクスポートを構成する必要があります。
+ライブの Activity Log API にはシナリオの機能フラグは不要です。
 
 ```shell
 # マネージド Prometheus: ワークスペースを確認し、即時クエリを実行
@@ -801,7 +806,8 @@ uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 -
 ```
 
 `list-watchers`、`list-events`、`summarize-events` は
-`--resource-group "<group>"` で対象を絞れます。
+`--resource-group "<group>"`（または `AZURE_RESOURCE_GROUP`）で対象を絞れます。
+サブスクリプション全体で探索する場合は、この環境変数を空にしてください。
 たとえば Watcher の設定を明示的な ID で上書きできます。
 
 ```shell
@@ -810,9 +816,13 @@ uv run --locked python -m scripts.cli_network_watcher show-watcher \
 ```
 
 ログ / テレメトリのクエリと Activity Log コマンドには `--hours 1..168`
-（既定 `24`）、`--limit 1..1000`（既定 `100`）を指定できます。結果と集計件数は
-この時間範囲とレコード上限内の値であり、サブスクリプション /
-ワークスペース全体の総数ではありません。Log Analytics の `AzureActivity` は
+（既定 `24`）、`--limit 1..1000`（既定 `100`）を指定できます。
+`query-logs` と `query-telemetry` は返す行数を制限します。
+Log Analytics の `summarize-activity` は**時間範囲内の一致する全行**を集計後、
+返すグループ数を制限します。一方、ライブ Activity Log の `summarize-events`
+は最大 `--limit` 件のイベントのみを集計し、その時間範囲内の全イベント数では
+ありません。いずれも期間無制限の総数ではありません。
+Log Analytics の `AzureActivity` は
 **サブスクリプションの診断設定で別途エクスポートされた** Activity Log のみを
 含みます。ライブの Activity Log API とは異なります。エクスポート未設定なら、
 `list-events` が成功してもテーブルは未作成または空です。操作のない
@@ -839,7 +849,7 @@ Application Insights の接続文字列を**出力しません**。リソース�
 uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
 ```
 
-`--count` は `1..100`（既定 `10`）です。サンプルの server/client span、
+`--count` は `1..100`（既定 `10`）です。サンプルの server span、
 相関ログ、メトリック増分を送信し、エクスポーターを flush して、一意の `run_id`
 を表示します。flush の失敗は明示されますが、成功しても取り込み完了を
 **保証しません**。取り込みを待ち、最近のリクエストで実行を探してから、
@@ -850,14 +860,17 @@ uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppRequests --hours 1 --limit 100
 RUN_ID="<emit-telemetry-が表示した-run_id-UUID>"
 uv run --locked python -m scripts.cli_application_insights query-telemetry \
-  --table AppDependencies --run-id "$RUN_ID" --hours 1 --limit 100
+  --table AppRequests --run-id "$RUN_ID" --hours 1 --limit 100
 uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppTraces --run-id "$RUN_ID" --hours 1 --limit 100
 uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppMetrics --run-id "$RUN_ID" --hours 1 --limit 100
 ```
 
-指定できるテーブルは上記 4 種類のみです。`--run-id` は省略可能ですが、
+指定できるテーブルは `AppRequests`、`AppTraces`、`AppMetrics`、
+`AppDependencies` の 4 種類のみです。最後のテーブルは既存の依存関係テレメトリを
+検索できますが、この送信コマンドは dependency span を生成しません。
+`--run-id` は省略可能ですが、
 指定する場合は UUID が必要です。メトリックは集約されるため、増分との比較には
 行数ではなくカウンター値 / 集約値を使います。シナリオの Application Insights
 サンプリングは既定 **25%** です。Azure Monitor OpenTelemetry distro の

@@ -151,7 +151,7 @@ def _telemetry_environment() -> Generator[None, None, None]:
 
 @app.command()
 def emit_telemetry(count: CountOption = 10) -> None:
-    """Emit spans, logs and counter increments once; flushing does not prove ingestion."""
+    """Emit once. Provider flushing does not guarantee acceptance, persistence or ingestion."""
     connection_string = os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING")
     if not connection_string or not connection_string.strip():
         raise typer.BadParameter("set APPLICATIONINSIGHTS_CONNECTION_STRING in the environment")
@@ -170,7 +170,7 @@ def emit_telemetry(count: CountOption = 10) -> None:
                 enable_performance_counters=False,
                 sampling_ratio=1.0,
                 instrumentation_options={name: {"enabled": False} for name in INSTRUMENTATIONS},
-                connection_timeout=5,
+                timeout=5,
                 read_timeout=5,
             )
             providers = [

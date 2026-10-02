@@ -743,6 +743,7 @@ az account show --query '{subscription:id,tenant:tenantId}' --output table
 | `application_insights_id` | Application Insights ARM ID (`Microsoft.Insights/components`) | `AZURE_APPLICATION_INSIGHTS_ID` | `--resource-id` |
 | `network_watcher_id` | Network Watcher ARM ID (`Microsoft.Network/networkWatchers`) | `AZURE_NETWORK_WATCHER_ID` | `--resource-id` |
 | `az account show --query id --output tsv` | Subscription GUID; no scenario output | `AZURE_SUBSCRIPTION_ID` | `--subscription-id` |
+| `resource_group_name`, or the existing watcher's actual group | Optional group filter; leave empty for subscription-wide reads | `AZURE_RESOURCE_GROUP` | `--resource-group` |
 
 An ARM ID starts with `/subscriptions/<id>/resourceGroups/<group>/providers/`;
 a workspace GUID has the form `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. Disabled
@@ -757,7 +758,8 @@ Have an administrator authorize the actual calling identity:
 | --- | --- |
 | Workspace metadata / watcher metadata | Management-plane `Reader` on the corresponding resource; watcher listing needs access at the selected resource-group/subscription scope |
 | PromQL query | `Monitoring Data Reader` on the **Azure Monitor Workspace** |
-| Log Analytics / workspace-based Application Insights queries | `Log Analytics Reader` on the backing Log Analytics workspace; retain `Reader` on the Application Insights component for metadata lookup |
+| Log Analytics workspace queries | `Log Analytics Reader` on the Log Analytics workspace |
+| Application Insights resource-centric queries | `Reader` on the Application Insights component when the workspace access mode allows resource permissions; otherwise grant query access such as `Log Analytics Reader` on the backing workspace |
 | Subscription Activity Log | `Reader` at subscription scope, including Activity Log read access |
 
 PromQL's `Monitoring Data Reader` is not the general-purpose `Monitoring Reader`
@@ -773,7 +775,10 @@ write diagnostic settings.
 
 ### Read all five targets
 
-Run only the commands for enabled, authorized targets:
+Run only the commands for available, authorized targets. The `AzureActivity`
+exercises require both `features.activity_log` and `features.log_analytics`
+to export into the selected workspace. The live Activity Log API needs no
+scenario feature flag.
 
 ```shell
 # Managed Prometheus: inspect the workspace, then run an instant query.
@@ -798,7 +803,9 @@ uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 -
 ```
 
 `list-watchers`, `list-events`, and `summarize-events` accept
-`--resource-group "<group>"` to narrow their scope. For example, an explicit ID
+`--resource-group "<group>"` (or `AZURE_RESOURCE_GROUP`) to narrow their scope.
+Leave that environment variable empty for subscription-wide discovery.
+For example, an explicit ID
 overrides the configured watcher:
 
 ```shell
@@ -807,9 +814,13 @@ uv run --locked python -m scripts.cli_network_watcher show-watcher \
 ```
 
 Log and telemetry queries and Activity Log commands accept `--hours 1..168`
-(default `24`) and `--limit 1..1000` (default `100`). Results and summary counts
-are bounded by that time window and record limit; they are not complete
-subscription/workspace totals. Log Analytics `AzureActivity` contains only
+(default `24`) and `--limit 1..1000` (default `100`). `query-logs` and
+`query-telemetry` limit returned rows. Log Analytics `summarize-activity`
+aggregates **all matching rows in the time window**, then limits the returned
+groups. In contrast, live Activity Log `summarize-events` counts only a sample
+of up to `--limit` events, not all subscription events in that window.
+None of these results is an unrestricted lifetime total.
+Log Analytics `AzureActivity` contains only
 Activity Log events **separately exported by a subscription diagnostic setting**.
 It is not the live Activity Log API. Without export, the table may be missing
 or empty while `list-events` succeeds. A quiet subscription can also have no
@@ -834,7 +845,7 @@ and the [Python OpenTelemetry quickstart](https://learn.microsoft.com/azure/azur
 uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
 ```
 
-`--count` accepts `1..100` (default `10`). The command emits sample server/client
+`--count` accepts `1..100` (default `10`). The command emits sample server
 spans, correlated logs, and metric increments, flushes the exporters, and
 reports a unique `run_id`; flush failures are explicit. Successful flushing
 does **not** guarantee ingestion. Allow ingestion time, then locate that run in
@@ -845,15 +856,17 @@ uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppRequests --hours 1 --limit 100
 RUN_ID="<run_id-UUID-printed-by-emit-telemetry>"
 uv run --locked python -m scripts.cli_application_insights query-telemetry \
-  --table AppDependencies --run-id "$RUN_ID" --hours 1 --limit 100
+  --table AppRequests --run-id "$RUN_ID" --hours 1 --limit 100
 uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppTraces --run-id "$RUN_ID" --hours 1 --limit 100
 uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppMetrics --run-id "$RUN_ID" --hours 1 --limit 100
 ```
 
-These four table names are the allowlist; `--run-id` is optional but must be a
-UUID when provided. Metrics are aggregated: compare counter values/aggregates,
+Queries allow `AppRequests`, `AppTraces`, `AppMetrics`, and `AppDependencies`;
+the last table is supported for existing dependency telemetry, but this emitter
+does not create dependency spans. `--run-id` is optional but must be a UUID
+when provided. Metrics are aggregated: compare counter values/aggregates,
 not metric row counts, with emitted increments. The scenario's Application
 Insights sampling defaults to **25%**; Azure Monitor OpenTelemetry distro
 client-side sampling is configured separately (this emitter explicitly uses

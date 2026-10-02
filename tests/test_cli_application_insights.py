@@ -2,7 +2,9 @@ import json
 import logging
 import os
 import runpy
+import subprocess
 import sys
+import textwrap
 from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -177,6 +179,9 @@ def test_emit_all_signals(count: int | None, telemetry: SimpleNamespace):
     assert options["disable_offline_storage"] is True
     assert options["enable_live_metrics"] is False
     assert options["enable_performance_counters"] is False
+    assert options["timeout"] == 5
+    assert options["read_timeout"] == 5
+    assert "connection_timeout" not in options
     assert options["instrumentation_options"] == {name: {"enabled": False} for name in INSTRUMENTATIONS}
     assert "credential" not in options
     telemetry.clients.auth.assert_not_called()
@@ -290,6 +295,52 @@ def test_disable_auxiliary_telemetry_and_restore_environment(
     assert result.exit_code == 0, result.output
     assert os.environ["OTEL_TRACES_SAMPLER"] == "always_off"
     assert "APPLICATIONINSIGHTS_STATSBEAT_DISABLED_ALL" not in os.environ
+
+
+def test_real_distro_exporter_construction_offline():
+    # Global OTel providers are write-once; keep real SDK setup in a fresh process.
+    script = textwrap.dedent("""
+        import json
+        from unittest.mock import patch
+        from azure.monitor.opentelemetry.exporter._generated import AzureMonitorClient
+        from azure.monitor.opentelemetry.exporter._generated.exporter.models import TrackResponse
+        from typer.testing import CliRunner
+        from scripts.cli_application_insights import app
+
+        uploaded = []
+
+        def track(self, body, **kwargs):
+            uploaded.extend(body)
+            return TrackResponse(items_received=len(body), items_accepted=len(body), errors=[])
+
+        with (
+            patch.object(AzureMonitorClient, "track", track),
+            patch("requests.sessions.Session.send", side_effect=AssertionError("Network forbidden")),
+        ):
+            result = CliRunner().invoke(app, ["emit-telemetry", "--count", "2"])
+        assert result.exit_code == 0, result.output
+        summary = json.loads(result.output)
+        assert summary["flushed"] is True, summary
+        assert summary["ingestion_guaranteed"] is False
+        types = {item.data.base_type for item in uploaded}
+        assert {"RequestData", "MessageData", "MetricData"} <= types, types
+        assert len([item for item in uploaded if item.data.base_type == "RequestData"]) == 2
+        assert len([item for item in uploaded if item.data.base_type == "MessageData"]) == 2
+        print(result.output, end="")
+    """)
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env={
+            **os.environ,
+            "APPLICATIONINSIGHTS_CONNECTION_STRING": f"InstrumentationKey={GUID}",
+            "OTEL_EXPERIMENTAL_RESOURCE_DETECTORS": "",
+        },
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout)["count"] == 2
 
 
 @pytest.mark.parametrize("args", [[], ["query-telemetry"], ["emit-telemetry"]])
