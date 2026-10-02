@@ -12,7 +12,7 @@
   for running Functions locally
 - `curl` for HTTP checks
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) for the
-  Microsoft Foundry sample and publishing to existing Azure resources
+  Azure SDK samples and publishing to existing Azure resources
 
 ## Make targets
 
@@ -347,6 +347,291 @@ uv run --locked python -m scripts.cli_cosmosdb query-items \
 Use `--endpoint`, `--database`, and `--container` to override the environment
 values `AZURE_COSMOS_DB_ENDPOINT`, `AZURE_COSMOS_DB_DATABASE`, and
 `AZURE_COSMOS_DB_CONTAINER`. Run each command with `--help` for all options.
+
+## Azure messaging CLIs
+
+Four independent modules exercise the passwordless examples in these articles:
+
+- [Event Grid Python SDK](https://learn.microsoft.com/en-us/python/api/overview/azure/eventgrid-readme?view=azure-python)
+- [Event Hubs Python quickstart](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-python-get-started-send?tabs=passwordless%2Croles-azure-portal)
+- [Service Bus Queue Python quickstart](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-python-how-to-use-queues?tabs=passwordless)
+- [Queue Storage Python quickstart](https://learn.microsoft.com/en-us/azure/storage/queues/storage-quickstart-queues-python?tabs=passwordless%2Croles-azure-portal%2Cenvironment-variable-windows%2Csign-in-azure-cli)
+
+### Terraform outputs and authentication
+
+Use resources already deployed by
+[`ks6088ts/template-terraform`, `infra/scenarios/azure_messaging`](https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_messaging).
+Services are opt-in and disabled by default; enable the services you want to
+exercise using that repository's instructions. No Terraform changes are required
+in this Python repository. From your Terraform checkout, read the outputs:
+
+```shell
+terraform -chdir=infra/scenarios/azure_messaging output
+# For a single value without quotes:
+terraform -chdir=infra/scenarios/azure_messaging output -raw event_grid_topic_endpoint
+```
+
+In this Python repository, copy the template once (do not overwrite an existing
+`.env`), replace the placeholders with the corresponding outputs, and sign in:
+
+```shell
+cp .env.template .env
+az login
+uv run --locked python -m scripts.cli_event_grid --help
+uv run --locked python -m scripts.cli_event_hubs --help
+uv run --locked python -m scripts.cli_service_bus --help
+uv run --locked python -m scripts.cli_queue_storage --help
+```
+
+| Terraform output | `.env` variable | CLI override |
+| --- | --- | --- |
+| `event_grid_topic_endpoint` | `AZURE_EVENT_GRID_TOPIC_ENDPOINT` | `--endpoint` |
+| `event_hubs_namespace_fqdn` | `AZURE_EVENT_HUBS_FULLY_QUALIFIED_NAMESPACE` | `--fully-qualified-namespace` |
+| `event_hub_name` | `AZURE_EVENT_HUB_NAME` | `--event-hub` |
+| `event_hub_consumer_group_name` | `AZURE_EVENT_HUB_CONSUMER_GROUP` | `--consumer-group` |
+| `service_bus_namespace_fqdn` | `AZURE_SERVICE_BUS_FULLY_QUALIFIED_NAMESPACE` | `--fully-qualified-namespace` |
+| `service_bus_queue_name` | `AZURE_SERVICE_BUS_QUEUE_NAME` | `--queue` |
+| `queue_storage_endpoint` | `AZURE_QUEUE_STORAGE_ENDPOINT` | `--endpoint` |
+| `queue_storage_queue_name` | `AZURE_QUEUE_STORAGE_QUEUE_NAME` | `--queue` |
+
+Disabled services have null/absent outputs; do not use these as configuration.
+Namespace values are hostnames such as `<namespace>.servicebus.windows.net`,
+without a scheme or path. Endpoints are HTTPS URLs; use the Queue endpoint,
+not the Blob or DFS endpoint. The built-in consumer group is literally
+`$Default`; quote it as `'$Default'` in shell commands.
+
+All four CLIs use **only `DefaultAzureCredential`**: locally it can use
+developer credentials such as `az login`; in Azure it can use the hosting
+resource's managed identity. Configure the intended identity and grant it the
+roles below; an Azure managed identity does not inherit your local user's
+permissions. Other configured credentials in the default chain may take
+precedence over Azure CLI credentials. No connection-string, account-key, or
+SAS options are provided. The Terraform scenario disables shared-key/local
+data-plane authentication.
+
+### Required messaging RBAC
+
+For each enabled service, the scenario assigns these roles to its
+`operator_principal_id` output: the Terraform operator by default, or the
+principal explicitly selected with the same input variable.
+
+| Service | Assigned data-plane roles | Assignment scope (Terraform output) |
+| --- | --- | --- |
+| Event Grid | `EventGrid Data Sender` | Custom Topic (`event_grid_topic_id`) |
+| Event Hubs | `Azure Event Hubs Data Sender`, `Azure Event Hubs Data Receiver` | Namespace (`event_hubs_namespace_id`) |
+| Service Bus | `Azure Service Bus Data Sender`, `Azure Service Bus Data Receiver` | Namespace (`service_bus_namespace_id`) |
+| Queue Storage | `Storage Queue Data Contributor` | Storage account (`queue_storage_account_id`) |
+
+Verify that the calling identity matches the authorized principal. To inspect
+assignments, substitute the appropriate resource ID and principal object ID
+from the Terraform outputs (or your Azure-hosted managed identity's object ID):
+
+```shell
+az account show --query "{subscription:name,tenantId:tenantId,user:user.name}" --output table
+MESSAGING_SCOPE="<resource-ID-from-the-scope-column>"
+PRINCIPAL_ID="<calling-principal-object-ID>"
+az role assignment list \
+  --scope "$MESSAGING_SCOPE" --include-inherited \
+  --query "[?principalId=='${PRINCIPAL_ID}'].{role:roleDefinitionName,scope:scope}" \
+  --output table
+```
+
+If the runtime identity differs from the scenario operator, an authorized
+administrator must assign the required roles to that identity. Management-plane
+`Owner`/`Contributor` access alone does not replace data-plane roles. Allow
+several minutes for role propagation; for authorization failures also check
+the selected tenant, endpoint, and resource network restrictions.
+
+### Article-to-command coverage
+
+| Article feature | Module | Command / adaptation |
+| --- | --- | --- |
+| Event Grid: Send a Cloud Event | `scripts.cli_event_grid` | `publish-event`; select the topic's input schema |
+| Event Grid: Send Multiple Events | `scripts.cli_event_grid` | `publish-events`; one send with an event list |
+| Event Grid: Namespace receive/process | — | Excluded: no Namespace, namespace topic, or pull subscription |
+| Event Hubs: Send events | `scripts.cli_event_hubs` | `send-events`; one SDK batch |
+| Event Hubs: Receive events | `scripts.cli_event_hubs` | `receive-events`; bounded, without Blob checkpoints |
+| Service Bus: Send single message | `scripts.cli_service_bus` | `send-message` |
+| Service Bus: Send a list | `scripts.cli_service_bus` | `send-message-list`; one send with a list |
+| Service Bus: Send a batch | `scripts.cli_service_bus` | `send-message-batch`; explicit SDK batch |
+| Service Bus: Receive/complete | `scripts.cli_service_bus` | `receive-messages`; complete after display |
+| Queue Storage: Create queue | `scripts.cli_queue_storage` | `create-queue` |
+| Queue Storage: Add message | `scripts.cli_queue_storage` | `send-message` |
+| Queue Storage: Peek messages | `scripts.cli_queue_storage` | `peek-messages` |
+| Queue Storage: Update message | `scripts.cli_queue_storage` | `update-message` |
+| Queue Storage: Get queue length | `scripts.cli_queue_storage` | `get-queue-length`; approximate count |
+| Queue Storage: Receive messages | `scripts.cli_queue_storage` | `receive-messages`; does not delete |
+| Queue Storage: Delete message | `scripts.cli_queue_storage` | `delete-message`; ID and pop receipt |
+| Queue Storage: Delete queue | `scripts.cli_queue_storage` | `delete-queue`; confirmation or explicit `--yes` |
+
+### Event Grid Basic Custom Topic
+
+Publish one event or multiple events (three by default) using the default payload and
+`--schema event-grid`, which matches Terraform's default `EventGridSchema`:
+
+```shell
+uv run --locked python -m scripts.cli_event_grid publish-event
+uv run --locked python -m scripts.cli_event_grid publish-events
+uv run --locked python -m scripts.cli_event_grid publish-events \
+  --subject "samples/orders" --event-type "Sample.OrderCreated" \
+  --data '{"orderId":42,"status":"created"}' --data-version "1.0" --count 2
+```
+
+`--data` must be a JSON object, not an array or scalar. For a topic deployed
+with `event_grid_input_schema = "CloudEventSchemaV1_0"`, explicitly select
+`--schema cloud-event`; `--source` supplies the CloudEvent source:
+
+```shell
+uv run --locked python -m scripts.cli_event_grid publish-event \
+  --endpoint "https://<topic>.<region>-1.eventgrid.azure.net/api/events" \
+  --schema cloud-event --source "/samples/orders" \
+  --subject "orders/42" --event-type "Sample.OrderCreated" \
+  --data '{"orderId":42}'
+```
+
+`--data-version` is Event Grid schema metadata, not a CloudEvent version
+selector. `publish-events --count` sends the entire event list in one call.
+Publishing prints one JSON object with `schema`, `count`, and `ids` fields.
+The CLI does not support `CustomEventSchema` or Namespace consumer operations
+(receive, acknowledge, release, reject, renew lock). This scenario creates a
+Basic Custom Topic, not an Event Grid Namespace, and no event subscriptions:
+successful publishing does not by itself establish downstream delivery.
+
+### Event Hubs
+
+Send the three quickstart events by default, or supply repeatable `--message`
+options to build one batch. Sending prints `{"sent": N}`:
+
+```shell
+uv run --locked python -m scripts.cli_event_hubs send-events
+uv run --locked python -m scripts.cli_event_hubs send-events \
+  --fully-qualified-namespace "<namespace>.servicebus.windows.net" \
+  --event-hub events --message "First event" --message '{"orderId":42}'
+uv run --locked python -m scripts.cli_event_hubs receive-events
+uv run --locked python -m scripts.cli_event_hubs receive-events \
+  --consumer-group '$Default' --starting-position '-1' \
+  --max-events 3 --max-wait-time 10
+```
+
+The receiver defaults to at most 100 events and a 5-second idle timeout.
+`--max-events` accepts 1–10,000.
+It stops at `--max-events` or after `--max-wait-time` seconds of
+global inactivity across partitions, and displays payload and
+partition/sequence metadata as JSON lines followed by a received-count summary.
+Event objects contain `body`, `partition_id`, `offset`, `sequence_number`,
+and `enqueued_time`; the final object is `{"received": N}`, including zero.
+Any real event resets the idle timeout; reception also times out when no
+callbacks arrive or no partitions are discovered. An idle partition does not
+stop reception while other partitions remain active. `--starting-position` defaults to `-1`
+(beginning of retained events), and `--consumer-group` defaults to `$Default`.
+Receiving is non-destructive and saves **no checkpoints**: another run with
+the same starting position can reread retained events. The article's Blob
+checkpoint store is intentionally excluded because the scenario provisions
+neither a Blob container nor `Storage Blob Data Contributor`.
+
+### Service Bus Queue
+
+The three send commands demonstrate distinct SDK send shapes. Use `--message`
+to change the body and `--count` to change list/batch sizes (default: three).
+Receive defaults to at most ten messages and a 5-second wait:
+
+```shell
+uv run --locked python -m scripts.cli_service_bus send-message
+uv run --locked python -m scripts.cli_service_bus send-message-list
+uv run --locked python -m scripts.cli_service_bus send-message-batch
+uv run --locked python -m scripts.cli_service_bus send-message --message "Hello queue"
+uv run --locked python -m scripts.cli_service_bus send-message-list --message "Order" --count 2
+uv run --locked python -m scripts.cli_service_bus send-message-batch --message "Order" --count 2
+uv run --locked python -m scripts.cli_service_bus receive-messages
+uv run --locked python -m scripts.cli_service_bus receive-messages \
+  --fully-qualified-namespace "<namespace>.servicebus.windows.net" \
+  --queue queue --max-messages 5 --max-wait-time 10
+```
+
+`send-message-list` passes the list to `send_messages` once.
+`send-message-batch` adds messages to a `ServiceBusMessageBatch` and explicitly
+reports capacity overflow rather than silently dropping messages. Reduce
+`--count` or message size if the batch is too large. Receiving is bounded by
+the requested count/wait. Send commands print `{"sent": N}`; receive prints
+one JSON object per message with `body`, `message_id`, and metadata, followed
+by `{"received": N}`. Each object occupies one line, not an indented block.
+Each successfully displayed message is **completed**, removing it from the queue. This differs
+from Event Hubs and Queue Storage receive behavior. Only Queues are supported,
+even though the scenario also deploys a Topic and Subscription.
+
+### Queue Storage lifecycle (scratch queue)
+
+Use a unique scratch queue for these examples. `--queue` overrides the
+Terraform-managed queue in `.env`, including for deletion. Queue names must
+be valid Azure Storage queue names (lowercase letters, numbers, and hyphens).
+With the endpoint configured in `.env`, try the default message and limits:
+
+```shell
+SCRATCH_QUEUE="messaging-cli-scratch-$(date +%s)"
+uv run --locked python -m scripts.cli_queue_storage create-queue --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage send-message --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage peek-messages --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage get-queue-length --queue "$SCRATCH_QUEUE"
+uv run --locked python -m scripts.cli_queue_storage receive-messages --queue "$SCRATCH_QUEUE"
+```
+
+Customize the body, visibility timeout (seconds), and retrieval limit.
+Peek/receive default to one message; receive hides it for 30 seconds by
+default. Send/update default to a visibility timeout of zero.
+Keep the visibility timeout below the message's remaining lifetime
+(the default message lifetime is seven days).
+`--max-messages` for peek/receive must be between **1 and 32**:
+
+```shell
+uv run --locked python -m scripts.cli_queue_storage send-message \
+  --queue "$SCRATCH_QUEUE" --message "Please update me" --visibility-timeout 0
+uv run --locked python -m scripts.cli_queue_storage peek-messages \
+  --queue "$SCRATCH_QUEUE" --max-messages 2
+uv run --locked python -m scripts.cli_queue_storage receive-messages \
+  --queue "$SCRATCH_QUEUE" --max-messages 2 --visibility-timeout 120
+```
+
+Send, receive, and update return JSON containing `id` and `pop_receipt`
+needed for subsequent operations. Send/update output one metadata object;
+receive outputs one aggregate object, `{"received": N, "messages": [...]}`,
+with metadata for each message. An empty receive returns
+`{"received": 0, "messages": []}`. Each result is complete on a single line
+for JSONL processing. Peek returns an array of message metadata without pop
+receipts. It does not change visibility or consume
+a message. Receive hides messages for the visibility timeout but **does not
+delete them**; they become visible again if not deleted. The queue length is
+an approximate service count, not a count of currently visible messages.
+
+Copy an ID and its matching pop receipt from the latest receive output, then
+update before the visibility timeout expires:
+
+```shell
+MESSAGE_ID="<message-ID-from-receive>"
+POP_RECEIPT="<matching-pop-receipt-from-receive>"
+uv run --locked python -m scripts.cli_queue_storage update-message \
+  --queue "$SCRATCH_QUEUE" --message-id "$MESSAGE_ID" --pop-receipt "$POP_RECEIPT" \
+  --message "Updated content" --visibility-timeout 120
+```
+
+Update returns a **new pop receipt**. Replace the old value with that receipt;
+future receives also change the receipt. Always use the latest receipt for
+the same message when updating or deleting:
+
+```shell
+POP_RECEIPT="<new-pop-receipt-from-update>"
+uv run --locked python -m scripts.cli_queue_storage delete-message \
+  --queue "$SCRATCH_QUEUE" --message-id "$MESSAGE_ID" --pop-receipt "$POP_RECEIPT"
+# Delete only the scratch queue; prompts for confirmation:
+uv run --locked python -m scripts.cli_queue_storage delete-queue --queue "$SCRATCH_QUEUE"
+# Alternative for noninteractive cleanup (explicit opt-in):
+uv run --locked python -m scripts.cli_queue_storage delete-queue --queue "$SCRATCH_QUEUE" --yes
+```
+
+Declining deletion cancels without calling Azure. Noninteractive queue
+deletion requires `--yes`. Deleting a queue removes all remaining messages;
+never substitute the Terraform-managed queue for the scratch queue in these
+cleanup commands. Use `--endpoint` to override the Queue service endpoint and
+each command's `--help` to inspect all options and defaults.
 
 ## Docker development
 
