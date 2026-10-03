@@ -31,7 +31,7 @@ def publish(
     multiple: bool,
 ) -> dict[str, object]:
     endpoint = validate_endpoint(
-        required_value(endpoint, get_azure_settings().azure_event_grid_topic_endpoint, "--endpoint"), allow_path=True
+        required_value(endpoint, get_azure_settings().event_grid.endpoint, "--endpoint"), allow_path=True
     )
     subject = validate_name(subject, "--subject")
     source = validate_name(source, "--source")

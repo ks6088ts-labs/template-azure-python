@@ -33,7 +33,7 @@ def _watcher_record(watcher: NetworkWatcher) -> dict[str, object]:
 
 
 def show_watcher(resource_id: str | None) -> dict[str, object]:
-    resource_id = required_value(resource_id, get_azure_settings().azure_network_watcher_id, "--resource-id")
+    resource_id = required_value(resource_id, get_azure_settings().network_watcher.resource_id, "--resource-id")
     subscription, resource_group, name = validate_arm_id(resource_id, "Microsoft.Network", "networkWatchers")
     with _network_client(subscription) as client:
         return _watcher_record(
@@ -44,10 +44,10 @@ def show_watcher(resource_id: str | None) -> dict[str, object]:
 def list_watchers(subscription_id: str | None, resource_group: str | None) -> dict[str, object]:
     settings = get_azure_settings()
     subscription_id = validate_guid(
-        required_value(subscription_id, settings.azure_subscription_id, "--subscription-id")
+        required_value(subscription_id, settings.resource.subscription_id, "--subscription-id")
     )
     resource_group = validate_resource_group(
-        settings.azure_resource_group if resource_group is None else resource_group
+        settings.resource.resource_group if resource_group is None else resource_group
     )
     with _network_client(subscription_id) as client:
         watchers = (

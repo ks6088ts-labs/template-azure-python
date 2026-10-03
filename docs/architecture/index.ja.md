@@ -41,7 +41,9 @@ template_azure_python/
   settings/
     _base.py                   # dotenv 読み込みの共通設定
     project.py                 # ProjectSettings とキャッシュ付き取得関数
-    azure.py                   # AzureSettings とキャッシュ付き取得関数
+    azure/
+      settings.py              # 階層化した AzureSettings とキャッシュ付き取得関数
+      <domain>.py              # サービス別 Pydantic Settings モデル
     _telemetry.py              # SDK 用環境変数の一時設定・復元
     __init__.py                # 設定への公開アクセス経路
   internals/
@@ -69,8 +71,11 @@ SDK のクライアントと結果モデルは内部実装に閉じ込めます�
 
 - `get_project_settings()` はプロジェクト名とログレベルを取得します。
 - `get_azure_settings()` は `.env.template` に記載されたアプリ用 Azure 設定を取得します。
-- `ProjectSettings` と `AzureSettings` は Pydantic Settings のモデルです。
-  UTF-8 の dotenv 読み込み、大文字・小文字を区別しない変数名、無関係なキーの無視を共有します。
+- `ProjectSettings` は Pydantic Settings モデルです。`AzureSettings` はサービス別の
+  Pydantic Settings モデルを集約し、`settings.cosmos_db.endpoint` や
+  `settings.resource.subscription_id` のような階層化したパスで値を公開します。
+  `.env.template` のフラットな環境変数名を維持しつつ、UTF-8 の dotenv 読み込み、
+  大文字・小文字を区別しない変数名、無関係なキーの無視を共有します。
 
 ```mermaid
 flowchart LR
@@ -158,8 +163,9 @@ Azure を利用する HTTP ドメインを追加する場合、Cosmos クライ�
 
 ### Azure CLI
 
-1. 必要な型付きフィールドを `AzureSettings` に追加し、
+1. `settings/azure` 以下のサービス別モデルを追加または拡張し、
    秘密情報を含まない設定例を `.env.template` に記載します。
+   新しいサービスモデルが必要な場合は `AzureSettings` に組み込みます。
 2. `internals/azure` にサービス操作を追加します。
    省略設定は公開 settings パッケージから解決し、認証前の検証・リソース管理・通常の値への変換を行います。
 3. `cli_errors` と既存の表示ヘルパーを使う薄い `scripts/cli_<service>.py` を追加します。

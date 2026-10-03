@@ -15,7 +15,7 @@ from template_azure_python.settings import get_azure_settings
 
 def query_logs(workspace_id: str | None, hours: int, limit: int, *, summarize: bool = False) -> dict[str, object]:
     workspace_id = validate_guid(
-        required_value(workspace_id, get_azure_settings().azure_log_analytics_workspace_id, "--workspace-id")
+        required_value(workspace_id, get_azure_settings().log_analytics.workspace_id, "--workspace-id")
     )
     query = f"AzureActivity | where TimeGenerated >= ago({hours}h)"
     if summarize:

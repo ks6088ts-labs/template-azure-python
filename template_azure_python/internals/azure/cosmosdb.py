@@ -39,9 +39,9 @@ def _container_client(
     endpoint: str | None, database_id: str | None, container_id: str | None, throughput: int | None
 ) -> Generator[ContainerProxy, None, None]:
     settings = get_azure_settings()
-    endpoint = _validate_endpoint(required_value(endpoint, settings.azure_cosmos_db_endpoint, "--endpoint"))
-    database_id = required_value(database_id, settings.azure_cosmos_db_database, "--database")
-    container_id = required_value(container_id, settings.azure_cosmos_db_container, "--container")
+    endpoint = _validate_endpoint(required_value(endpoint, settings.cosmos_db.endpoint, "--endpoint"))
+    database_id = required_value(database_id, settings.cosmos_db.database, "--database")
+    container_id = required_value(container_id, settings.cosmos_db.container, "--container")
     with azure_errors("Azure Cosmos DB operation failed", include_details=True):
         with closing(DefaultAzureCredential()) as credential:
             with closing(CosmosClient(url=endpoint, credential=credential)) as client:

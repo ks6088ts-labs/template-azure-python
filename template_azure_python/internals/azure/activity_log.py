@@ -34,10 +34,10 @@ def _read_events(
 ) -> tuple[list[dict[str, object]], dict[str, object]]:
     settings = get_azure_settings()
     subscription_id = validate_guid(
-        required_value(subscription_id, settings.azure_subscription_id, "--subscription-id")
+        required_value(subscription_id, settings.resource.subscription_id, "--subscription-id")
     )
     resource_group = validate_resource_group(
-        settings.azure_resource_group if resource_group is None else resource_group
+        settings.resource.resource_group if resource_group is None else resource_group
     )
     if not 1 <= hours <= 168:
         raise InputError("must be between 1 and 168", "--hours")

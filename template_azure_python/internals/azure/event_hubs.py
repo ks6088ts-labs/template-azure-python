@@ -20,11 +20,9 @@ def _resources(namespace: str | None, event_hub: str | None) -> tuple[str, str]:
     settings = get_azure_settings()
     return (
         validate_namespace(
-            required_value(
-                namespace, settings.azure_event_hubs_fully_qualified_namespace, "--fully-qualified-namespace"
-            )
+            required_value(namespace, settings.event_hubs.fully_qualified_namespace, "--fully-qualified-namespace")
         ),
-        validate_name(required_value(event_hub, settings.azure_event_hub_name, "--event-hub"), "--event-hub"),
+        validate_name(required_value(event_hub, settings.event_hubs.name, "--event-hub"), "--event-hub"),
     )
 
 
@@ -148,7 +146,7 @@ def receive_events(
 ) -> int:
     namespace, event_hub = _resources(namespace, event_hub)
     consumer_group = validate_name(
-        required_value(consumer_group, get_azure_settings().azure_event_hub_consumer_group, "--consumer-group"),
+        required_value(consumer_group, get_azure_settings().event_hubs.consumer_group, "--consumer-group"),
         "--consumer-group",
     )
     if not math.isfinite(max_wait_time) or max_wait_time <= 0:

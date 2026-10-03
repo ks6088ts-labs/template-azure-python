@@ -16,8 +16,8 @@ from template_azure_python.settings import get_azure_settings
 def resolve_queue(endpoint: str | None, queue: str | None) -> tuple[str, str]:
     settings = get_azure_settings()
     return (
-        validate_endpoint(required_value(endpoint, settings.azure_queue_storage_endpoint, "--endpoint")),
-        validate_name(required_value(queue, settings.azure_queue_storage_queue_name, "--queue"), "--queue"),
+        validate_endpoint(required_value(endpoint, settings.queue_storage.endpoint, "--endpoint")),
+        validate_name(required_value(queue, settings.queue_storage.queue_name, "--queue"), "--queue"),
     )
 
 

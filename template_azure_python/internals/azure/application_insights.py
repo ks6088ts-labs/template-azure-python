@@ -59,7 +59,7 @@ class TelemetryTable(str, Enum):
 def query_telemetry(
     resource_id: str | None, table: TelemetryTable, hours: int, limit: int, run_id: str | None
 ) -> dict[str, object]:
-    resource_id = required_value(resource_id, get_azure_settings().azure_application_insights_id, "--resource-id")
+    resource_id = required_value(resource_id, get_azure_settings().application_insights.resource_id, "--resource-id")
     validate_arm_id(resource_id, "Microsoft.Insights", "components")
     if run_id is not None:
         run_id = validate_guid(run_id)
@@ -110,7 +110,7 @@ def _isolated_logging(logger: logging.Logger) -> Generator[_Diagnostics, None, N
 
 
 def emit_telemetry(count: int) -> dict[str, object]:
-    secret = get_azure_settings().applicationinsights_connection_string
+    secret = get_azure_settings().application_insights.connection_string
     if secret is None or not secret.get_secret_value().strip():
         raise InputError("set APPLICATIONINSIGHTS_CONNECTION_STRING in the environment")
     run_id = str(uuid4())

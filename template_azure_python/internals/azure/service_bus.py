@@ -21,9 +21,9 @@ SERVICE = "Azure Service Bus"
 def _queue_client(namespace: str | None, queue: str | None) -> Generator[tuple[str, ServiceBusClient], None, None]:
     settings = get_azure_settings()
     namespace = validate_namespace(
-        required_value(namespace, settings.azure_service_bus_fully_qualified_namespace, "--fully-qualified-namespace")
+        required_value(namespace, settings.service_bus.fully_qualified_namespace, "--fully-qualified-namespace")
     )
-    queue = validate_name(required_value(queue, settings.azure_service_bus_queue_name, "--queue"), "--queue")
+    queue = validate_name(required_value(queue, settings.service_bus.queue_name, "--queue"), "--queue")
     with managed_client(
         SERVICE, lambda credential: ServiceBusClient(fully_qualified_namespace=namespace, credential=credential)
     ) as client:

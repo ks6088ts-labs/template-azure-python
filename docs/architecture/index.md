@@ -42,7 +42,9 @@ template_azure_python/
   settings/
     _base.py                   # shared dotenv configuration
     project.py                 # ProjectSettings and cached getter
-    azure.py                   # AzureSettings and cached getter
+    azure/
+      settings.py              # nested AzureSettings aggregate and cached getter
+      <domain>.py              # service-specific Pydantic Settings models
     _telemetry.py              # scoped SDK environment controls
     __init__.py                # public configuration access
   internals/
@@ -71,8 +73,11 @@ Application code accesses configuration through `template_azure_python.settings`
 
 - `get_project_settings()` supplies project name and logging level.
 - `get_azure_settings()` supplies the application Azure settings listed in `.env.template`.
-- `ProjectSettings` and `AzureSettings` are Pydantic Settings models.
-  Both share UTF-8 dotenv loading, case-insensitive field names, and ignored unrelated keys.
+- `ProjectSettings` is a Pydantic Settings model. `AzureSettings` composes
+  service-specific Pydantic Settings models and exposes values through nested
+  paths such as `settings.cosmos_db.endpoint` and `settings.resource.subscription_id`.
+  The models share UTF-8 dotenv loading, case-insensitive field names, and ignored
+  unrelated keys while retaining the flat environment variable names in `.env.template`.
 
 ```mermaid
 flowchart LR
@@ -157,7 +162,9 @@ not initialization that the current root endpoint needs.
 
 ### Azure CLI
 
-1. Add necessary typed fields to `AzureSettings` and nonsecret examples to `.env.template`.
+1. Add or extend the service-specific model under `settings/azure` and add
+   nonsecret examples to `.env.template`. Compose a new service model in
+   `AzureSettings` when needed.
 2. Add a service operation under `internals/azure`. Resolve omitted configuration
    through the public settings package, validate before authentication, manage
    resources, and convert SDK results into ordinary values.

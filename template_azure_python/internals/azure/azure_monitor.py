@@ -27,7 +27,7 @@ def _prometheus_endpoint(value: str | None) -> str:
 
 
 def _resource(resource_id: str | None) -> tuple[str, str, str]:
-    resource_id = required_value(resource_id, get_azure_settings().azure_monitor_id, "--resource-id")
+    resource_id = required_value(resource_id, get_azure_settings().azure_monitor.resource_id, "--resource-id")
     return validate_arm_id(resource_id, "Microsoft.Monitor", "accounts")
 
 
