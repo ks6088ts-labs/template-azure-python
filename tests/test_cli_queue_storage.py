@@ -10,8 +10,9 @@ from azure.storage.queue import QueueMessage
 from click import unstyle
 from typer.testing import CliRunner
 
-from scripts import _azure_messaging as helper
+from scripts import _cli as helper
 from scripts import cli_queue_storage as cli
+from template_azure_python.internals.azure import _common, queue_storage
 
 ENDPOINT = "https://example.queue.core.windows.net"
 QUEUE = "quickstart"
@@ -35,8 +36,8 @@ def clients(monkeypatch):
     client = MagicMock()
     credential_type = MagicMock(return_value=credential)
     client_type = MagicMock(return_value=client)
-    monkeypatch.setattr(helper, "DefaultAzureCredential", credential_type)
-    monkeypatch.setattr(cli, "QueueClient", client_type)
+    monkeypatch.setattr(_common, "DefaultAzureCredential", credential_type)
+    monkeypatch.setattr(queue_storage, "QueueClient", client_type)
     monkeypatch.delenv("AZURE_QUEUE_STORAGE_ENDPOINT", raising=False)
     monkeypatch.delenv("AZURE_QUEUE_STORAGE_QUEUE_NAME", raising=False)
     client.send_message.return_value = QueueMessage(content=cli.DEFAULT_MESSAGE, id="message-id", pop_receipt="receipt")

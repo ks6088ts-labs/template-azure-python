@@ -8,7 +8,6 @@ from click import unstyle
 from typer.testing import CliRunner
 
 from scripts.cli_cosmosdb import (
-    CATEGORY_QUERY,
     DEFAULT_CATEGORY,
     DEFAULT_CONTAINER,
     DEFAULT_DATABASE,
@@ -16,9 +15,9 @@ from scripts.cli_cosmosdb import (
     DEFAULT_ITEM_NAME,
     DEFAULT_QUANTITY,
     DEFAULT_SALE,
-    PARTITION_KEY_PATH,
     app,
 )
+from template_azure_python.internals.azure.cosmosdb import CATEGORY_QUERY, PARTITION_KEY_PATH
 
 ENDPOINT = "https://example.documents.azure.com:443/"
 
@@ -34,9 +33,13 @@ def cosmos_clients():
     database.create_container_if_not_exists.return_value = container
 
     with (
-        patch("scripts.cli_cosmosdb.DefaultAzureCredential", return_value=credential) as credential_type,
-        patch("scripts.cli_cosmosdb.CosmosClient", return_value=client) as client_type,
-        patch("scripts.cli_cosmosdb.PartitionKey", return_value=partition_key) as partition_key_type,
+        patch(
+            "template_azure_python.internals.azure.cosmosdb.DefaultAzureCredential", return_value=credential
+        ) as credential_type,
+        patch("template_azure_python.internals.azure.cosmosdb.CosmosClient", return_value=client) as client_type,
+        patch(
+            "template_azure_python.internals.azure.cosmosdb.PartitionKey", return_value=partition_key
+        ) as partition_key_type,
     ):
         yield SimpleNamespace(
             credential=credential,
@@ -215,8 +218,8 @@ def test_upsert_item_requires_endpoint():
 )
 def test_commands_reject_invalid_endpoint(endpoint: str):
     with (
-        patch("scripts.cli_cosmosdb.DefaultAzureCredential") as credential_type,
-        patch("scripts.cli_cosmosdb.CosmosClient") as client_type,
+        patch("template_azure_python.internals.azure.cosmosdb.DefaultAzureCredential") as credential_type,
+        patch("template_azure_python.internals.azure.cosmosdb.CosmosClient") as client_type,
     ):
         result = CliRunner().invoke(app, ["query-items", "--endpoint", endpoint])
 
@@ -228,8 +231,8 @@ def test_commands_reject_invalid_endpoint(endpoint: str):
 
 def test_upsert_item_rejects_invalid_throughput():
     with (
-        patch("scripts.cli_cosmosdb.DefaultAzureCredential") as credential_type,
-        patch("scripts.cli_cosmosdb.CosmosClient") as client_type,
+        patch("template_azure_python.internals.azure.cosmosdb.DefaultAzureCredential") as credential_type,
+        patch("template_azure_python.internals.azure.cosmosdb.CosmosClient") as client_type,
     ):
         result = CliRunner().invoke(
             app,

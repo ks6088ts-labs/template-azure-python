@@ -16,9 +16,9 @@ from scripts.cli_event_hubs import (
     DEFAULT_MAX_EVENTS,
     DEFAULT_MAX_WAIT_TIME,
     DEFAULT_MESSAGES,
-    _receive_bounded,
     app,
 )
+from template_azure_python.internals.azure.event_hubs import _receive_bounded
 
 NAMESPACE = "example.servicebus.windows.net"
 RESOURCE_ARGS = ["--fully-qualified-namespace", NAMESPACE, "--event-hub", "events"]
@@ -34,12 +34,18 @@ def clients():
     consumer.receive = AsyncMock()
     consumer.close = AsyncMock()
     with (
-        patch("scripts._azure_messaging.DefaultAzureCredential", return_value=credential) as credential_type,
         patch(
-            "scripts._azure_messaging.AsyncDefaultAzureCredential", return_value=async_credential
+            "template_azure_python.internals.azure._common.DefaultAzureCredential", return_value=credential
+        ) as credential_type,
+        patch(
+            "template_azure_python.internals.azure._common.AsyncDefaultAzureCredential", return_value=async_credential
         ) as async_credential_type,
-        patch("scripts.cli_event_hubs.EventHubProducerClient", return_value=producer) as producer_type,
-        patch("scripts.cli_event_hubs.EventHubConsumerClient", return_value=consumer) as consumer_type,
+        patch(
+            "template_azure_python.internals.azure.event_hubs.EventHubProducerClient", return_value=producer
+        ) as producer_type,
+        patch(
+            "template_azure_python.internals.azure.event_hubs.EventHubConsumerClient", return_value=consumer
+        ) as consumer_type,
     ):
         yield SimpleNamespace(
             credential=credential,
@@ -406,7 +412,7 @@ def test_real_sdk_discovery_is_bounded_and_leaves_no_tasks(discovery):
 
         with patch.object(consumer, "get_partition_ids", side_effect=get_partition_ids):
             try:
-                operation = _receive_bounded(consumer, 100, 0.015, "-1")
+                operation = _receive_bounded(consumer, 100, 0.015, "-1", lambda _record: None)
                 if discovery == "error":
                     with pytest.raises(AzureError, match="discovery failed"):
                         await asyncio.wait_for(operation, timeout=1)
@@ -448,7 +454,7 @@ def test_real_sdk_partition_shutdown_cancels_load_balancing_sleep(outcome):
             patch.object(consumer, "_create_consumer", side_effect=create_consumer),
         ):
             try:
-                operation = _receive_bounded(consumer, 1, 0.015, "-1")
+                operation = _receive_bounded(consumer, 1, 0.015, "-1", lambda _record: None)
                 if outcome == "error":
                     with pytest.raises(AzureError, match="partition failed"):
                         await asyncio.wait_for(operation, timeout=2)

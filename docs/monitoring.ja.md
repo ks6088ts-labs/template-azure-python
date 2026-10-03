@@ -154,6 +154,10 @@ uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 -
 [接続文字列](https://learn.microsoft.com/azure/azure-monitor/app/connection-strings)と
 [Python OpenTelemetry](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python)も参照してください。
 
+内部実装は中央の settings パッケージから `SecretStr` として値を取得し、設定の dump からも除外します。
+SDK 用の環境変数制御は一時的なもので、送信後に元の状態へ復元します。
+[アーキテクチャ](architecture/index.md)も参照してください。
+
 ### サンプルを送信する
 
 ```shell

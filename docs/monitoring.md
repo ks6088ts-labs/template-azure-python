@@ -157,6 +157,10 @@ history, logs, screenshots, or shared output. There is no connection-string CLI
 option. See [connection strings](https://learn.microsoft.com/azure/azure-monitor/app/connection-strings)
 and [Python OpenTelemetry](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python).
 
+The internal adapter obtains the value from the central settings package as a
+`SecretStr`, excluded from settings dumps. SDK-only environment controls are
+temporary and restored after emission. See [architecture](architecture/index.md).
+
 ### Emit a sample
 
 ```shell

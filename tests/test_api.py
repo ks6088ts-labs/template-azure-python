@@ -33,6 +33,14 @@ def test_api_documentation():
     assert response.status_code == 200
 
 
+def test_router_is_in_openapi():
+    with TestClient(app) as client:
+        schema = client.get("/openapi.json").json()
+
+    assert set(schema["paths"]) == {"/"}
+    assert schema["paths"]["/"]["get"]["operationId"] == "read_root__get"
+
+
 def test_functions_wraps_the_same_fastapi_app():
     assert isinstance(functions_app, func.AsgiFunctionApp)
 

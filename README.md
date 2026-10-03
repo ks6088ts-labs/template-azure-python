@@ -14,6 +14,7 @@ A template repository for Python projects.
 | --- | --- | --- |
 | Getting started | [Guide](https://ks6088ts-labs.github.io/template-azure-python/) | [はじめに](https://ks6088ts-labs.github.io/template-azure-python/ja/) |
 | Local development | [Guide](https://ks6088ts-labs.github.io/template-azure-python/scripts/) | [ローカル開発](https://ks6088ts-labs.github.io/template-azure-python/ja/scripts/) |
+| Architecture | [Guide](https://ks6088ts-labs.github.io/template-azure-python/architecture/) | [アーキテクチャ](https://ks6088ts-labs.github.io/template-azure-python/ja/architecture/) |
 | Microsoft Foundry | [Guide](https://ks6088ts-labs.github.io/template-azure-python/foundry/) | [ガイド](https://ks6088ts-labs.github.io/template-azure-python/ja/foundry/) |
 | Azure Cosmos DB | [Guide](https://ks6088ts-labs.github.io/template-azure-python/cosmosdb/) | [ガイド](https://ks6088ts-labs.github.io/template-azure-python/ja/cosmosdb/) |
 | Messaging | [Guide](https://ks6088ts-labs.github.io/template-azure-python/messaging/) | [メッセージング](https://ks6088ts-labs.github.io/template-azure-python/ja/messaging/) |

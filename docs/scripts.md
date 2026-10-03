@@ -190,6 +190,12 @@ Authentication uses `DefaultAzureCredential`: it can use `az login` locally
 or a managed identity in Azure. Other configured credentials can take precedence.
 A managed identity does not inherit your local user's permissions.
 
+Application settings are loaded by `template_azure_python.settings` using Pydantic Settings.
+The relative `.env` path uses the current working directory and does not search parents.
+SDK-owned authentication variables must be exported in the OS or hosting environment;
+dotenv values are not injected into the process environment.
+See [architecture](architecture/index.md) for configuration and SDK boundaries.
+
 | Sample | Guide |
 | --- | --- |
 | AI models and agents | [Microsoft Foundry](foundry.md) |
@@ -207,7 +213,8 @@ uv run --locked python -m scripts.template hello
 uv run --locked python -m scripts.template --verbose hello --name Azure
 ```
 
-The basic commands load `.env` when present, or use defaults when it is absent.
+The basic commands use the same settings package and precedence. They read `.env`
+when present, or use OS values and defaults when it is absent.
 
 ## Edit the documentation, if needed
 

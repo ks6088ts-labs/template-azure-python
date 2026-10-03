@@ -16,7 +16,8 @@ from azure.monitor.query import LogsQueryPartialResult, LogsQueryResult, LogsTab
 from opentelemetry.trace import SpanKind
 from typer.testing import CliRunner
 
-from scripts.cli_application_insights import FLUSH_TIMEOUT_MILLIS, INSTRUMENTATIONS, app
+from scripts.cli_application_insights import app
+from template_azure_python.internals.azure.application_insights import FLUSH_TIMEOUT_MILLIS, INSTRUMENTATIONS
 
 GUID = "01234567-89ab-cdef-0123-456789abcdef"
 RESOURCE_ID = f"/subscriptions/{GUID}/resourceGroups/rg/providers/Microsoft.Insights/components/app"
@@ -28,8 +29,12 @@ def clients():
     credential, client = MagicMock(), MagicMock()
     client.query_resource.return_value = LogsQueryResult()
     with (
-        patch("scripts.cli_application_insights.DefaultAzureCredential", return_value=credential) as auth,
-        patch("scripts.cli_application_insights.LogsQueryClient", return_value=client) as factory,
+        patch(
+            "template_azure_python.internals.azure.application_insights.DefaultAzureCredential", return_value=credential
+        ) as auth,
+        patch(
+            "template_azure_python.internals.azure.application_insights.LogsQueryClient", return_value=client
+        ) as factory,
     ):
         yield SimpleNamespace(credential=credential, client=client, auth=auth, factory=factory)
 
@@ -143,12 +148,22 @@ def telemetry(clients: SimpleNamespace):
         logging.getLogger(kwargs["logger_name"]).addHandler(handler)
 
     with (
-        patch("scripts.cli_application_insights.configure_azure_monitor", side_effect=configure) as config,
-        patch("scripts.cli_application_insights.trace.get_tracer_provider", return_value=providers[0]),
-        patch("scripts.cli_application_insights.get_logger_provider", return_value=providers[1]),
-        patch("scripts.cli_application_insights.metrics.get_meter_provider", return_value=providers[2]),
-        patch("scripts.cli_application_insights.trace.get_tracer") as get_tracer,
-        patch("scripts.cli_application_insights.metrics.get_meter") as get_meter,
+        patch(
+            "template_azure_python.internals.azure.application_insights.configure_azure_monitor", side_effect=configure
+        ) as config,
+        patch(
+            "template_azure_python.internals.azure.application_insights.trace.get_tracer_provider",
+            return_value=providers[0],
+        ),
+        patch(
+            "template_azure_python.internals.azure.application_insights.get_logger_provider", return_value=providers[1]
+        ),
+        patch(
+            "template_azure_python.internals.azure.application_insights.metrics.get_meter_provider",
+            return_value=providers[2],
+        ),
+        patch("template_azure_python.internals.azure.application_insights.trace.get_tracer") as get_tracer,
+        patch("template_azure_python.internals.azure.application_insights.metrics.get_meter") as get_meter,
     ):
         yield SimpleNamespace(
             providers=providers,
@@ -316,6 +331,9 @@ def test_real_distro_exporter_construction_offline():
         from azure.monitor.opentelemetry.exporter._generated.exporter.models import TrackResponse
         from typer.testing import CliRunner
         from scripts.cli_application_insights import app
+        from template_azure_python.settings import AzureSettings
+
+        AzureSettings.model_config["env_file"] = None
 
         uploaded = []
 
@@ -365,5 +383,5 @@ def test_main(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delitem(sys.modules, "scripts.cli_application_insights", raising=False)
     with patch("dotenv.load_dotenv") as dotenv, patch("typer.Typer.__call__") as invoke:
         runpy.run_module("scripts.cli_application_insights", run_name="__main__")
-    dotenv.assert_called_once_with(override=False)
+    dotenv.assert_not_called()
     invoke.assert_called_once_with()

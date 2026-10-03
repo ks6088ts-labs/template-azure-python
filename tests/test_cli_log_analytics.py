@@ -21,8 +21,10 @@ def clients():
     credential, client = MagicMock(), MagicMock()
     client.query_workspace.return_value = LogsQueryResult()
     with (
-        patch("scripts.cli_log_analytics.DefaultAzureCredential", return_value=credential) as auth,
-        patch("scripts.cli_log_analytics.LogsQueryClient", return_value=client) as factory,
+        patch(
+            "template_azure_python.internals.azure.log_analytics.DefaultAzureCredential", return_value=credential
+        ) as auth,
+        patch("template_azure_python.internals.azure.log_analytics.LogsQueryClient", return_value=client) as factory,
     ):
         yield SimpleNamespace(credential=credential, client=client, auth=auth, factory=factory)
 
@@ -127,5 +129,5 @@ def test_main(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delitem(sys.modules, "scripts.cli_log_analytics", raising=False)
     with patch("dotenv.load_dotenv") as dotenv, patch("typer.Typer.__call__") as invoke:
         runpy.run_module("scripts.cli_log_analytics", run_name="__main__")
-    dotenv.assert_called_once_with(override=False)
+    dotenv.assert_not_called()
     invoke.assert_called_once_with()

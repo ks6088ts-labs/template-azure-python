@@ -189,6 +189,12 @@ Azure サンプルの設定は **CLI オプション → シェルの環境変�
 Azure ではマネージド ID を利用できます。他の設定済みの認証情報が優先される場合もあります。
 マネージド ID にローカルユーザーの権限は引き継がれません。
 
+アプリの設定は `template_azure_python.settings` が Pydantic Settings で読み込みます。
+相対パスの `.env` はカレントディレクトリを基準とし、親ディレクトリは探索しません。
+SDK 自体の認証用変数は OS またはホスティング環境へ設定してください。
+dotenv の値をプロセスの環境変数へ一括注入することはありません。
+設定と SDK の境界は[アーキテクチャ](architecture/index.md)を参照してください。
+
 | サンプル | ガイド |
 | --- | --- |
 | AI モデル・エージェント | [Microsoft Foundry](foundry.md) |
@@ -206,7 +212,8 @@ uv run --locked python -m scripts.template hello
 uv run --locked python -m scripts.template --verbose hello --name Azure
 ```
 
-基本コマンドは `.env` があれば読み込み、なければ既定値を使います。
+基本コマンドも同じ settings パッケージと優先順位を使います。
+`.env` があれば読み込み、なければ OS の値と既定値を使います。
 
 ## ドキュメントを編集する場合
 

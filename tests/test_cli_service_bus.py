@@ -32,8 +32,10 @@ def clients():
     receiver = client.get_queue_receiver.return_value
     receiver.receive_messages.return_value = []
     with (
-        patch("scripts._azure_messaging.DefaultAzureCredential", return_value=credential) as credential_type,
-        patch("scripts.cli_service_bus.ServiceBusClient", return_value=client) as client_type,
+        patch(
+            "template_azure_python.internals.azure._common.DefaultAzureCredential", return_value=credential
+        ) as credential_type,
+        patch("template_azure_python.internals.azure.service_bus.ServiceBusClient", return_value=client) as client_type,
     ):
         yield SimpleNamespace(
             credential=credential,
@@ -316,8 +318,8 @@ def test_child_close_failure_still_closes_outer_resources(clients: SimpleNamespa
     assert_closed(clients, command)
 
 
-def test_module_entrypoint_loads_dotenv_without_overriding_environment():
+def test_module_entrypoint_does_not_load_dotenv():
     with patch("dotenv.load_dotenv") as load, patch("typer.Typer.__call__"):
         with pytest.warns(RuntimeWarning, match="found in sys.modules"):
             runpy.run_module("scripts.cli_service_bus", run_name="__main__")
-    load.assert_called_once_with(override=False)
+    load.assert_not_called()

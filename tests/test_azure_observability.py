@@ -2,11 +2,10 @@ import json
 from datetime import datetime, timezone
 
 import pytest
-import typer
 from azure.monitor.query import LogsQueryError, LogsQueryPartialResult, LogsQueryResult, LogsTable
 
-from scripts._azure_messaging import print_json
-from scripts._azure_observability import format_logs_result, validate_arm_id, validate_guid
+from scripts._cli import print_json
+from template_azure_python.internals.azure._common import InputError, format_logs_result, validate_arm_id, validate_guid
 
 GUID = "01234567-89ab-cdef-0123-456789abcdef"
 RESOURCE_ID = f"/subscriptions/{GUID}/resourceGroups/rg-test/providers/Microsoft.Insights/components/app-test"
@@ -19,7 +18,7 @@ def test_guid(value: str):
 
 @pytest.mark.parametrize("value", [None, 123, [], {}, "", "secret", GUID.replace("-", ""), f" {GUID}", f"{GUID}\n"])
 def test_invalid_guid_is_sanitized(value):
-    with pytest.raises(typer.BadParameter, match="must be a dashed UUID") as error:
+    with pytest.raises(InputError, match="must be a dashed UUID") as error:
         validate_guid(value)
     assert "secret" not in str(error.value)
 
@@ -57,7 +56,7 @@ def test_arm_id():
     ],
 )
 def test_invalid_arm_id_is_sanitized(value):
-    with pytest.raises(typer.BadParameter) as error:
+    with pytest.raises(InputError) as error:
         validate_arm_id(value, "Microsoft.Insights", "components")
     assert "secret" not in str(error.value)
 
@@ -119,5 +118,7 @@ def test_partial_error_service_code(code: str):
 def test_unsafe_partial_error_code(code):
     result = LogsQueryPartialResult(partial_error=LogsQueryError(code=code, message="secret"))
     output = format_logs_result(result)
-    assert output["error"]["code"] == "PartialError"
+    error = output["error"]
+    assert isinstance(error, dict)
+    assert error["code"] == "PartialError"
     assert "secret" not in json.dumps(output)
