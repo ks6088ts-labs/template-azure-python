@@ -18,6 +18,10 @@ AZURE_COSMOS_DB_CONTAINER=products
 
 実行 ID には、データベース・コンテナーの作成と、データの書き込み・読み取り・クエリに
 必要な Cosmos DB のアクセス権を付与してください。認証には `DefaultAzureCredential` を使います。
+Cosmos DB ネイティブのデータプレーン RBAC を使う場合、ロール割り当てのスコープが
+設定したデータベースを含むようにしてください。たとえばスコープが `/dbs/playground` なら、
+`AZURE_COSMOS_DB_DATABASE=playground` が必要です。一致しない場合、SDK は
+`Microsoft.DocumentDB/databaseAccounts/readMetadata` に対する 403 を返します。
 
 **検証用のデータを使ってください。** 各コマンドは必要に応じてデータベースと
 コンテナーを作成します。`upsert-item` は、同じ ID とカテゴリのデータを上書きします。
