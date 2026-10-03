@@ -6,6 +6,7 @@ repo_name: ks6088ts-labs/template-azure-python
 nav:
   - Getting started: index.md
   - Local development: scripts.md
+  - Architecture: architecture/index.md
   - Azure samples:
       - Microsoft Foundry: foundry.md
       - Azure Cosmos DB: cosmosdb.md
@@ -63,7 +64,14 @@ plugins:
           nav_translations:
             Getting started: はじめに
             Local development: ローカル開発
+            Architecture: アーキテクチャ
             Azure samples: Azure サンプル
             Messaging: メッセージング
             Monitoring and logs: 監視とログ
             Deployment: デプロイ
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

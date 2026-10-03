@@ -5,7 +5,6 @@ from typing import Annotated
 
 import typer
 import uvicorn
-from dotenv import load_dotenv
 
 from template_azure_python.core import hello_world
 from template_azure_python.loggers import get_logger
@@ -101,6 +100,4 @@ def serve_functions(
 
 
 if __name__ == "__main__":
-    if not load_dotenv(override=True, verbose=True):
-        logging.warning("No .env file found; using defaults")
     app()

@@ -43,9 +43,13 @@ def clients(monkeypatch: pytest.MonkeyPatch):
     client = MagicMock()
     client.activity_logs.list.return_value = [_event()]
     with (
-        patch("scripts.cli_activity_log.DefaultAzureCredential", return_value=credential) as credential_type,
-        patch("scripts.cli_activity_log.MonitorManagementClient", return_value=client) as client_type,
-        patch("scripts.cli_activity_log.datetime") as clock,
+        patch(
+            "template_azure_python.internals.azure.activity_log.DefaultAzureCredential", return_value=credential
+        ) as credential_type,
+        patch(
+            "template_azure_python.internals.azure.activity_log.MonitorManagementClient", return_value=client
+        ) as client_type,
+        patch("template_azure_python.internals.azure.activity_log.datetime") as clock,
     ):
         clock.now.return_value = NOW
         yield SimpleNamespace(
@@ -301,5 +305,5 @@ def test_main_loads_dotenv_without_override(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delitem(sys.modules, "scripts.cli_activity_log", raising=False)
     with patch("dotenv.load_dotenv") as dotenv, patch("typer.Typer.__call__") as invoke:
         runpy.run_module("scripts.cli_activity_log", run_name="__main__")
-    dotenv.assert_called_once_with(override=False)
+    dotenv.assert_not_called()
     invoke.assert_called_once_with()

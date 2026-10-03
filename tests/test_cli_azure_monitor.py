@@ -9,7 +9,9 @@ import requests
 from azure.core.exceptions import AzureError
 from typer.testing import CliRunner
 
-from scripts.cli_azure_monitor import PROMETHEUS_SCOPE, app
+from scripts.cli_azure_monitor import app
+from template_azure_python.internals.azure.azure_monitor import PROMETHEUS_SCOPE
+from template_azure_python.settings import AzureSettings
 
 SUBSCRIPTION = "12345678-1234-1234-1234-123456789abc"
 RESOURCE_ID = f"/subscriptions/{SUBSCRIPTION}/resourceGroups/monitor-rg/providers/Microsoft.Monitor/accounts/demo"
@@ -30,9 +32,13 @@ def clients():
     response.status_code = 200
     response.json.return_value = EMPTY
     with (
-        patch("scripts.cli_azure_monitor.DefaultAzureCredential", return_value=credential) as auth,
-        patch("scripts.cli_azure_monitor.MonitorManagementClient", return_value=client) as factory,
-        patch("scripts.cli_azure_monitor.requests.Session") as http,
+        patch(
+            "template_azure_python.internals.azure.azure_monitor.DefaultAzureCredential", return_value=credential
+        ) as auth,
+        patch(
+            "template_azure_python.internals.azure.azure_monitor.MonitorManagementClient", return_value=client
+        ) as factory,
+        patch("template_azure_python.internals.azure.azure_monitor.requests.Session") as http,
     ):
         http.return_value.__enter__.return_value = session
         yield SimpleNamespace(
@@ -229,11 +235,11 @@ def test_help_without_auth(command, clients):
     clients.auth.assert_not_called()
 
 
-def test_module_dotenv(monkeypatch):
+def test_module_entrypoint_does_not_load_dotenv(monkeypatch):
     monkeypatch.delitem(sys.modules, "scripts.cli_azure_monitor", raising=False)
     with patch("dotenv.load_dotenv") as dotenv, patch("typer.Typer.__call__") as invoke:
         runpy.run_module("scripts.cli_azure_monitor", run_name="__main__")
-    dotenv.assert_called_once_with(override=False)
+    dotenv.assert_not_called()
     invoke.assert_called_once_with()
 
 
@@ -241,6 +247,10 @@ def test_module_dotenv(monkeypatch):
 def test_dotenv_values_and_cli_override(tmp_path, monkeypatch, override):
     dotenv_path = tmp_path / ".env"
     dotenv_path.write_text(f"AZURE_MONITOR_ID={RESOURCE_ID}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    config = AzureSettings.model_config.copy()
+    config["env_file"] = ".env"
+    monkeypatch.setattr(AzureSettings, "model_config", config)
     monkeypatch.delenv("AZURE_MONITOR_ID", raising=False)
     monkeypatch.delitem(sys.modules, "scripts.cli_azure_monitor", raising=False)
     args = ["cli_azure_monitor", "show-workspace"]
@@ -249,10 +259,9 @@ def test_dotenv_values_and_cli_override(tmp_path, monkeypatch, override):
     monkeypatch.setattr(sys, "argv", args)
     with (
         patch.dict("os.environ", {}),
-        patch("dotenv.main.find_dotenv", return_value=str(dotenv_path)),
-        patch("azure.identity.DefaultAzureCredential"),
-        patch("azure.mgmt.monitor.MonitorManagementClient") as factory,
-        patch("scripts._azure_messaging.print_json"),
+        patch("template_azure_python.internals.azure.azure_monitor.DefaultAzureCredential"),
+        patch("template_azure_python.internals.azure.azure_monitor.MonitorManagementClient") as factory,
+        patch("scripts._cli.print_json"),
         pytest.raises(SystemExit) as exit_info,
     ):
         runpy.run_module("scripts.cli_azure_monitor", run_name="__main__")

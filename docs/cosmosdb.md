@@ -17,6 +17,10 @@ AZURE_COSMOS_DB_CONTAINER=products
 
 Grant the calling identity the Cosmos DB permissions needed to create databases
 and containers and to write, read, and query items. Authentication uses `DefaultAzureCredential`.
+When using Cosmos DB native data-plane RBAC, ensure the role assignment scope covers
+the configured database. For example, an assignment scoped to `/dbs/playground`
+requires `AZURE_COSMOS_DB_DATABASE=playground`; otherwise the SDK returns a 403
+for `Microsoft.DocumentDB/databaseAccounts/readMetadata`.
 
 **Use test data.** Each command creates the database and container if needed.
 `upsert-item` replaces an existing item with the same ID and category.

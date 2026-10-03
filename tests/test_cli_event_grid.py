@@ -30,8 +30,12 @@ def event_grid_clients():
     credential = MagicMock()
     client = MagicMock()
     with (
-        patch("scripts._azure_messaging.DefaultAzureCredential", return_value=credential) as credential_type,
-        patch("scripts.cli_event_grid.EventGridPublisherClient", return_value=client) as client_type,
+        patch(
+            "template_azure_python.internals.azure._common.DefaultAzureCredential", return_value=credential
+        ) as credential_type,
+        patch(
+            "template_azure_python.internals.azure.event_grid.EventGridPublisherClient", return_value=client
+        ) as client_type,
     ):
         yield SimpleNamespace(
             credential=credential,
@@ -302,5 +306,5 @@ def test_module_main_preserves_environment(monkeypatch: pytest.MonkeyPatch):
     with patch("dotenv.load_dotenv") as dotenv, patch("typer.Typer.__call__") as invoke:
         runpy.run_module("scripts.cli_event_grid", run_name="__main__")
 
-    dotenv.assert_called_once_with(override=False)
+    dotenv.assert_not_called()
     invoke.assert_called_once_with()

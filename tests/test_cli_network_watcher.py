@@ -40,8 +40,12 @@ def clients(monkeypatch: pytest.MonkeyPatch):
     client.network_watchers.list.return_value = [watcher]
     client.network_watchers.list_all.return_value = [watcher]
     with (
-        patch("scripts.cli_network_watcher.DefaultAzureCredential", return_value=credential) as credential_type,
-        patch("scripts.cli_network_watcher.NetworkManagementClient", return_value=client) as client_type,
+        patch(
+            "template_azure_python.internals.azure.network_watcher.DefaultAzureCredential", return_value=credential
+        ) as credential_type,
+        patch(
+            "template_azure_python.internals.azure.network_watcher.NetworkManagementClient", return_value=client
+        ) as client_type,
     ):
         yield SimpleNamespace(
             credential=credential, client=client, credential_type=credential_type, client_type=client_type
@@ -229,5 +233,5 @@ def test_main_loads_dotenv_without_override(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delitem(sys.modules, "scripts.cli_network_watcher", raising=False)
     with patch("dotenv.load_dotenv") as dotenv, patch("typer.Typer.__call__") as invoke:
         runpy.run_module("scripts.cli_network_watcher", run_name="__main__")
-    dotenv.assert_called_once_with(override=False)
+    dotenv.assert_not_called()
     invoke.assert_called_once_with()

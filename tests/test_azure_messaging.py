@@ -8,7 +8,8 @@ import pytest
 import typer
 from azure.core.exceptions import AzureError
 
-from scripts import _azure_messaging as messaging
+from scripts import _cli as cli
+from template_azure_python.internals.azure import _common as messaging
 
 
 @pytest.mark.parametrize(
@@ -32,7 +33,7 @@ from scripts import _azure_messaging as messaging
     ],
 )
 def test_invalid_endpoint(endpoint):
-    with pytest.raises(typer.BadParameter):
+    with pytest.raises(messaging.InputError):
         messaging.validate_endpoint(endpoint)
 
 
@@ -46,7 +47,7 @@ def test_valid_endpoints():
     ["", "   ", "namespace", "sb://example.com", "example.com/", "example.com:443", "user@example.com", "bad_.com"],
 )
 def test_invalid_namespace(namespace):
-    with pytest.raises(typer.BadParameter):
+    with pytest.raises(messaging.InputError):
         messaging.validate_namespace(namespace)
 
 
@@ -56,13 +57,13 @@ def test_valid_namespace():
 
 @pytest.mark.parametrize("value", ["", "  ", "\t"])
 def test_invalid_name(value):
-    with pytest.raises(typer.BadParameter):
+    with pytest.raises(messaging.InputError):
         messaging.validate_name(value, "--queue")
 
 
 @pytest.mark.parametrize("value", ["{", "[]", "null", "1", '{"value": NaN}', '{"value": Infinity}', '{"value": 1e999}'])
 def test_invalid_json(value):
-    with pytest.raises(typer.BadParameter):
+    with pytest.raises(messaging.InputError):
         messaging.validate_json_object(value)
 
 
@@ -70,7 +71,7 @@ def test_json_object_and_output(capsys):
     value = messaging.validate_json_object('{"message": "こんにちは"}')
     value["time"] = datetime(2026, 1, 1, tzinfo=timezone.utc)
     value["id"] = UUID(int=0)
-    messaging.print_json(value)
+    cli.print_json(value)
     result = json.loads(capsys.readouterr().out)
     assert result == {
         "message": "こんにちは",
@@ -102,10 +103,10 @@ def test_managed_client_closes_resources(monkeypatch, capsys, failure):
     if failure == "none":
         operate()
     else:
-        with pytest.raises(typer.Exit) as error:
+        with pytest.raises(messaging.OperationError) as error:
             operate()
-        assert error.value.exit_code == 1
-        assert "Test service operation failed" in capsys.readouterr().err
+        assert "Test service operation failed" in str(error.value)
+        assert not capsys.readouterr().err
     if failure != "credential":
         credential.close.assert_called_once()
         factory.assert_called_once_with(credential)
@@ -114,10 +115,10 @@ def test_managed_client_closes_resources(monkeypatch, capsys, failure):
 
 
 def test_noninteractive_delete_requires_yes(monkeypatch):
-    monkeypatch.setattr(messaging.sys.stdin, "isatty", lambda: False)
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: False)
     with pytest.raises(typer.BadParameter):
-        messaging.confirm_delete("scratch-queue", False)
-    assert messaging.confirm_delete("scratch-queue", True)
+        cli.confirm_delete("scratch-queue", False)
+    assert cli.confirm_delete("scratch-queue", True)
 
 
 @pytest.mark.parametrize("failure", ["none", "credential", "factory", "operation", "close"])
@@ -143,10 +144,10 @@ def test_async_managed_client_closes_resources(monkeypatch, capsys, failure):
     if failure == "none":
         asyncio.run(operate())
     else:
-        with pytest.raises(typer.Exit) as error:
+        with pytest.raises(messaging.OperationError) as error:
             asyncio.run(operate())
-        assert error.value.exit_code == 1
-        assert "Test service operation failed" in capsys.readouterr().err
+        assert "Test service operation failed" in str(error.value)
+        assert not capsys.readouterr().err
     if failure != "credential":
         credential.close.assert_awaited_once()
         factory.assert_called_once_with(credential)
@@ -156,8 +157,8 @@ def test_async_managed_client_closes_resources(monkeypatch, capsys, failure):
 
 @pytest.mark.parametrize("answer", [True, False])
 def test_interactive_delete(monkeypatch, answer):
-    monkeypatch.setattr(messaging.sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: True)
     confirm = MagicMock(return_value=answer)
-    monkeypatch.setattr(messaging.typer, "confirm", confirm)
-    assert messaging.confirm_delete("scratch-queue", False) is answer
+    monkeypatch.setattr(cli.typer, "confirm", confirm)
+    assert cli.confirm_delete("scratch-queue", False) is answer
     confirm.assert_called_once_with("Delete queue 'scratch-queue'? This cannot be undone.", default=False, err=True)
