@@ -167,6 +167,171 @@ API 実行中の保存障害は `{"detail":"Task storage is unavailable"}` と H
 ログで通知します。全件一覧は cross-partition query なので RU とメモリーを消費します。
 ページング、ETag 競合検出はなく、更新は後勝ちです。HTTP 認証も追加していません。
 
+<a id="task-api-startup-troubleshooting"></a>
+
+### トラブルシュート: Cosmos DB を選ぶと API が起動しない
+
+次の起動コマンドが失敗し、ログに以下が出る場合の確認手順です。
+`serve-container-apps` はローカルで Uvicorn を起動するコマンドで、
+Azure Container Apps へのデプロイは行いません。
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps --repository cosmosdb
+```
+
+```text
+Task storage lifespan failed (CosmosResourceNotFoundError, status=404)
+...
+TaskRepositoryError: Task storage is unavailable
+ERROR:    Application startup failed. Exiting.
+```
+
+この **Cosmos DB の 404** は、起動時に参照した database / container 等のリソースが
+見つからないことを示します。HTTP API の `/` が 404 を返すこととは別の問題です。
+`Task storage is unavailable` だけでは原因を特定できないため、直前の例外名と status も確認します。
+API はリソースを自動作成せず、database と Task コンテナーを読み取ってから起動します。
+
+たとえば `.env` に `AZURE_COSMOS_DB_DATABASE=playground` と
+`AZURE_COSMOS_DB_CONTAINER=products` があり、database 内に `products` と `documents` しかない場合、
+商品 CLI が動いていても Task API は起動できません。
+`AZURE_COSMOS_DB_TASK_CONTAINER` が未指定なら、API は既定の `playground/tasks` を参照します。
+`AZURE_COSMOS_DB_CONTAINER` を設定しても Task の保存先は変わりません。
+
+#### 1. API が実際に使う接続先を確認する
+
+リポジトリルートで実行します。以下は接続先の非秘密の項目だけを表示し、
+資格情報や他のサービスの設定は出力しません。
+
+```shell
+uv run --locked python -c '
+from template_azure_python.settings import get_azure_settings
+settings = get_azure_settings().cosmos_db
+print(f"endpoint={settings.endpoint}")
+print(f"database={settings.database}")
+print(f"task_container={settings.task_container}")
+'
+```
+
+| Task API の設定 | 未指定時 |
+| --- | --- |
+| `AZURE_COSMOS_DB_ENDPOINT` | 必須。未設定なら起動前の入力検証で失敗 |
+| `AZURE_COSMOS_DB_DATABASE` | `cosmicworks` |
+| `AZURE_COSMOS_DB_TASK_CONTAINER` | `tasks`。パーティションキーは `/id` が必要 |
+
+OS 環境変数は `.env` より優先されます。表示が `.env` と違う場合は、
+同名の環境変数が export されていないか確認してください。
+既存の `.env` を `.env.template` で上書きせず、必要な設定だけを修正します。
+
+#### 2. Azure 上のアカウント・database・コンテナーを確認する
+
+Azure CLI にサインインし、以下の値を自分の環境に置き換えます。
+`COSMOS_ACCOUNT` は手順 1 の endpoint に対応するアカウント名です。
+database / container は手順 1 の表示と一致させてください。
+以下は `playground/tasks` を調べる例です。
+**`az` は `.env` を読み込まない**ため、このシェル変数は別途指定します。
+
+```shell
+az login
+SUBSCRIPTION_ID="<subscription-uuid>"
+COSMOS_ACCOUNT="<account-name>"
+COSMOS_DATABASE="playground"
+TASK_CONTAINER="tasks"
+
+az cosmosdb list --subscription "$SUBSCRIPTION_ID" \
+  --query "[?name=='$COSMOS_ACCOUNT'].{account:name,resourceGroup:resourceGroup,endpoint:documentEndpoint}" \
+  --output table
+```
+
+表示された endpoint が手順 1 と同じアカウントを指すことを確認し、
+その `resourceGroup` を次の変数に設定します。結果が空なら subscription とアカウント名を見直します。
+`AZURE_RESOURCE_GROUP` に監視サービス等の別の resource group が設定されていても、
+**Task 管理コマンドには Cosmos DB アカウントが所属する resource group が必要**です。
+
+```shell
+COSMOS_RESOURCE_GROUP="<cosmos-account-resource-group>"
+
+az cosmosdb sql database show --subscription "$SUBSCRIPTION_ID" \
+  --resource-group "$COSMOS_RESOURCE_GROUP" --account-name "$COSMOS_ACCOUNT" \
+  --name "$COSMOS_DATABASE" --query "resource.id" --output tsv
+
+az cosmosdb sql container list --subscription "$SUBSCRIPTION_ID" \
+  --resource-group "$COSMOS_RESOURCE_GROUP" --account-name "$COSMOS_ACCOUNT" \
+  --database-name "$COSMOS_DATABASE" \
+  --query "[].{container:resource.id,partition_key:resource.partitionKey.paths}" \
+  --output json
+```
+
+database の確認が成功してからコンテナーを一覧します。
+確認コマンドが失敗した場合は Azure CLI のエラーを読み、
+サインイン・権限・接続先の誤りと、リソースの不在を区別してください。
+失敗を「リソースが存在しない」と決めつけて作成しないでください。
+
+#### 3. 正しい接続先に不足している Task コンテナーを作成する
+
+対象を確認してから、既存の Task 管理 CLI を使います。
+以下の明示オプションは `.env` の管理設定より優先されるため、
+account 名が未設定、または resource group が別サービス用でも対象を指定できます。
+リソース作成には料金が発生する場合があります。
+
+```shell
+uv run --locked python -m scripts.cli_cosmosdb tasks create-container \
+  --subscription "$SUBSCRIPTION_ID" --resource-group "$COSMOS_RESOURCE_GROUP" \
+  --account-name "$COSMOS_ACCOUNT" \
+  --database "$COSMOS_DATABASE" --container "$TASK_CONTAINER"
+
+uv run --locked python -m scripts.cli_cosmosdb tasks show-container \
+  --subscription "$SUBSCRIPTION_ID" --resource-group "$COSMOS_RESOURCE_GROUP" \
+  --account-name "$COSMOS_ACCOUNT" \
+  --database "$COSMOS_DATABASE" --container "$TASK_CONTAINER"
+```
+
+既存 database に不足コンテナーだけを作成した場合、
+作成結果は `database_created: false`、`container_created: true` です。
+`show-container` の `database` / `container` が手順 1 と一致し、
+`partition_key` が `["/id"]` であることを確認します。
+同じ対象へ再実行すると、既存の適合リソースは変更されず両方の作成フラグが `false` になります。
+
+`products` / `documents` を削除・改名したり、Task API を商品用 `/category` コンテナーへ
+向けたりする必要はありません。既存コンテナーの partition key が違う場合、
+管理 CLI は失敗します。データを守るため、専用の別コンテナーを用意し、
+`AZURE_COSMOS_DB_TASK_CONTAINER` もその名前に合わせてください。
+
+**管理コマンドのオプションは API の起動設定には引き継がれません。**
+endpoint / database / Task コンテナーの名前を環境変数または `.env` でも一致させます。
+以後、管理オプションを省略したい場合は `AZURE_COSMOS_DB_ACCOUNT_NAME`、
+`AZURE_SUBSCRIPTION_ID`、`AZURE_RESOURCE_GROUP` も正しい値に設定してください。
+account 名は endpoint から自動補完されません。他のサービスで同じ resource group 設定を
+使う場合は、共通設定を変更せず、上記の明示オプションで対象を指定します。
+
+#### 4. 同じ起動コマンドで HTTP 応答を確認する
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps --repository cosmosdb
+```
+
+`Application startup complete.` が出たら、別ターミナルで確認します。
+
+```shell
+curl --fail --silent --show-error --write-out '\nHTTP %{http_code}\n' \
+  http://127.0.0.1:8000/tasks
+```
+
+HTTP 200 と Task の JSON 配列が返れば確認完了です。
+新規の空コンテナーでは `[]`、既存データがある場合はその Task 一覧が返ります。
+検証後は起動したターミナルで `Ctrl+C` を押して停止します。
+Functions でも同じ保存先を使います。`serve-functions --repository cosmosdb` で起動した場合、
+確認 URL のポートは既定の `7071` に変更してください。
+
+#### 別のエラーが出る場合
+
+| 症状 | 次に確認すること |
+| --- | --- |
+| `Missing option '--account-name'` / `--subscription` / `--resource-group` | 管理 CLI 用の設定が不足。手順 3 の明示オプションを指定する。endpoint だけでは管理先を解決できない |
+| 管理 CLI が非ゼロで終了する | `az login`、subscription、Cosmos DB の resource group、管理プレーン RBAC。手順 2 の `az` コマンドで詳細を確認し、失敗を不在と扱わない |
+| API 起動ログが status 403 | API の実行 ID、Cosmos DB ネイティブのデータプレーン RBAC と database / container のスコープ。管理 CLI の成功だけでは API の権限を確認できない |
+| `Task container must use partition key /id` | 接続先のコンテナーが Task 用ではない。既存データを削除せず、`/id` の専用コンテナーと設定を用意する |
+| 作成後も Cosmos DB の 404 が続く | 手順 1 の実効設定と作成結果の account / database / container を再比較。環境変数の上書きや、管理 CLI と API が別アカウントを指していないか確認 |
+
 ### 停止後に削除
 
 **すべての Task が削除されます。** API を停止して、表示される対象を確認してください。

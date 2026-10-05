@@ -74,6 +74,10 @@ and container preparation. The API never creates resources automatically.
 uv run --locked python -m scripts.template serve-container-apps --repository cosmosdb
 ```
 
+If selecting Cosmos DB fails at startup with `CosmosResourceNotFoundError, status=404`,
+follow [Task API startup troubleshooting](cosmosdb.md#task-api-startup-troubleshooting)
+to check effective settings and Azure resources and safely prepare the missing dedicated Task container.
+
 Direct `uvicorn template_azure_python.api:app` also reads `TASK_REPOSITORY`.
 Pass the same environment settings to Docker/Compose. InMemory is isolated per app;
 Cosmos shares the configured container.
