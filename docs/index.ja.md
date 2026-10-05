@@ -16,10 +16,11 @@ uv run --locked python -m scripts.template serve-container-apps
 別のターミナルで API を確認します。
 
 ```shell
-curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/tasks
 ```
 
-`{"Hello":"World"}` が返れば起動完了です。
+初期状態で `[]` が返れば起動完了です。既定の保存先は InMemory です。
+Cosmos 永続化と管理 CLI は [Cosmos DB](cosmosdb.md) を参照してください。
 ブラウザーで <http://127.0.0.1:8000/docs> を開くと、API を操作できます。
 サーバーを止めるには、起動したターミナルで `Ctrl+C` を押します。
 

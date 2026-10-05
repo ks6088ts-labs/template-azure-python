@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -16,12 +16,12 @@ from scripts.template import app
     ],
 )
 def test_serve_container_apps_command(options: list[str], expected_host: str, expected_port: int):
-    with patch("scripts.template.uvicorn.run") as run:
+    with patch("scripts.template.uvicorn.run") as run, patch("template_azure_python.api.create_app") as create_app:
         result = CliRunner().invoke(app, ["serve-container-apps", *options])
 
     assert result.exit_code == 0, result.output
     run.assert_called_once_with(
-        "template_azure_python.api:app",
+        create_app.return_value,
         host=expected_host,
         port=expected_port,
     )
@@ -44,7 +44,9 @@ def test_serve_functions_command(options: list[str], expected_port: int):
         ["func", "start", "--port", str(expected_port)],
         cwd=Path(__file__).resolve().parents[1],
         check=False,
+        env=ANY,
     )
+    assert run.call_args.kwargs["env"]["TASK_REPOSITORY"] == "in-memory"
 
 
 @pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
@@ -78,3 +80,51 @@ def test_serve_functions_propagates_host_failure():
 
     assert result.exit_code == 42
     assert "status 42" in result.output
+
+
+@pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
+@pytest.mark.parametrize("backend", ["in-memory", "cosmosdb"])
+def test_serve_repository_selection(command, backend):
+    from template_azure_python.settings import TaskRepositoryBackend
+
+    with (
+        patch("scripts.template.uvicorn.run"),
+        patch("template_azure_python.api.create_app") as create_app,
+        patch("scripts.template.subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as run,
+    ):
+        result = CliRunner().invoke(
+            app,
+            [command, "--repository", backend],
+            env={"AZURE_COSMOS_DB_ENDPOINT": "https://example.documents.azure.com/"},
+        )
+    assert result.exit_code == 0, result.output
+    if command == "serve-container-apps":
+        create_app.assert_called_once_with(repository_backend=TaskRepositoryBackend(backend))
+    else:
+        assert run.call_args.kwargs["env"]["TASK_REPOSITORY"] == backend
+
+
+@pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
+def test_serve_rejects_unknown_repository_and_missing_cosmos_settings(command):
+    with patch("scripts.template.uvicorn.run") as uvicorn_run, patch("scripts.template.subprocess.run") as run:
+        invalid = CliRunner().invoke(app, [command, "--repository", "unknown"])
+        missing = CliRunner().invoke(app, [command, "--repository", "cosmosdb"])
+    assert invalid.exit_code == missing.exit_code == 2
+    assert "AZURE_COSMOS_DB_ENDPOINT" in missing.output
+    uvicorn_run.assert_not_called()
+    run.assert_not_called()
+
+
+@pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
+def test_explicit_memory_overrides_environment_cosmos_without_endpoint(command):
+    with (
+        patch("scripts.template.uvicorn.run"),
+        patch("template_azure_python.api.create_app") as create_app,
+        patch("scripts.template.subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as run,
+    ):
+        result = CliRunner().invoke(app, [command, "--repository", "in-memory"], env={"TASK_REPOSITORY": "cosmosdb"})
+    assert result.exit_code == 0, result.output
+    if command == "serve-container-apps":
+        assert create_app.call_args.kwargs["repository_backend"].value == "in-memory"
+    else:
+        assert run.call_args.kwargs["env"]["TASK_REPOSITORY"] == "in-memory"

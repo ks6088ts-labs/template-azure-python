@@ -1,3 +1,15 @@
-from template_azure_python.infrastructure.repositories import InMemoryTaskRepository
+from template_azure_python.infrastructure.repositories import (
+    CosmosdbTaskRepository,
+    InMemoryTaskRepository,
+    TaskStorageConfigurationError,
+    open_cosmos_task_repository,
+    validate_cosmos_task_settings,
+)
 
-__all__ = ["InMemoryTaskRepository"]
+__all__ = [
+    "CosmosdbTaskRepository",
+    "InMemoryTaskRepository",
+    "TaskStorageConfigurationError",
+    "open_cosmos_task_repository",
+    "validate_cosmos_task_settings",
+]

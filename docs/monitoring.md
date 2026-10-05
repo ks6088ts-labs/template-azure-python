@@ -302,16 +302,16 @@ These flags apply only to this process and do not edit `.env`. Keep the server r
 First check a normal response:
 
 ```shell
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/tasks
 ```
 
-Expect `{"Hello":"World"}`. Then send up to 30 requests one second apart:
+Expect a Task array (initially `[]` with default InMemory). Then send up to 30 requests one second apart:
 at most 31 including the initial check. Stop the loop if `curl` fails.
 
 ```shell
 for i in $(seq 1 30); do
   curl --fail --silent --show-error --output /dev/null \
-    --write-out 'HTTP %{http_code}\n' http://127.0.0.1:8000/ || break
+    --write-out 'HTTP %{http_code}\n' http://127.0.0.1:8000/tasks || break
   sleep 1
 done
 ```
@@ -324,7 +324,7 @@ done
 | Role name | `template-azure-python`, or the effective OS override of `PROJECT_NAME` |
 | Request count/rate | Increases while sending |
 | Request duration | Values are displayed |
-| Failed requests | With no other traffic, successful `/` calls do not increase failures |
+| Failed requests | With no other traffic, successful `/tasks` calls do not increase failures |
 
 **Both HTTP 200 responses and changing live graphs are required to verify display.**
 Connection and rendering can take time. Wait for a connection, then observe graphs
@@ -375,11 +375,11 @@ TELEMETRY_ENABLED=false uv run --locked python -m scripts.template serve-contain
 The server command keeps running. Check responses from a second terminal:
 
 ```shell
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/tasks
 curl --fail --silent --output /dev/null --write-out '%{http_code}\n' http://127.0.0.1:8000/docs
 ```
 
-The expected response is `{"Hello":"World"}`. No connection string is required,
+The expected response is a Task array. With InMemory and telemetry disabled, no connection string is required,
 and no Azure Monitor provider is installed.
 Confirm HTTP `200` for `/docs`. Stop the server with `Ctrl+C` in its terminal.
 The next check uses the same port, so do not run both servers simultaneously.
@@ -427,7 +427,7 @@ TELEMETRY_ENABLED=true uv run --locked python -m scripts.template serve-containe
 Generate requests from a second terminal:
 
 ```shell
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/tasks
 curl --fail http://127.0.0.1:8000/docs
 ```
 
@@ -438,7 +438,7 @@ uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppRequests --hours 1 --limit 100
 ```
 
-Use the emission time and `url` to find this exercise's `GET /` and `GET /docs`.
+Use the emission time and `url` to find this exercise's `GET /tasks` and `GET /docs`.
 Confirm `resultCode` is `200`, `success` indicates success, and `cloud_RoleName`
 matches `PROJECT_NAME`. Initialization also sets OpenTelemetry `service.name`
 to `PROJECT_NAME`. HTTP 200 verifies the API response, not Azure ingestion.
@@ -744,7 +744,7 @@ For `count=10`, the code performs the following ten times:
 **The CLI does not make an HTTP request to the API.**
 The exporter converts its manually created SERVER span into request telemetry.
 Finding `quickstart.request` in `AppRequests` does not demonstrate a successful
-real `GET /`. No dependency span is generated either.
+real `GET /tasks`. No dependency span is generated either.
 
 Logging inside the span provides matching `operation_Id` values.
 `run_id` groups the entire run; `operation_Id` correlates individual operations.
@@ -796,7 +796,7 @@ requests
 | take 100
 ```
 
-API instrumentation instead collects real inbound requests such as `GET /`,
+API instrumentation instead collects real inbound requests such as `GET /tasks`,
 actual logs from the selected logger, and instrumented outbound HTTP/Azure SDK calls.
 The API explicitly sets `service.name` to `PROJECT_NAME`; the CLI sample does not.
 Both can use the same connection string, but distinguish their data sources and meaning.
@@ -806,6 +806,9 @@ Both can use the same connection string, but distinguish their data sources and 
 The following results were observed on October 5, 2026. Counts are examples for
 that environment, time window, and sampling configuration, not fixed acceptance criteria.
 Secrets, subscription IDs, and run UUIDs are intentionally omitted.
+
+These are historical results from before root endpoint removal. Current startup/instrumentation checks use `/tasks`.
+This record does not verify external SDK dependency correlation for the Cosmos-backed API.
 
 | Check | Observation and interpretation |
 | --- | --- |

@@ -21,7 +21,15 @@
 - API は認証なしのサンプルです。一般公開する前に、必要なアクセス制御を用意してください。
   Azure リソースやイメージの保存には料金が発生する場合があります。
 
-API の確認では、`/` が `{"Hello":"World"}` を返し、`/docs` が HTTP 200 を返せば正常です。
+API の確認では、`/tasks` が Task の配列（初期状態は `[]`）を返し、`/docs` が HTTP 200 を返せば正常です。
+旧モックの `/` は削除されています。probe は全件取得を繰り返さない `/docs` を使います。
+
+既定の保存先は InMemory で、replica 間で共有されません。
+Cosmos を使う場合は [Task コンテナーの準備](cosmosdb.md#task-api)を済ませ、
+Functions のアプリ設定 / Container Apps の環境変数に `TASK_REPOSITORY=cosmosdb`、
+`AZURE_COSMOS_DB_ENDPOINT`、`AZURE_COSMOS_DB_DATABASE`、`AZURE_COSMOS_DB_TASK_CONTAINER` を設定します。
+API のマネージド ID に対象のデータプレーン RBAC を付与し、管理 CLI の権限は付けません。
+管理 CLI 用の account 名・subscription・resource group は API の起動に不要です。
 
 ## Azure Functions
 
@@ -53,7 +61,7 @@ func azure functionapp publish "$FUNCTION_APP_NAME" --build remote
 #### 3. 応答を確認する
 
 ```shell
-curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/"
+curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/tasks"
 curl --fail --show-error --output /dev/null "https://$FUNCTION_APP_NAME.azurewebsites.net/docs"
 ```
 
@@ -100,7 +108,7 @@ func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTIO
 既定では Microsoft Entra 認証は無効です。
 
 ```shell
-curl --fail --show-error "$FUNCTION_APP_URL/"
+curl --fail --show-error "$FUNCTION_APP_URL/tasks"
 curl --fail --show-error --output /dev/null "$FUNCTION_APP_URL/docs"
 ```
 
@@ -110,7 +118,7 @@ curl --fail --show-error --output /dev/null "$FUNCTION_APP_URL/docs"
 ```shell
 AUTH_RESOURCE=$(terraform -chdir="$SCENARIO_DIR" output -raw function_app_authentication_identifier_uri)
 ACCESS_TOKEN=$(az account get-access-token --subscription "$SUBSCRIPTION_ID" --resource "$AUTH_RESOURCE" --query accessToken --output tsv)
-curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/"
+curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/tasks"
 curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/docs"
 unset ACCESS_TOKEN
 ```
@@ -155,7 +163,7 @@ az containerapp update --name "$CONTAINER_APP_NAME" \
 
 ```shell
 CONTAINER_APP_FQDN=$(az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query properties.configuration.ingress.fqdn -o tsv)
-curl --fail --show-error "https://$CONTAINER_APP_FQDN/"
+curl --fail --show-error "https://$CONTAINER_APP_FQDN/tasks"
 curl --fail --show-error --output /dev/null "https://$CONTAINER_APP_FQDN/docs"
 ```
 
@@ -206,7 +214,7 @@ push 済みイメージを digest（イメージの固定識別子）で指定�
 | --- | --- |
 | イメージ | push 済みの digest |
 | ingress とヘルスチェックのポート | `8000` |
-| ヘルスチェックのパス | `/` |
+| ヘルスチェックのパス | `/docs` |
 | 起動コマンド | Dockerfile の既定値 |
 
 ```shell
@@ -225,7 +233,7 @@ push 済みイメージを digest（イメージの固定識別子）で指定�
   TEMP_FILE=$(mktemp "${VARS_FILE}.XXXXXX")
   trap 'rm -f "$TEMP_FILE"' EXIT
   jq -e --arg image "$IMAGE_BY_DIGEST" \
-    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/" | .container_command = []' \
+    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/docs" | .container_command = []' \
     "$VARS_FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$VARS_FILE"
 )
@@ -253,7 +261,7 @@ MCP 専用の `verify_deployment.sh` は `/health` と `/mcp` を確認するた
 
 ```shell
 CONTAINER_APP_URL=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_url)
-curl --fail --show-error "$CONTAINER_APP_URL/"
+curl --fail --show-error "$CONTAINER_APP_URL/tasks"
 curl --fail --show-error --output /dev/null "$CONTAINER_APP_URL/docs"
 ```
 
@@ -262,7 +270,7 @@ Microsoft Entra 認証を有効にした場合は、代わりに次を使いま�
 ```shell
 AUTH_RESOURCE=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_authentication_identifier_uri)
 ACCESS_TOKEN=$(az account get-access-token --subscription "$SUBSCRIPTION_ID" --resource "$AUTH_RESOURCE" --query accessToken -o tsv)
-curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/"
+curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/tasks"
 curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/docs"
 unset ACCESS_TOKEN
 ```

@@ -1,7 +1,7 @@
 # ローカル開発
 
 開発環境を整え、API を起動し、変更をテストする手順です。
-ローカルの FastAPI アプリは Azure に接続せずに動かせます。
+既定の InMemory・テレメトリ無効なら、FastAPI アプリは Azure に接続せずに動かせます。
 以下のコマンドは、すべてリポジトリのルートで実行します。
 
 ## 必要なツール
@@ -45,11 +45,12 @@ uv run --locked python -m scripts.template serve-container-apps
 別のターミナルで実行します。
 
 ```shell
-curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/tasks
 curl -I http://127.0.0.1:8000/docs
 ```
 
-最初のコマンドで `{"Hello":"World"}`、次のコマンドで HTTP 200 が返れば正常です。
+初期状態では最初のコマンドで `[]`、次のコマンドで HTTP 200 が返れば正常です。
+旧モックの `/` は 404 です。
 ブラウザーで <http://127.0.0.1:8000/docs> を開くと、API を操作できます。
 
 ### アドレスやポートを変える場合
@@ -62,6 +63,25 @@ uv run --locked python -m scripts.template serve-container-apps --host 0.0.0.0 -
 
 この例はすべてのネットワークインターフェイスで待ち受けます。
 自分の端末だけで使う場合は `--host 127.0.0.1` を指定してください。
+
+### 保存先を選ぶ
+
+`--repository in-memory`（既定）または `--repository cosmosdb` を指定できます。
+省略時は `TASK_REPOSITORY` を OS 環境変数 → `.env` → 既定値の順で解決します。
+Cosmos の設定・権限・コンテナー準備は [Cosmos DB](cosmosdb.md#task-api) を参照してください。
+API はリソースを自動作成しません。
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps --repository cosmosdb
+```
+
+Cosmos DB 選択時に `CosmosResourceNotFoundError, status=404` で起動に失敗する場合は、
+[Task API の起動トラブルシュート](cosmosdb.md#task-api-startup-troubleshooting)を参照してください。
+実効設定と Azure 上のリソースを確認し、不足している Task 専用コンテナーを安全に準備する手順です。
+
+直接 `uvicorn template_azure_python.api:app` を起動する場合も `TASK_REPOSITORY` が使われます。
+Docker / Compose でも同じ環境設定を渡せます。InMemory はアプリごとに独立し、
+Cosmos は設定したコンテナーを共有します。
 
 ## 3. Functions で動かす場合
 
@@ -89,18 +109,20 @@ uv run --locked python -m scripts.template serve-functions
 別のターミナルで実行します。
 
 ```shell
-curl http://127.0.0.1:7071/
+curl http://127.0.0.1:7071/tasks
 curl -I http://127.0.0.1:7071/docs
 ```
 
-`{"Hello":"World"}` と HTTP 200 が返れば正常です。
+初期状態の `[]` と HTTP 200 が返れば正常です。
 別のポートを使う場合は、起動コマンドに `--port 7072` などを付けます。
+こちらも `--repository cosmosdb` または `TASK_REPOSITORY` で保存先を選択できます。
+CLI は選択を Functions 子プロセスへ渡し、親環境は変更しません。
 
 ### 公開時の注意
 
 - `function_app.py` が同じ FastAPI アプリを `AsgiFunctionApp` で読み込みます。
   [Azure のサンプル](https://github.com/Azure-Samples/fastapi-on-azure-functions)と同じ構成です。
-- `host.json` で `/api` の接頭辞を外しているため、URL は `/` と `/docs` です。
+- `host.json` で `/api` の接頭辞を外しているため、URL は `/tasks` と `/docs` です。
 - HTTP トリガーは**認証なし**です。機密データを扱う前にアクセス制御を追加してください。
 - Azure ではランタイムが `function_app.py` を直接読み込みます。この CLI はローカル専用です。
 - `.env` と `local.settings.json` は発行・Docker ビルドから除外されます。
@@ -144,7 +166,7 @@ Dockerfile は `serve-container-apps` を `0.0.0.0:8000` で起動します。
 
 | 確認内容 | コマンド |
 | --- | --- |
-| コンテナーを起動し、`/` と `/docs` を確認して停止 | `make docker-smoke-test` |
+| コンテナーを起動し、`/tasks` と `/docs` を確認して停止 | `make docker-smoke-test` |
 | Dockerfile の lint、ビルド、スキャン、起動確認をまとめて実行 | `make ci-test-docker` |
 
 スモークテストは自分でコンテナーを起動するため、`make docker-run` の実行中でなくても使えます。

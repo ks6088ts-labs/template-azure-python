@@ -121,7 +121,7 @@ def test_fastapi_request_is_instrumented_offline():
             from template_azure_python.api import app
 
             with TestClient(app) as client:
-                response = client.get("/")
+                response = client.get("/tasks")
             assert response.status_code == 200
             for provider in (
                 trace.get_tracer_provider(),

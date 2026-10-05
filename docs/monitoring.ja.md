@@ -298,16 +298,16 @@ TELEMETRY_ENABLED=true TELEMETRY_LIVE_METRICS_ENABLED=true \
 まず正常な応答を確認します。
 
 ```shell
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/tasks
 ```
 
-期待する応答は `{"Hello":"World"}` です。続けて1秒間隔で最大30回送信します。
+期待する応答は Task の配列（既定 InMemory の初期状態は `[]`）です。続けて1秒間隔で最大30回送信します。
 最初の確認と合わせて最大31リクエストです。ループ内の `curl` が失敗したら終了します。
 
 ```shell
 for i in $(seq 1 30); do
   curl --fail --silent --show-error --output /dev/null \
-    --write-out 'HTTP %{http_code}\n' http://127.0.0.1:8000/ || break
+    --write-out 'HTTP %{http_code}\n' http://127.0.0.1:8000/tasks || break
   sleep 1
 done
 ```
@@ -320,7 +320,7 @@ done
 | ロール名 | `template-azure-python`。OS で上書きしていれば、その `PROJECT_NAME` |
 | リクエスト数・レート | 送信中に増える |
 | リクエスト所要時間 | 値が表示される |
-| 失敗したリクエスト | 他のトラフィックがなければ、正常な `/` アクセスでは増えない |
+| 失敗したリクエスト | 他のトラフィックがなければ、正常な `/tasks` アクセスでは増えない |
 
 **HTTP 200 とライブグラフの変化の両方を確認できれば、表示までの確認は成功です。**
 接続・描画には時間がかかる場合があります。接続表示を待ち、送信中と直後のグラフを確認します。
@@ -370,11 +370,11 @@ TELEMETRY_ENABLED=false uv run --locked python -m scripts.template serve-contain
 起動コマンドはサーバーを動かし続けます。別のターミナルで応答を確認します。
 
 ```shell
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/tasks
 curl --fail --silent --output /dev/null --write-out '%{http_code}\n' http://127.0.0.1:8000/docs
 ```
 
-期待する応答は `{"Hello":"World"}` です。接続文字列は不要で、
+期待する応答は Task の配列です。InMemory・テレメトリ無効なら接続文字列は不要で、
 Azure Monitor provider も設定されません。
 `/docs` は HTTP `200` を確認します。確認後はサーバー側で `Ctrl+C` を押して停止します。
 次の確認も同じポートを使うため、同時に起動しないでください。
@@ -420,7 +420,7 @@ TELEMETRY_ENABLED=true uv run --locked python -m scripts.template serve-containe
 別のターミナルでリクエストを送ります。
 
 ```shell
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/tasks
 curl --fail http://127.0.0.1:8000/docs
 ```
 
@@ -431,7 +431,7 @@ uv run --locked python -m scripts.cli_application_insights query-telemetry \
   --table AppRequests --hours 1 --limit 100
 ```
 
-送信時刻と `url` を使って今回の `GET /` と `GET /docs` を探します。
+送信時刻と `url` を使って今回の `GET /tasks` と `GET /docs` を探します。
 `resultCode` が `200`、`success` が成功を示す値、
 `cloud_RoleName` が `PROJECT_NAME` と一致することを確認します。
 `PROJECT_NAME` は初期化時に OpenTelemetry の `service.name` にも設定されます。
@@ -734,7 +734,7 @@ Azure Monitor Workspace（Prometheus 用）や Network Watcher に送る処理�
 **CLI は HTTP リクエストを API に送っているわけではありません。**
 手動で作る SERVER span を exporter がリクエスト形式へ変換するため、
 `AppRequests` に保存されます。`quickstart.request` が見つかっても、
-実際に `GET /` が成功したことを示すデータではありません。dependency span も生成しません。
+実際に `GET /tasks` が成功したことを示すデータではありません。dependency span も生成しません。
 
 ログは span の内側で出すため、リクエストと `operation_Id` で相関できます。
 `run_id` は実行全体をまとめる ID、`operation_Id` は個々の処理を対応させる ID です。
@@ -782,7 +782,7 @@ requests
 | take 100
 ```
 
-API の計装はこれとは異なり、実際に受けた `GET /` などを自動収集します。
+API の計装はこれとは異なり、実際に受けた `GET /tasks` などを自動収集します。
 対象 logger の実ログや、計装済みの外部 HTTP / Azure SDK 呼び出しも収集対象です。
 API は `PROJECT_NAME` を `service.name` に明示設定しますが、CLI サンプルは明示設定しません。
 どちらも同じ接続文字列で送信できますが、データの発生元と意味を区別してください。
@@ -792,6 +792,9 @@ API は `PROJECT_NAME` を `service.name` に明示設定しますが、CLI サ�
 2026年10月5日の確認では、次の結果が得られました。
 件数はその環境・時間範囲・サンプリングでの実測例であり、毎回一致すべき期待値ではありません。
 秘密情報、サブスクリプション ID、実行 UUID はここには記載しません。
+
+以下は root endpoint 削除前の履歴です。現在の起動確認・計装テストは `/tasks` を使います。
+Cosmos を選択した API の外部 SDK 呼び出しの相関は、この履歴では検証していません。
 
 | 確認 | 実測結果と読み方 |
 | --- | --- |

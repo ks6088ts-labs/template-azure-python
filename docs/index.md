@@ -17,10 +17,11 @@ uv run --locked python -m scripts.template serve-container-apps
 Check the API from another terminal:
 
 ```shell
-curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/tasks
 ```
 
-A response of `{"Hello":"World"}` confirms that the app is running.
+An initial response of `[]` confirms that the app is running. InMemory is the default storage backend.
+See [Cosmos DB](cosmosdb.md) for persistence and management CLI commands.
 Open <http://127.0.0.1:8000/docs> in a browser to try the API.
 Press `Ctrl+C` in the server terminal to stop it.
 

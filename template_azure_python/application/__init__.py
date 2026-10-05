@@ -6,6 +6,7 @@ from template_azure_python.application.task import (
     ListTasks,
     TaskAlreadyExistsError,
     TaskNotFoundError,
+    TaskRepositoryError,
     UpdateTask,
     UpdateTaskCommand,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "ListTasks",
     "TaskAlreadyExistsError",
     "TaskNotFoundError",
+    "TaskRepositoryError",
     "UpdateTask",
     "UpdateTaskCommand",
 ]

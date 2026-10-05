@@ -203,6 +203,26 @@ def test_secret_is_not_in_settings_output(monkeypatch: pytest.MonkeyPatch):
     assert secret not in settings.model_dump_json()
 
 
+def test_repository_setting_precedence_and_functions_environment(tmp_path, monkeypatch):
+    from template_azure_python.settings import TaskRepositoryBackend, functions_environment
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("TASK_REPOSITORY=cosmosdb\n", encoding="utf-8")
+    assert ProjectSettings(_env_file=None).task_repository is TaskRepositoryBackend.IN_MEMORY
+    assert ProjectSettings(_env_file=env_file).task_repository is TaskRepositoryBackend.COSMOSDB
+    monkeypatch.setenv("TASK_REPOSITORY", "in-memory")
+    assert ProjectSettings(_env_file=env_file).task_repository is TaskRepositoryBackend.IN_MEMORY
+    assert (
+        ProjectSettings(_env_file=env_file, task_repository=TaskRepositoryBackend.COSMOSDB).task_repository
+        is TaskRepositoryBackend.COSMOSDB
+    )
+    child = functions_environment(TaskRepositoryBackend.COSMOSDB)
+    assert child["TASK_REPOSITORY"] == "cosmosdb"
+    assert os.environ["TASK_REPOSITORY"] == "in-memory"
+    with pytest.raises(ValueError):
+        ProjectSettings(_env_file=None, task_repository="invalid")
+
+
 @pytest.mark.parametrize("fail", [False, True])
 def test_telemetry_environment_restored(monkeypatch: pytest.MonkeyPatch, fail: bool):
     monkeypatch.setenv("OTEL_TRACES_SAMPLER", "always_off")

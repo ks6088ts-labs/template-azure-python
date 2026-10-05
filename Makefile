@@ -99,16 +99,16 @@ docker-smoke-test: ## check the default Docker server over HTTP
 	port=$$(docker port "$$container" 8000/tcp | sed 's/.*://'); \
 	attempt=0; \
 	while [ "$$attempt" -lt 30 ]; do \
-		if response=$$(curl --fail --silent "http://127.0.0.1:$$port/") && \
-			[ "$$response" = '{"Hello":"World"}' ] && \
+		if response=$$(curl --fail --silent "http://127.0.0.1:$$port/tasks") && \
+			[ "$$response" = '[]' ] && \
 			curl --fail --silent -o /dev/null "http://127.0.0.1:$$port/docs"; then \
-			printf 'Container served / and /docs on port %s\n' "$$port"; \
+			printf 'Container served /tasks and /docs on port %s\n' "$$port"; \
 			exit 0; \
 		fi; \
 		attempt=$$((attempt + 1)); \
 		sleep 1; \
 	done; \
-	printf 'Container did not serve / and /docs on port %s\n' "$$port" >&2; \
+	printf 'Container did not serve /tasks and /docs on port %s\n' "$$port" >&2; \
 	docker logs "$$container"; \
 	exit 1
 
