@@ -66,7 +66,13 @@ flowchart LR
 | `presentation` | HTTP DTO、routing、error/status mapping | `application`、`domain` |
 | `api.py` | 具象 object の生成と接続 | すべての層 |
 
-domain は Pydantic model ではなく frozen dataclass と enum を使います。application は
+domain は Pydantic model ではなく frozen dataclass と enum を使います。
+業務モデルを HTTP・JSON の検証・変換と外部ライブラリから独立させる、このテンプレートの設計判断です。
+frozen は直接の属性変更を防ぎ、enum は状態の語彙を明示しますが、業務ルールは domain 側で検証します。
+Clean Architecture や DDD が Pydantic を禁止したり、Entity の不変性を必須にしたりするわけではありません。
+依存を受け入れるなら、domain に Pydantic model を使う設計も可能です。
+
+application は
 具象 repository ではなく構造的部分型の `TaskRepository` protocol に依存します
 （[Python の Protocol 仕様](https://typing.python.org/en/latest/spec/protocol.html)）。
 FastAPI と Pydantic は HTTP adapter 内に限定します。`create_app()` が composition root であり、

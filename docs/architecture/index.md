@@ -73,7 +73,14 @@ flowchart LR
 | `presentation` | HTTP DTOs, routing, error/status mapping | `application`, `domain` |
 | `api.py` | Construct and connect concrete objects | All layers |
 
-The domain uses frozen dataclasses and enums rather than Pydantic models. The application
+The domain uses frozen dataclasses and enums rather than Pydantic models.
+This template chooses to keep business models independent of HTTP/JSON validation,
+conversion, and external libraries. Frozen dataclasses prevent direct attribute changes;
+enums define the vocabulary of states, while the domain validates business rules.
+Clean Architecture and DDD neither prohibit Pydantic nor require immutable Entities.
+Using Pydantic models in the domain is also valid if that dependency is accepted.
+
+The application
 depends on the structural `TaskRepository` protocol rather than a concrete repository
 (see the [Python Protocol specification](https://typing.python.org/en/latest/spec/protocol.html)).
 FastAPI and Pydantic remain in the HTTP adapter. `create_app()` is the composition root;
