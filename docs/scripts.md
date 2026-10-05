@@ -167,6 +167,10 @@ change the port in `compose.yml` to `127.0.0.1:8000:8000`.
 
 ## Common setup for Azure samples
 
+To send a local OpenTelemetry sample and check stored data in Azure portal, follow
+the [emission and KQL instructions](monitoring.md#5-emit-and-find-telemetry-from-the-cli-optionally).
+No API server is needed.
+
 Complete these steps only if you want to try an Azure sample:
 
 1. Install Azure CLI and prepare the service resources you will use.

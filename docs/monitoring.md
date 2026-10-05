@@ -479,6 +479,10 @@ the root endpoint. A route without external calls cannot demonstrate dependency 
 
 **Like the Azure API check in section 4, this step sends data and may incur ingestion charges.**
 
+For a minimal local OpenTelemetry check, follow **configure the connection string,
+emit one sample, then query portal logs**. No API server or Live Metrics is needed.
+This checks stored requests, logs, and metrics rather than live graphs.
+
 ### Set the connection string locally
 
 The scenario does not output the connection string. Copy it privately from
@@ -496,8 +500,12 @@ temporary and restored after emission. See [architecture](architecture/index.md)
 
 ### Emit a sample
 
+Explicitly disable Live Metrics for this process when checking only stored data.
+Run once from the repository root:
+
 ```shell
-uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
+TELEMETRY_LIVE_METRICS_ENABLED=false \
+  uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
 ```
 
 `--count` accepts 1 to 100 (default 10). The command emits server spans,
@@ -506,7 +514,145 @@ It does not create dependency spans. Flush failures and observed SDK warnings
 are reported. **`flushed: true` means local provider flushing completed, not that
 Azure accepted or ingested the data.**
 
-### Find data from the same run
+Example output follows. Record the actual `run_id` and emission time.
+Use the UUID from your execution, not the placeholder:
+
+```json
+{
+  "run_id": "<run-UUID>",
+  "count": 10,
+  "flushed": true,
+  "ingestion_guaranteed": false
+}
+```
+
+### Run KQL in Azure portal logs
+
+KQL is the query language used to search and aggregate Azure logs.
+Paste these queries into the portal query editor, not a local shell.
+
+#### 1. Open the destination Application Insights
+
+1. Sign in to [Azure portal](https://portal.azure.com/) in your browser.
+2. Search for **Application Insights** in the top search bar and select the service.
+3. Select the same resource from which you obtained the emission connection string.
+4. Open **Monitoring → Logs** in its left menu. Search the resource menu for "Logs" if needed.
+
+Browser sign-in and log read permissions are required.
+Local `az login` does not sign your browser in.
+Portal-only verification does not require the CLI query setting `AZURE_APPLICATION_INSIGHTS_ID`.
+
+#### 2. Show the query editor
+
+Close the example-query dialog if it appears.
+Switch from **Simple mode** to **KQL mode** if necessary.
+Labels may vary with portal language and UI updates.
+Set the time range to **Last hour** and ensure it includes the emission time.
+
+**Use Logs, not Live Metrics.** Replace the editor contents with one query at a time
+and select **Run**. Results appear in the results pane below.
+
+#### 3. Check for recent requests
+
+```kusto
+requests
+| where timestamp > ago(1h)
+| order by timestamp desc
+| take 20
+```
+
+This includes other emissions to the same resource. Rows alone do not verify your run;
+filter by `run_id` next. Zero rows need not indicate an error.
+
+#### 4. Find all three signals for this run
+
+Replace `<run-UUID>` in each query with the emitted `run_id`.
+
+Requests:
+
+```kusto
+requests
+| where timestamp > ago(1h)
+| where tostring(customDimensions["run_id"]) == "<run-UUID>"
+| project timestamp, name, operation_Id, customDimensions
+| order by timestamp desc
+```
+
+Logs:
+
+```kusto
+traces
+| where timestamp > ago(1h)
+| where tostring(customDimensions["run_id"]) == "<run-UUID>"
+| project timestamp, message, operation_Id, customDimensions
+| order by timestamp desc
+```
+
+Metrics:
+
+```kusto
+customMetrics
+| where timestamp > ago(1h)
+| where tostring(customDimensions["run_id"]) == "<run-UUID>"
+| where name == "quickstart.events"
+| summarize total = sum(valueSum)
+```
+
+**Look for `quickstart.request`, `Quickstart telemetry`, matching `operation_Id`
+values, and a metric `total` of ten, matching the emitted count.**
+Sampling and other factors can make request/log row counts differ from ten.
+If results are empty or the total is incomplete, allow ingestion time and query
+the same UUID again. Aggregation also returns zero when no rows match;
+zero does not establish successful emission.
+To widen the time range, review both the portal time selection and KQL `ago(1h)`.
+Check destination, UUID, time range, and permissions before resending.
+
+#### Query from the Log Analytics workspace instead
+
+The queries above use the Application Insights resource format.
+The linked **Log Analytics workspace → Logs** uses different table and column names.
+If `requests` cannot be resolved, check which resource's Logs view you opened.
+
+| Application Insights | Log Analytics workspace |
+| --- | --- |
+| `requests` / `traces` / `customMetrics` | `AppRequests` / `AppTraces` / `AppMetrics` |
+| `timestamp` / `customDimensions` | `TimeGenerated` / `Properties` |
+| `name` / `message` | `Name` / `Message` |
+| `operation_Id` / `valueSum` | `OperationId` / `Sum` |
+
+Run these workspace queries individually:
+
+```kusto
+AppRequests
+| where TimeGenerated > ago(1h)
+| where tostring(Properties["run_id"]) == "<run-UUID>"
+| project TimeGenerated, Name, OperationId, Properties
+| order by TimeGenerated desc
+```
+
+```kusto
+AppTraces
+| where TimeGenerated > ago(1h)
+| where tostring(Properties["run_id"]) == "<run-UUID>"
+| project TimeGenerated, Message, OperationId, Properties
+| order by TimeGenerated desc
+```
+
+```kusto
+AppMetrics
+| where TimeGenerated > ago(1h)
+| where tostring(Properties["run_id"]) == "<run-UUID>"
+| where Name == "quickstart.events"
+| summarize total = sum(Sum)
+```
+
+A workspace can contain data from other resources, so filter by this run's UUID.
+
+### Find data from the same run using the CLI
+
+To use the CLI instead of portal, configure the same destination's ARM ID through
+`AZURE_APPLICATION_INSIGHTS_ID` or `--resource-id`, and prepare Azure authentication
+and read permissions.
 
 Allow ingestion time, then check recent requests and each signal using the printed UUID:
 

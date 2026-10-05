@@ -471,6 +471,11 @@ root endpoint は、テーブルを埋めるためだけの偽の依存関係、
 
 **第4章の Azure 確認と同様にデータを送信します。取り込み料金が発生する場合があります。**
 
+ローカルから OpenTelemetry の送信を最短で確認する場合は、
+**接続文字列の設定 → サンプルを1回送信 → portal のログで検索**の順に進めます。
+API の起動は不要です。通常の保存データの確認では Live Metrics も不要です。
+ライブグラフではなく、Azure に保存されたリクエスト・ログ・メトリックを確認します。
+
 ### 接続文字列をローカルに設定する
 
 シナリオは接続文字列を出力しません。Azure portal の Application Insights の
@@ -488,8 +493,12 @@ SDK 用の環境変数制御は一時的なもので、送信後に元の状態�
 
 ### サンプルを送信する
 
+保存データだけを確認するため、今回のプロセスでは Live Metrics を明示的に無効にします。
+リポジトリルートで次を1回実行してください。
+
 ```shell
-uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
+TELEMETRY_LIVE_METRICS_ENABLED=false \
+  uv run --locked python -m scripts.cli_application_insights emit-telemetry --count 10
 ```
 
 `--count` は 1～100（既定 10）です。server span・相関ログ・メトリック増分を送信し、
@@ -497,7 +506,144 @@ uv run --locked python -m scripts.cli_application_insights emit-telemetry --coun
 flush の失敗や検知した SDK 警告は報告されます。
 **`flushed: true` はローカルの送信処理完了だけを示し、Azure の受理・取り込みを保証しません。**
 
-### 同じ実行のデータを検索する
+出力例は次のとおりです。実際に出力された `run_id` と送信時刻を控えてください。
+この例のプレースホルダーではなく、今回の UUID を検索に使います。
+
+```json
+{
+  "run_id": "<今回のUUID>",
+  "count": 10,
+  "flushed": true,
+  "ingestion_guaranteed": false
+}
+```
+
+### Azure portal のログで KQL を実行する
+
+KQL は Azure のログを検索・集計するクエリ言語です。
+以下のクエリはローカルのシェルではなく、portal のクエリエディターに貼り付けて実行します。
+
+#### 1. 送信先の Application Insights を開く
+
+1. [Azure portal](https://portal.azure.com/) にブラウザーでサインインします。
+2. 画面上部の検索欄で **Application Insights** を検索し、サービスを選びます。
+3. 接続文字列を取得した、送信先と同じリソースを選びます。
+4. 左メニューの **監視 → ログ（Logs）** を開きます。見つからない場合はメニュー内で「ログ」を検索します。
+
+ブラウザーのサインインとログ読み取り権限が必要です。
+ローカルの `az login` だけでブラウザーへサインインしたことにはなりません。
+portal で確認するだけなら、CLI 検索用の `AZURE_APPLICATION_INSIGHTS_ID` は不要です。
+
+#### 2. クエリエディターを表示する
+
+クエリ例のダイアログが出たら閉じます。
+**シンプル モード（Simple mode）**の場合は **KQL モード（KQL mode）**に切り替えます。
+画面上の名称は言語や UI の更新により異なる場合があります。
+時間範囲を **過去1時間**にし、送信時刻がその範囲に含まれることを確認します。
+
+**「Live Metrics」ではなく「ログ」を使います。** 次のクエリは1つずつ、
+エディターの内容を置き換えて **実行（Run）**を押します。結果は下部の結果欄に表示されます。
+
+#### 3. 最近のリクエストがあるか確認する
+
+```kusto
+requests
+| where timestamp > ago(1h)
+| order by timestamp desc
+| take 20
+```
+
+これは同じリソースの他の送信も含む検索です。行があっても今回の送信が成功したとは限らないので、
+次に `run_id` で絞り込みます。0行は必ずしもエラーではありません。
+
+#### 4. 今回の3種類のデータを検索する
+
+各クエリの `<今回のUUID>` を、送信結果の `run_id` に置き換えます。
+
+リクエスト:
+
+```kusto
+requests
+| where timestamp > ago(1h)
+| where tostring(customDimensions["run_id"]) == "<今回のUUID>"
+| project timestamp, name, operation_Id, customDimensions
+| order by timestamp desc
+```
+
+ログ:
+
+```kusto
+traces
+| where timestamp > ago(1h)
+| where tostring(customDimensions["run_id"]) == "<今回のUUID>"
+| project timestamp, message, operation_Id, customDimensions
+| order by timestamp desc
+```
+
+メトリック:
+
+```kusto
+customMetrics
+| where timestamp > ago(1h)
+| where tostring(customDimensions["run_id"]) == "<今回のUUID>"
+| where name == "quickstart.events"
+| summarize total = sum(valueSum)
+```
+
+**成功の目安は、`quickstart.request` と `Quickstart telemetry` が見つかり、
+`operation_Id` が対応し、メトリックの `total` が送信数の10になることです。**
+リクエスト・ログの行数はサンプリング等で10にならない場合があります。
+結果が空、または合計が足りない場合は、取り込みを待って同じ UUID で再検索します。
+一致する行がない場合も集計が0を返すため、0は送信成功の証拠にはなりません。
+時間範囲を広げる場合は、画面の時間指定と KQL の `ago(1h)` の両方を見直します。
+まず再送ではなく、送信先・UUID・時間範囲・権限を確認してください。
+
+#### Log Analytics ワークスペースから検索する場合
+
+上記は Application Insights のリソースを対象とした形式です。
+関連付けられた **Log Analytics ワークスペース → ログ**から検索する場合は、
+テーブル名と列名が異なります。`requests` が未解決の場合は、どちらの画面かを確認してください。
+
+| Application Insights | Log Analytics ワークスペース |
+| --- | --- |
+| `requests` / `traces` / `customMetrics` | `AppRequests` / `AppTraces` / `AppMetrics` |
+| `timestamp` / `customDimensions` | `TimeGenerated` / `Properties` |
+| `name` / `message` | `Name` / `Message` |
+| `operation_Id` / `valueSum` | `OperationId` / `Sum` |
+
+ワークスペース側では次を1つずつ実行します。
+
+```kusto
+AppRequests
+| where TimeGenerated > ago(1h)
+| where tostring(Properties["run_id"]) == "<今回のUUID>"
+| project TimeGenerated, Name, OperationId, Properties
+| order by TimeGenerated desc
+```
+
+```kusto
+AppTraces
+| where TimeGenerated > ago(1h)
+| where tostring(Properties["run_id"]) == "<今回のUUID>"
+| project TimeGenerated, Message, OperationId, Properties
+| order by TimeGenerated desc
+```
+
+```kusto
+AppMetrics
+| where TimeGenerated > ago(1h)
+| where tostring(Properties["run_id"]) == "<今回のUUID>"
+| where Name == "quickstart.events"
+| summarize total = sum(Sum)
+```
+
+ワークスペースには他のリソースのデータも保存され得るため、今回の UUID で絞り込みます。
+
+### CLI で同じ実行のデータを検索する
+
+portal の代わりに CLI から確認する場合は、同じ送信先の ARM ID を
+`AZURE_APPLICATION_INSIGHTS_ID` または `--resource-id` で設定し、
+Azure 認証と読み取り権限を用意します。
 
 取り込みを待ち、最近のリクエストと、表示された UUID の各データを確認します。
 

@@ -167,6 +167,9 @@ Compose は `.env` をコンテナーへ渡し、`PROJECT_NAME` は `hello` に�
 
 ## Azure サンプルの共通準備
 
+ローカルから OpenTelemetry のサンプルを送り、Azure portal で保存データを確認する場合は、
+[送信・KQL 実行の手順](monitoring.md#5-cli)を参照してください。API の起動は不要です。
+
 Azure サンプルを試す場合だけ、次の準備をします。
 
 1. Azure CLI と、使うサービスのリソースを用意します。
