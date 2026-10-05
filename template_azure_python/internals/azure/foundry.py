@@ -25,8 +25,12 @@ class _ProjectClient(Protocol):
 @contextmanager
 def _project_client(endpoint: str | None) -> Generator[_ProjectClient, None, None]:
     endpoint = required_value(endpoint, get_azure_settings().foundry.endpoint, "--endpoint")
-    parsed = urlparse(endpoint)
-    if parsed.scheme != "https" or not parsed.netloc or "/api/projects/" not in parsed.path:
+    try:
+        parsed = urlparse(endpoint)
+        valid = parsed.scheme == "https" and bool(parsed.netloc) and "/api/projects/" in parsed.path
+    except ValueError:
+        valid = False
+    if not valid:
         raise InputError("must be an HTTPS Foundry project URL containing '/api/projects/'", "--endpoint")
     with azure_errors("Microsoft Foundry operation failed."):
         try:

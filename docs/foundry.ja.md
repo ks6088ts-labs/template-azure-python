@@ -18,6 +18,7 @@ FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<p
 ```
 
 **`/api/projects/` を含む HTTPS URL が必要です。**
+URL の形式が不正な場合は、認証前に入力エラーを表示し、終了コード 2 で終了します。
 以降のコマンドは、この Python リポジトリのルートで実行します。
 
 ## 2. アクセス権を確認する

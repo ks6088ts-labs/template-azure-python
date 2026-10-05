@@ -197,12 +197,21 @@ def test_chat_model_requires_endpoint():
     assert "Missing option '--endpoint'" in unstyle(result.output)
 
 
-def test_chat_model_rejects_invalid_endpoint():
+@pytest.mark.parametrize("command", ["chat-model", "create-agent", "chat-agent"])
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "https://example.com",
+        "https://[broken/api/projects/example",
+        "https://example.com]/api/projects/example",
+    ],
+)
+def test_commands_reject_invalid_endpoint(command: str, endpoint: str):
     with (
         patch("template_azure_python.internals.azure.foundry.DefaultAzureCredential") as credential_type,
         patch("template_azure_python.internals.azure.foundry.AIProjectClient") as project_type,
     ):
-        result = CliRunner().invoke(app, ["chat-model", "--endpoint", "https://example.com"])
+        result = CliRunner().invoke(app, [command, "--endpoint", endpoint])
 
     assert result.exit_code == 2
     assert "must be an HTTPS Foundry project URL" in result.output

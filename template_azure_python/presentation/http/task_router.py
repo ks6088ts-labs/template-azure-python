@@ -71,7 +71,7 @@ def create_task_router(
     @router.get(
         "/{task_id}",
         response_model=TaskResponse,
-        responses={404: {"model": ErrorResponse}},
+        responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
         operation_id="get_task",
     )
     async def get(task_id: UUID) -> TaskResponse:
@@ -99,7 +99,7 @@ def create_task_router(
         "/{task_id}",
         status_code=status.HTTP_204_NO_CONTENT,
         response_class=Response,
-        responses={404: {"model": ErrorResponse}},
+        responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
         operation_id="delete_task",
     )
     async def delete(task_id: UUID) -> Response:

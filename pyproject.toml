@@ -64,7 +64,7 @@ select = ["E", "F", "I", "UP"]
 ignore = ["D203"]
 
 [tool.pytest.ini_options]
-addopts = "-ra --cov"
+addopts = "-ra --cov=template_azure_python --cov=scripts --cov=function_app"
 testpaths = ["tests"]
 pythonpath = ['.']
 log_cli = true

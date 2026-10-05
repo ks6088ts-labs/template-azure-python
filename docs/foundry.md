@@ -18,6 +18,7 @@ FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<p
 ```
 
 **Use an HTTPS URL containing `/api/projects/`.**
+Malformed URLs report an input error with exit code 2 before authentication.
 Run the remaining commands from the root of this Python repository.
 
 ## 2. Check access

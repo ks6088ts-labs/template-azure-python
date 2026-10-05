@@ -4,10 +4,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 import azure.functions as func
+import pytest
 from fastapi.testclient import TestClient
 
 from function_app import app as functions_app
 from template_azure_python.api import app, create_app
+from template_azure_python.domain import Task
 
 
 def test_root_returns_hello_world():
@@ -106,3 +108,77 @@ def test_task_api_validation_and_application_state_isolation():
 
     with TestClient(second_application) as second_client:
         assert second_client.get("/tasks").json() == []
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "body", "schema_path"),
+    [
+        ("post", "/tasks", {"title": ""}, "/tasks"),
+        ("get", "/tasks/not-a-uuid", None, "/tasks/{task_id}"),
+        (
+            "put",
+            "/tasks/not-a-uuid",
+            {"title": "Valid", "description": "", "status": "todo"},
+            "/tasks/{task_id}",
+        ),
+        ("delete", "/tasks/not-a-uuid", None, "/tasks/{task_id}"),
+    ],
+)
+def test_task_validation_response_matches_openapi(method: str, path: str, body: object, schema_path: str):
+    with TestClient(create_app()) as client:
+        response = client.request(method, path, json=body)
+        schema = client.get("/openapi.json").json()
+
+    assert response.status_code == 422
+    assert set(response.json()) == {"detail"}
+    assert isinstance(response.json()["detail"], str)
+    assert response.json()["detail"]
+    assert schema["paths"][schema_path][method]["responses"]["422"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ErrorResponse"
+    }
+    assert schema["components"]["schemas"]["ErrorResponse"]["properties"]["detail"]["type"] == "string"
+
+
+@pytest.mark.parametrize(
+    ("title", "description", "expected_status"),
+    [
+        ("a", "", 201),
+        ("a" * 200, "b" * 2000, 201),
+        ("a" * 201, "", 422),
+        ("Valid", "b" * 2001, 422),
+        (" ", "", 422),
+    ],
+)
+def test_task_http_validation_boundaries(title: str, description: str, expected_status: int):
+    with TestClient(create_app()) as client:
+        response = client.post("/tasks", json={"title": title, "description": description})
+        tasks = client.get("/tasks").json()
+
+    assert response.status_code == expected_status
+    assert len(tasks) == (1 if expected_status == 201 else 0)
+
+
+@pytest.mark.parametrize("method", ["put", "delete"])
+def test_task_missing_mutation_returns_not_found(method: str):
+    task_id = "00000000-0000-0000-0000-000000000001"
+    with TestClient(create_app()) as client:
+        response = client.request(
+            method, f"/tasks/{task_id}", json={"title": "Missing", "description": "", "status": "todo"}
+        )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": f"Task {task_id} was not found"}
+
+
+def test_task_duplicate_returns_conflict():
+    task = Task.create("Duplicate")
+    with (
+        TestClient(create_app()) as client,
+        patch("template_azure_python.application.task.Task.create", return_value=task),
+    ):
+        assert client.post("/tasks", json={"title": "Duplicate"}).status_code == 201
+        response = client.post("/tasks", json={"title": "Duplicate"})
+        assert len(client.get("/tasks").json()) == 1
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": f"Task {task.id} already exists"}
