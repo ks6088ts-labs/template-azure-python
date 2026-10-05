@@ -103,6 +103,34 @@ API は database / container を作成せず、起動時に存在と `/id` parti
 | テレメトリは明示的な opt-in | ローカルの Azure 非依存を保ち、初期化失敗を隠さない | API は既定無効、有効時は fail-fast。provider はプロセスごとに一度だけ初期化 |
 | 必要になるまで抽象化しない | テンプレートに未使用の仕組みを増やさない | 単純な CRUD と薄い CLI を維持。汎用 service 基底クラス・exporter registry は追加しない |
 
+### Repository の共通インタフェースと実装の分離
+
+**共通化するのは保存操作の契約であり、保存技術ごとの実装ではありません。**
+`application/ports/task_repository.py` の `TaskRepository` Protocol が、
+InMemory と Cosmos に共通する非同期 `add/get/list/update/delete` のインタフェースです。
+use case はこの port に依存し、具象 repository の選択・注入は `api.py` が行います。
+
+Python の Protocol は**構造的型付け**です。必要なメソッドと互換性のあるシグネチャを備えていれば、
+明示的に継承しなくても port に適合します。
+現在の `InMemoryTaskRepository` と `CosmosdbTaskRepository` はこの方式を使っています。
+クラス宣言で実装関係を明示したい場合は、既存 Protocol を明示的に継承する整理も可能ですが、
+そのためだけに別の ABC や汎用 repository 基底クラスを追加する必要はありません。
+
+適合の確認は次の二つに分けます。
+
+- **型検査**: `TaskRepository` 型として注入するとき、メソッド・引数・戻り値の型の互換性を検査する。
+- **共通契約テスト**: `tests/test_task_repositories.py` の `test_repository_contract` を両実装に適用し、
+  CRUD、未検出、重複、更新が新規作成にならないこと等の振る舞いを検査する。
+  同じメソッド名だけでは、これらの意味まで保証されません。
+
+未検出・重複・保存先障害などの契約は、以下の「維持する契約」に合わせます。
+dict と lock による保存、Cosmos の document 変換・partition・SDK error 変換は各 adapter に残します。
+保存処理を無理に共通基底クラスへまとめると、保存先別の条件分岐や責務の混在を招くためです。
+SDK 呼び出しの検証や接続解放のテストも、共通 CRUD 契約とは区別します。
+
+client・資格情報の初期化と解放は、Cosmos の resource factory と API lifespan が所有します。
+これを CRUD port の必須メソッドにせず、InMemory や use case に Cosmos 固有の寿命管理を要求しません。
+
 ### Clean Architecture と DDD の位置付け
 
 Clean Architecture は**技術と業務ルールの分離・ソース依存の向き**を扱います。

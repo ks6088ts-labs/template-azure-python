@@ -103,6 +103,35 @@ Matching layer names alone does not establish the design.
 | Make telemetry an explicit opt-in | Preserve Azure-independent local use without hiding initialization failure | Disabled by default for the API; fail-fast when enabled; initialize once per process |
 | Abstract only when needed | Avoid unused mechanisms in a template | Retain simple CRUD/thin CLIs; no generic service base class or exporter registry |
 
+### Shared repository interface and separate implementations
+
+**Share the storage-operation contract, not the implementation of each storage technology.**
+The `TaskRepository` Protocol in `application/ports/task_repository.py` defines the asynchronous
+`add/get/list/update/delete` interface shared by InMemory and Cosmos.
+Use cases depend on this port; `api.py` selects and injects the concrete repository.
+
+Python Protocols use **structural typing**: an implementation with the required methods and compatible
+signatures satisfies the port without explicitly inheriting from it.
+Both `InMemoryTaskRepository` and `CosmosdbTaskRepository` currently use this approach.
+Explicitly inheriting from the existing Protocol is also an option when the implementation relationship
+should be visible in class declarations; it does not require a separate ABC or generic repository base class.
+
+Check conformance at two different levels:
+
+- **Type checking**: injection as `TaskRepository` checks compatibility of methods, arguments, and return types.
+- **Shared contract tests**: `test_repository_contract` in `tests/test_task_repositories.py` runs against both
+  implementations, checking CRUD, absence, duplicates, and updates not creating missing Tasks.
+  Matching method names alone does not guarantee these semantics.
+
+Align absence, duplicates, and storage failures with the "Contracts to preserve" section below.
+Keep dict/lock storage and Cosmos document mapping, partitioning, and SDK error translation in their adapters.
+Forcing storage logic into a common base class would introduce backend-specific branches and mix responsibilities.
+SDK call verification and connection-cleanup tests are distinct from the shared CRUD contract.
+
+The Cosmos resource factory and API lifespan own client/credential initialization and cleanup.
+Do not make those operations mandatory CRUD port methods: InMemory and use cases should not be required
+to manage Cosmos-specific resource lifetimes.
+
 ### Clean Architecture and DDD
 
 Clean Architecture concerns **technology/business separation and source dependency direction**.
