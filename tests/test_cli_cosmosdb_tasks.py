@@ -3,6 +3,7 @@ import subprocess
 from unittest.mock import patch
 
 import pytest
+from click import unstyle
 from typer.testing import CliRunner
 
 from scripts.cli_cosmosdb import app
@@ -101,7 +102,7 @@ def test_show_has_no_creation_and_returns_safe_metadata(run):
 def test_delete_requires_yes_without_a_terminal(run):
     response = invoke("delete-container")
     assert response.exit_code == 2
-    assert "--yes" in response.output
+    assert "--yes" in unstyle(response.output)
     run.assert_not_called()
 
 
