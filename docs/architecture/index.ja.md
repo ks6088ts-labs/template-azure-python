@@ -28,35 +28,115 @@ uv run --locked python -m scripts.template serve-container-apps
 
 ## 構成と起動経路
 
+### Task API - Clean Architecture
+
 ```mermaid
 flowchart LR
-    launcher["scripts/template.py / Docker<br/>Uvicorn"] --> api["api.py<br/>composition root"]
-    functions["function_app.py<br/>AsgiFunctionApp"] --> api
-    api --> http["presentation/http<br/>/tasks"]
-    http --> usecases["application/task.py<br/>use case"]
-    usecases --> domain["domain/task.py<br/>Task"]
-    usecases --> port["application/ports<br/>TaskRepository"]
-    api --> memory["infrastructure/repositories<br/>in-memory"]
-    memory -. implements .-> port
-    api --> cosmos["infrastructure/repositories<br/>CosmosdbTaskRepository / lifespan"]
-    cosmos -. implements .-> port
-    cosmos --> cosmossdk["Azure SDK<br/>cosmos.aio / identity.aio"]
-    cosmossdk --> data["Cosmos DB data plane<br/>Task container /id"]
-    api --> settings
-    api --> telemetry["telemetry.py<br/>任意のプロセス初期化"]
-    cli["scripts/cli_*.py"] --> operations["internals/azure<br/>SDK 操作"]
-    cli --> output["scripts/_cli.py<br/>表示・終了コード"]
-    operations --> settings["settings<br/>型付き設定"]
-    operations --> sdk["Azure SDK / OpenTelemetry"]
-    cli --> admin["internals/azure/cosmosdb_tasks_admin<br/>Task 管理 adapter"]
-    admin --> settings
-    admin --> az["Azure CLI / az"]
-    az --> arm["Azure Resource Manager<br/>database / container 管理"]
-    telemetry --> settings
-    telemetry --> sdk
+    subgraph ApiEntrypoints["起動ポイント"]
+        launcher["Uvicorn と Container Apps"]
+        functions["Azure Functions"]
+    end
+
+    subgraph ApiOuter["インターフェースアダプター"]
+        api["api.py コンポジションルート"]
+        http["FastAPI Task ルーター"]
+        memory["インメモリ Repository"]
+        cosmos["Cosmos DB Repository"]
+        telemetry["テレメトリ初期化"]
+        settings["型付き設定"]
+    end
+
+    subgraph ApiCore["Clean Architecture コア"]
+        subgraph ApiApplication["Application 層"]
+            usecases["Task CRUD ユースケース"]
+            port["TaskRepository ポート"]
+        end
+        subgraph ApiDomain["Domain 層"]
+            domain["Task モデルと不変条件"]
+        end
+    end
+
+    subgraph ApiExternal["外部システム"]
+        cosmossdk["Azure Cosmos DB SDK"]
+        data[("Task コンテナー")]
+        monitor["Azure Monitor"]
+    end
+
+    launcher -->|"起動"| api
+    functions -->|"ラップ"| api
+    api -->|"登録"| http
+    http -->|"実行"| usecases
+    usecases -->|"不変条件を適用"| domain
+    usecases -->|"依存"| port
+    api -->|"注入"| memory
+    api -->|"注入と寿命管理"| cosmos
+    memory -.->|"実装"| port
+    cosmos -.->|"実装"| port
+    cosmos -->|"非同期クライアントを使用"| cosmossdk
+    cosmossdk -->|"読み書き"| data
+    api -->|"読み込み"| settings
+    api -->|"有効時に初期化"| telemetry
+    telemetry -->|"送信"| monitor
+
+    classDef entry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
+    classDef adapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef application fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
+    classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
+    classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
+    class launcher,functions entry
+    class api,http,memory,cosmos,telemetry,settings adapter
+    class usecases,port application
+    class domain domain
+    class cosmossdk,data,monitor external
+    style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
+    style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
+    style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px
 ```
 
-実線は呼び出し・依存、破線は port の実装を示します。
+青は起動ポイント、紫はインターフェースアダプター、黄は Application 層、
+緑は Domain 層、グレーは外部システムです。依存はコア境界を内向きに越え、
+破線は Application 層が所有するポートの実装を示します。
+
+### Azure 操作 CLI - 独立した技術経路
+
+```mermaid
+flowchart LR
+    subgraph CliPresentation["CLI プレゼンテーション"]
+        cli["サービス別 CLI コマンド"]
+        output["表示と終了コード"]
+    end
+
+    subgraph CliOperations["技術操作"]
+        operations["Azure SDK 操作"]
+        admin["Task リソース管理アダプター"]
+        cliSettings["型付き設定"]
+    end
+
+    subgraph CliExternal["Azure ツールとサービス"]
+        sdk["Azure SDK と OpenTelemetry"]
+        az["Azure CLI"]
+        arm["Azure Resource Manager"]
+    end
+
+    cli -->|"結果を整形"| output
+    cli -->|"データ操作を実行"| operations
+    cli -->|"リソース管理を実行"| admin
+    operations -->|"読み込み"| cliSettings
+    admin -->|"読み込み"| cliSettings
+    operations -->|"呼び出し"| sdk
+    admin -->|"実行"| az
+    az -->|"リソース管理"| arm
+
+    classDef cliEntry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
+    classDef cliAdapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef cliExternalNode fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
+    class cli,output cliEntry
+    class operations,admin,cliSettings cliAdapter
+    class sdk,az,arm cliExternalNode
+```
+
+この経路は Task API のコアから意図的に分離しています。技術的な Azure 操作を例示しつつ、
+Domain やユースケースを SDK・Typer・コントロールプレーンのツールへ依存させません。
 `create_app()` は use case と具象 repository を明示的に接続します。
 InMemory はアプリごとに独立し、Cosmos は設定したコンテナーを共有します。
 use case の provider は composition root に置き、HTTP router は FastAPI の DI で受け取ります。

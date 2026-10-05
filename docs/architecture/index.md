@@ -28,35 +28,115 @@ The old mock `GET /` has been removed and returns 404.
 
 ## Components and entrypoints
 
+### Task API - Clean Architecture
+
 ```mermaid
 flowchart LR
-    launcher["scripts/template.py / Docker<br/>Uvicorn"] --> api["api.py<br/>composition root"]
-    functions["function_app.py<br/>AsgiFunctionApp"] --> api
-    api --> http["presentation/http<br/>/tasks"]
-    http --> usecases["application/task.py<br/>use cases"]
-    usecases --> domain["domain/task.py<br/>Task"]
-    usecases --> port["application/ports<br/>TaskRepository"]
-    api --> memory["infrastructure/repositories<br/>in-memory"]
-    memory -. implements .-> port
-    api --> cosmos["infrastructure/repositories<br/>CosmosdbTaskRepository / lifespan"]
-    cosmos -. implements .-> port
-    cosmos --> cosmossdk["Azure SDK<br/>cosmos.aio / identity.aio"]
-    cosmossdk --> data["Cosmos DB data plane<br/>Task container /id"]
-    api --> settings
-    api --> telemetry["telemetry.py<br/>optional process initialization"]
-    cli["scripts/cli_*.py"] --> operations["internals/azure<br/>SDK operations"]
-    cli --> output["scripts/_cli.py<br/>output and exit codes"]
-    operations --> settings["settings<br/>typed configuration"]
-    operations --> sdk["Azure SDK / OpenTelemetry"]
-    cli --> admin["internals/azure/cosmosdb_tasks_admin<br/>Task management adapter"]
-    admin --> settings
-    admin --> az["Azure CLI / az"]
-    az --> arm["Azure Resource Manager<br/>database / container management"]
-    telemetry --> settings
-    telemetry --> sdk
+    subgraph ApiEntrypoints["Entrypoints"]
+        launcher["Uvicorn and Container Apps"]
+        functions["Azure Functions"]
+    end
+
+    subgraph ApiOuter["Interface adapters"]
+        api["api.py composition root"]
+        http["FastAPI task router"]
+        memory["In-memory repository"]
+        cosmos["Cosmos DB repository"]
+        telemetry["Telemetry initialization"]
+        settings["Typed settings"]
+    end
+
+    subgraph ApiCore["Clean Architecture core"]
+        subgraph ApiApplication["Application layer"]
+            usecases["Task CRUD use cases"]
+            port["TaskRepository port"]
+        end
+        subgraph ApiDomain["Domain layer"]
+            domain["Task model and invariants"]
+        end
+    end
+
+    subgraph ApiExternal["External systems"]
+        cosmossdk["Azure Cosmos DB SDK"]
+        data[("Task container")]
+        monitor["Azure Monitor"]
+    end
+
+    launcher -->|"starts"| api
+    functions -->|"wraps"| api
+    api -->|"registers"| http
+    http -->|"invokes"| usecases
+    usecases -->|"enforces"| domain
+    usecases -->|"depends on"| port
+    api -->|"injects"| memory
+    api -->|"injects and owns"| cosmos
+    memory -.->|"implements"| port
+    cosmos -.->|"implements"| port
+    cosmos -->|"uses async client"| cosmossdk
+    cosmossdk -->|"reads and writes"| data
+    api -->|"loads"| settings
+    api -->|"initializes when enabled"| telemetry
+    telemetry -->|"exports"| monitor
+
+    classDef entry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
+    classDef adapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef application fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
+    classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
+    classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
+    class launcher,functions entry
+    class api,http,memory,cosmos,telemetry,settings adapter
+    class usecases,port application
+    class domain domain
+    class cosmossdk,data,monitor external
+    style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
+    style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
+    style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px
 ```
 
-Solid arrows show calls/dependencies; the dotted arrow shows a port implementation.
+Blue is an entrypoint, purple is an interface adapter, amber is the application layer,
+green is the domain, and gray is an external system. Dependencies cross the core boundary
+inward; dotted arrows show implementations of the application-owned port.
+
+### Azure operations CLI - independent technical path
+
+```mermaid
+flowchart LR
+    subgraph CliPresentation["CLI presentation"]
+        cli["Service CLI commands"]
+        output["Output and exit codes"]
+    end
+
+    subgraph CliOperations["Technical operations"]
+        operations["Azure SDK operations"]
+        admin["Task resource admin adapter"]
+        cliSettings["Typed settings"]
+    end
+
+    subgraph CliExternal["Azure tools and services"]
+        sdk["Azure SDK and OpenTelemetry"]
+        az["Azure CLI"]
+        arm["Azure Resource Manager"]
+    end
+
+    cli -->|"formats results"| output
+    cli -->|"runs data operations"| operations
+    cli -->|"runs resource management"| admin
+    operations -->|"loads"| cliSettings
+    admin -->|"loads"| cliSettings
+    operations -->|"calls"| sdk
+    admin -->|"executes"| az
+    az -->|"manages resources"| arm
+
+    classDef cliEntry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
+    classDef cliAdapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef cliExternalNode fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
+    class cli,output cliEntry
+    class operations,admin,cliSettings cliAdapter
+    class sdk,az,arm cliExternalNode
+```
+
+This path is deliberately outside the Task API core: it demonstrates technical Azure operations
+without making the domain or use cases depend on SDKs, Typer, or control-plane tools.
 `create_app()` explicitly connects use cases to a concrete repository.
 InMemory storage is isolated per app; Cosmos apps share the configured container.
 Use-case providers live in the composition root and HTTP routes receive them through FastAPI DI.
