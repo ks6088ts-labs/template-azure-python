@@ -1,6 +1,9 @@
+import logging
+from collections.abc import Callable
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, FastAPI, Request, Response, status
+from fastapi import APIRouter, Depends, FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -12,6 +15,7 @@ from template_azure_python.application import (
     ListTasks,
     TaskAlreadyExistsError,
     TaskNotFoundError,
+    TaskRepositoryError,
     UpdateTask,
     UpdateTaskCommand,
 )
@@ -42,16 +46,21 @@ def register_task_error_handlers(application: FastAPI) -> None:
     async def task_conflict_handler(_request: Request, error: TaskAlreadyExistsError) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(error)})
 
+    @application.exception_handler(TaskRepositoryError)
+    async def task_storage_handler(request: Request, error: TaskRepositoryError) -> JSONResponse:
+        logging.getLogger(__name__).error("Task storage unavailable for %s %s", request.method, request.url.path)
+        return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"detail": str(error)})
+
 
 def create_task_router(
     *,
-    create_task: CreateTask,
-    get_task: GetTask,
-    list_tasks: ListTasks,
-    update_task: UpdateTask,
-    delete_task: DeleteTask,
+    create_task: Callable[[], CreateTask],
+    get_task: Callable[[], GetTask],
+    list_tasks: Callable[[], ListTasks],
+    update_task: Callable[[], UpdateTask],
+    delete_task: Callable[[], DeleteTask],
 ) -> APIRouter:
-    router = APIRouter(prefix="/tasks", tags=["tasks"])
+    router = APIRouter(prefix="/tasks", tags=["tasks"], responses={503: {"model": ErrorResponse}})
 
     @router.post(
         "",
@@ -60,13 +69,13 @@ def create_task_router(
         responses={409: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
         operation_id="create_task",
     )
-    async def create(request: CreateTaskRequest) -> TaskResponse:
-        task = await create_task(CreateTaskCommand(title=request.title, description=request.description))
+    async def create(request: CreateTaskRequest, use_case: Annotated[CreateTask, Depends(create_task)]) -> TaskResponse:
+        task = await use_case(CreateTaskCommand(title=request.title, description=request.description))
         return TaskResponse.from_domain(task)
 
     @router.get("", response_model=list[TaskResponse], operation_id="list_tasks")
-    async def list_all() -> list[TaskResponse]:
-        return [TaskResponse.from_domain(task) for task in await list_tasks()]
+    async def list_all(use_case: Annotated[ListTasks, Depends(list_tasks)]) -> list[TaskResponse]:
+        return [TaskResponse.from_domain(task) for task in await use_case()]
 
     @router.get(
         "/{task_id}",
@@ -74,8 +83,8 @@ def create_task_router(
         responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
         operation_id="get_task",
     )
-    async def get(task_id: UUID) -> TaskResponse:
-        task = await get_task(TaskId(task_id))
+    async def get(task_id: UUID, use_case: Annotated[GetTask, Depends(get_task)]) -> TaskResponse:
+        task = await use_case(TaskId(task_id))
         return TaskResponse.from_domain(task)
 
     @router.put(
@@ -84,8 +93,10 @@ def create_task_router(
         responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
         operation_id="update_task",
     )
-    async def update(task_id: UUID, request: UpdateTaskRequest) -> TaskResponse:
-        task = await update_task(
+    async def update(
+        task_id: UUID, request: UpdateTaskRequest, use_case: Annotated[UpdateTask, Depends(update_task)]
+    ) -> TaskResponse:
+        task = await use_case(
             UpdateTaskCommand(
                 task_id=TaskId(task_id),
                 title=request.title,
@@ -102,8 +113,8 @@ def create_task_router(
         responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
         operation_id="delete_task",
     )
-    async def delete(task_id: UUID) -> Response:
-        await delete_task(TaskId(task_id))
+    async def delete(task_id: UUID, use_case: Annotated[DeleteTask, Depends(delete_task)]) -> Response:
+        await use_case(TaskId(task_id))
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     return router

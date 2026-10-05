@@ -49,9 +49,9 @@ def print_logs(output: dict[str, object]) -> None:
         raise typer.Exit(1)
 
 
-def confirm_delete(resource: str, yes: bool) -> bool:
+def confirm_delete(resource: str, yes: bool, *, resource_type: str = "queue") -> bool:
     if yes:
         return True
     if not sys.stdin.isatty():
-        raise typer.BadParameter("non-interactive queue deletion requires --yes", param_hint="--yes")
-    return typer.confirm(f"Delete queue {resource!r}? This cannot be undone.", default=False, err=True)
+        raise typer.BadParameter(f"non-interactive {resource_type} deletion requires --yes", param_hint="--yes")
+    return typer.confirm(f"Delete {resource_type} {resource!r}? This cannot be undone.", default=False, err=True)

@@ -95,6 +95,17 @@ def validate_name(value: str, option: str) -> str:
     return value
 
 
+def validate_cosmos_resource_name(value: str, option: str) -> str:
+    validate_name(value, option)
+    if (
+        value != value.strip()
+        or len(value) > 255
+        or any(character in "/\\?#" or ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        raise InputError("must be a valid Cosmos DB resource name without paths or surrounding whitespace", option)
+    return value
+
+
 def validate_json_object(value: str) -> dict[str, object]:
     def reject_constant(constant: str) -> None:
         raise ValueError(f"{constant} is not a JSON value")

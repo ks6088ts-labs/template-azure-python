@@ -9,7 +9,7 @@ It is not a complete business system or a production persistence/authentication 
 
 | Start here to understand... | Read |
 | --- | --- |
-| Local setup and startup | [Local development](../scripts.md). No Azure resources or sign-in are needed with telemetry disabled |
+| Local setup and startup | [Local development](../scripts.md). No Azure resources or sign-in are needed with InMemory and telemetry disabled |
 | The HTTP path | `api.py` → `presentation/http` → `application/task.py` → `domain/task.py` |
 | The Azure path | `scripts/cli_<service>.py` → `internals/azure/<service>.py` → `settings` |
 | Deployment and operations | [Deployment](../deployment.md), [monitoring and logs](../monitoring.md) |
@@ -22,7 +22,8 @@ make install-deps-dev
 uv run --locked python -m scripts.template serve-container-apps
 ```
 
-`http://127.0.0.1:8000/` returns `{"Hello":"World"}`; `/docs` provides an interactive API.
+`http://127.0.0.1:8000/tasks` initially returns `[]`; `/docs` provides an interactive API.
+The old mock `GET /` has been removed and returns 404.
 `install-deps-dev` replaces an existing pre-commit hook. See the development guide for details.
 
 ## Components and entrypoints
@@ -31,37 +32,50 @@ uv run --locked python -m scripts.template serve-container-apps
 flowchart LR
     launcher["scripts/template.py / Docker<br/>Uvicorn"] --> api["api.py<br/>composition root"]
     functions["function_app.py<br/>AsgiFunctionApp"] --> api
-    api --> root["routers/root.py<br/>GET /"]
     api --> http["presentation/http<br/>/tasks"]
     http --> usecases["application/task.py<br/>use cases"]
     usecases --> domain["domain/task.py<br/>Task"]
     usecases --> port["application/ports<br/>TaskRepository"]
     api --> memory["infrastructure/repositories<br/>in-memory"]
     memory -. implements .-> port
+    api --> cosmos["infrastructure/repositories<br/>CosmosdbTaskRepository / lifespan"]
+    cosmos -. implements .-> port
+    cosmos --> cosmossdk["Azure SDK<br/>cosmos.aio / identity.aio"]
+    cosmossdk --> data["Cosmos DB data plane<br/>Task container /id"]
+    api --> settings
     api --> telemetry["telemetry.py<br/>optional process initialization"]
     cli["scripts/cli_*.py"] --> operations["internals/azure<br/>SDK operations"]
     cli --> output["scripts/_cli.py<br/>output and exit codes"]
     operations --> settings["settings<br/>typed configuration"]
     operations --> sdk["Azure SDK / OpenTelemetry"]
+    cli --> admin["internals/azure/cosmosdb_tasks_admin<br/>Task management adapter"]
+    admin --> settings
+    admin --> az["Azure CLI / az"]
+    az --> arm["Azure Resource Manager<br/>database / container management"]
     telemetry --> settings
     telemetry --> sdk
 ```
 
 Solid arrows show calls/dependencies; the dotted arrow shows a port implementation.
-`create_app()` explicitly connects use cases to a concrete repository and creates independent storage for each app.
-Uvicorn uses `template_azure_python.api:app`; Functions wraps that same app.
+`create_app()` explicitly connects use cases to a concrete repository.
+InMemory storage is isolated per app; Cosmos apps share the configured container.
+Use-case providers live in the composition root and HTTP routes receive them through FastAPI DI.
+The launcher injects the selected backend; direct Uvicorn uses `template_azure_python.api:app`.
+Functions wraps that same app.
 The Functions HTTP trigger is anonymous; `host.json` removes the `/api` prefix.
-No Azure-backed HTTP endpoints are implemented yet.
+With `TASK_REPOSITORY=cosmosdb`, tasks API uses the asynchronous Azure SDK.
+Lifespan initializes one client/credential per app and closes them on shutdown, failure, or cancellation.
+The API does not create databases/containers: startup verifies their existence and the `/id` partition.
 
 | Location | Responsibility |
 | --- | --- |
 | `api.py` | App creation, use-case/adapter composition, router registration, optional telemetry initialization |
 | `domain/` | Task, ID/status types, normalization, and value invariants |
 | `application/`, `application/ports/` | Commands, CRUD use cases, asynchronous repository Protocol, application errors |
-| `infrastructure/repositories/` | In-memory storage implementing the port |
-| `presentation/http/`, `routers/root.py` | HTTP DTOs, routing, response/error mapping, existing root endpoint |
+| `infrastructure/repositories/` | InMemory/Cosmos port implementations, document mapping, SDK errors, asynchronous resource factory |
+| `presentation/http/` | HTTP DTOs, routing, response/error mapping |
 | `scripts/` | Launch commands, CLI arguments, presentation, deletion confirmation, exit codes |
-| `internals/azure/` | Service SDK operations, result mapping, input validation, credential/client lifetime |
+| `internals/azure/` | Service SDK operations and Task management az adapter, mapping, validation, resource lifetime |
 | `settings/`, `telemetry.py` | Public configuration access and caching, process-level Azure Monitor initialization |
 | `tests/`, `pyproject.toml`, `Makefile` | Regression/structural tests, dependency/type rules, development/CI commands |
 | `docs/`, `mkdocs.yml` | English/Japanese usage and design guides, site configuration |
@@ -80,7 +94,11 @@ Matching layer names alone does not establish the design.
 | Separate HTTP validation from business invariants | Business constraints also hold for non-HTTP callers | DTOs validate format/required fields; domain normalizes/validates values; use cases orchestrate |
 | Separate SDK operations from CLI presentation | Keep operations independent of Typer and output code | `internals/azure` returns ordinary values or invokes callbacks; no SDK imports in scripts |
 | Resolve settings centrally | Keep precedence and required-setting decisions consistent | Public `settings` package; do not scatter environment/dotenv access |
-| Own credential/client lifetime | Avoid leaks on success, failure, and cancellation | Context managers, asynchronous close, cleanup tests; future shared API clients use lifespan |
+| Own credential/client lifetime | Avoid leaks on success, initialization failure, and cancellation | API lifespan, asynchronous resource factory, immediate cleanup registration, cleanup tests |
+| Keep API SDK boundaries in infrastructure | Do not leak storage technology into HTTP/business code | Cosmos adapter; forbid direct Azure imports in API/presentation |
+| Select storage in the composition root and settings | Keep the Azure-independent default and consistent entrypoints | `create_app()`, `--repository`, `TASK_REPOSITORY`; no concrete selection in routes |
+| Translate SDK errors into application failures | Distinguish absence/conflicts from outages without exposing SDK details | `TaskRepositoryError`, HTTP 503, safe type/status logging |
+| Separate resource management from API data operations | Entra database/container management requires the control plane | Task management CLI → az → ARM; no management privileges on the API identity |
 | Do not make failures look successful | Users and automation must distinguish failure/partial results | HTTP error models, `InputError` / `OperationError`, CLI exit codes |
 | Make telemetry an explicit opt-in | Preserve Azure-independent local use without hiding initialization failure | Disabled by default for the API; fail-fast when enabled; initialize once per process |
 | Abstract only when needed | Avoid unused mechanisms in a template | Retain simple CRUD/thin CLIs; no generic service base class or exporter registry |
@@ -103,12 +121,11 @@ Consider Aggregates, Domain Events, Unit of Work, and multiple Contexts when the
 
 | Operation | Contract |
 | --- | --- |
-| `GET /` | 200, `{"Hello":"World"}` |
 | `POST /tasks` | 201; generates a UUID with initial status `todo` |
 | `GET /tasks`, `GET /tasks/{task_id}` | 200; an array of Tasks or one Task |
 | `PUT /tasks/{task_id}` | 200; title/status required; omitted description replaces it with an empty string; not a partial update |
 | `DELETE /tasks/{task_id}` | 204, no response body |
-| Errors | Input/domain validation: 422; not-found: 404; duplicate: 409. Body: `{"detail": "message"}`; keep OpenAPI aligned |
+| Errors | Input/domain validation: 422; not-found: 404; duplicate: 409; storage failure: 503. Body: `{"detail": "message"}`; keep OpenAPI aligned |
 
 HTTP DTOs reject unknown input fields.
 Titles cannot be whitespace-only and allow at most 200 characters; descriptions allow at most 2,000.
@@ -120,6 +137,10 @@ The HTTP validation exception handler is registered app-wide: future routers mus
 Missing `get` returns `None`; missing `update/delete` returns `False`;
 duplicate `add` raises `TaskAlreadyExistsError`. Use cases translate absence into an application error.
 The in-memory adapter's lock is per operation, not a transaction/concurrency guarantee for future adapters.
+Cosmos uses the UUID string as both `id` and partition key, and stores status as a string.
+Not-found checks also verify container existence, so lost storage does not masquerade as a missing Task.
+Lists consume all cross-partition pages; partial failures and invalid documents produce 503.
+Full scans consume RUs/memory and updates remain last-writer-wins.
 
 ### Settings and authentication
 
@@ -131,10 +152,16 @@ The in-memory adapter's lock is per operation, not a transaction/concurrency gua
   Do not use unrelated `NAME` or `RESOURCE_ID` variables for aliased fields.
 - Getters cache their first snapshot. Restart after changes; clear caches in tests.
   Do not search parent directories for `.env` or inject its contents into the OS environment.
+- Select storage using `--repository` → `TASK_REPOSITORY` → `in-memory`.
+  Cosmos uses `AZURE_COSMOS_DB_ENDPOINT` / `DATABASE` / `TASK_CONTAINER`,
+  separate from the product CLI's `AZURE_COSMOS_DB_CONTAINER`.
+  Functions CLI passes selection to the child environment without changing the parent.
 - Validate required endpoints/IDs and service-specific input at operation time.
   Unrelated missing Azure settings must not prevent API startup or another service's `--help`.
 - Azure operations use `DefaultAzureCredential`, including Azure CLI login and managed identity.
   SDK-owned authentication variables belong in the OS/hosting environment, not arbitrary extra dotenv keys.
+- Only Task management uses Azure CLI authentication, explicit subscription, and control-plane RBAC.
+  Select an existing account/resource group; API data-plane RBAC is separate.
 - Only Application Insights emission passes a connection string to the SDK; query authentication is separate.
   Keep it as a `SecretStr` excluded from dumps, never in CLI arguments, logs, or source.
 
@@ -147,6 +174,10 @@ The in-memory adapter's lock is per operation, not a transaction/concurrency gua
   Queue Storage receive does not delete; queue deletion requires confirmation or explicit `--yes`.
 - Cosmos CLI demonstrates products with a `/category` partition. Queries stay parameterized;
   omitted throughput is not passed to container creation. This is not Task persistence.
+- `cli_cosmosdb tasks create-container/show-container/delete-container` manages Task resources separately.
+  A thin operation adapter in `internals/azure` executes az; scripts own confirmation/output.
+  Argument arrays avoid a shell; nonzero exits, timeouts, invalid JSON, and partial completion are explicit failures.
+  Deletion requires confirmation or `--yes`, never deletes the database, and does not provide migrations.
 - Foundry uses a project URL and preserves two-turn output order.
 - API instrumentation and CLI `emit-telemetry` are separate paths.
   The CLI explicitly emits even when `TELEMETRY_ENABLED=false`; it owns process-wide providers/logging,
@@ -173,8 +204,8 @@ and [monitoring](../monitoring.md) for service procedures and side effects.
    Check whether existing PUT or other paths bypass a new rule; explicitly record contract changes.
 
 "Only started Tasks can be completed" is a **possible future business rule**, not current behavior.
-A Cosmos Task Repository is also unimplemented. Do not reuse the synchronous product CLI as-is:
-design asynchronous I/O, document/domain mapping, partitioning, client lifespan, and SDK error translation.
+The Cosmos Task Repository is independent of the synchronous product CLI and handles
+asynchronous I/O, document/domain mapping, partitioning, client lifespan, and SDK error translation.
 Protecting concurrent updates requires versions/ETags and conditional saves; consider port/use-case contract changes too.
 
 ### Add Azure CLI technical operations
@@ -191,7 +222,8 @@ Protecting concurrent updates requires versions/ETags and conditional saves; con
 
 | Check | Command/scope |
 | --- | --- |
-| Task changes | `uv run --locked pytest tests/test_task_domain.py tests/test_task_application.py tests/test_api.py` |
+| Task changes | `uv run --locked pytest tests/test_task_domain.py tests/test_task_application.py tests/test_task_repositories.py tests/test_api.py` |
+| Task container management | `tests/test_cli_cosmosdb_tasks.py`, product/Queue regressions; mock az subprocess |
 | Settings/Azure operations | `tests/test_settings.py`, relevant `test_cli_<service>.py`, shared-operation tests |
 | Format/types/dependencies/workflows | `make format-check lint` |
 | Full regression | `make test`; coverage targets package, scripts, and Functions runtime code |
@@ -211,12 +243,13 @@ Mock SDK boundaries; construct write-once OpenTelemetry providers in separate of
 
 ## Intentional limits and non-goals
 
-- Tasks disappear on restart and are not shared across workers/processes/replicas.
-  Persistence, pagination, optimistic concurrency, and business state-transition rules are unimplemented.
+- Default InMemory Tasks disappear on restart and are not shared across workers/processes/replicas.
+  Cosmos persists/shared storage; pagination, optimistic concurrency, and business state transitions remain unimplemented.
 - HTTP is an anonymous reference implementation. Production sensitive-data handling needs access controls and storage design.
 - Azure CLIs are technical SDK samples, not Task API business use cases.
   They can delete messages or overwrite data; use test resources.
-- Infrastructure provisioning is outside this repository; deployment/service guides explain external Terraform scenarios.
+- Account provisioning/general infrastructure management is outside this repository.
+  The management CLI prepares Task databases/containers; service guides cover external Terraform scenarios.
 - HTTP 200, empty query results, and successful local flushing alone do not establish Azure ingestion,
   monitoring coverage, or production readiness.
 

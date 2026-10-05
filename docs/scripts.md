@@ -1,7 +1,7 @@
 # Local development
 
 Set up development, start the API, and test your changes.
-The local FastAPI app runs without connecting to Azure.
+The default InMemory backend with telemetry disabled runs without connecting to Azure.
 Run all commands below from the repository root.
 
 ## Required tools
@@ -45,11 +45,11 @@ Press `Ctrl+C` in the server terminal to stop it.
 Run these commands from another terminal:
 
 ```shell
-curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/tasks
 curl -I http://127.0.0.1:8000/docs
 ```
 
-The first command should return `{"Hello":"World"}`; the second should return HTTP 200.
+Initially the first command returns `[]`; the second returns HTTP 200. The removed mock `/` returns 404.
 Open <http://127.0.0.1:8000/docs> in a browser to try the API.
 
 ### Change the address or port
@@ -62,6 +62,21 @@ uv run --locked python -m scripts.template serve-container-apps --host 0.0.0.0 -
 
 This example listens on all network interfaces.
 Use `--host 127.0.0.1` to restrict it to your own machine.
+
+### Select storage
+
+Use `--repository in-memory` (default) or `--repository cosmosdb`.
+When omitted, `TASK_REPOSITORY` resolves from OS environment → `.env` → default.
+See [Cosmos DB](cosmosdb.md#task-api-persistence-and-container-management) for settings, permissions,
+and container preparation. The API never creates resources automatically.
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps --repository cosmosdb
+```
+
+Direct `uvicorn template_azure_python.api:app` also reads `TASK_REPOSITORY`.
+Pass the same environment settings to Docker/Compose. InMemory is isolated per app;
+Cosmos shares the configured container.
 
 ## 3. Run with Functions, if needed
 
@@ -89,18 +104,20 @@ uv run --locked python -m scripts.template serve-functions
 From another terminal:
 
 ```shell
-curl http://127.0.0.1:7071/
+curl http://127.0.0.1:7071/tasks
 curl -I http://127.0.0.1:7071/docs
 ```
 
-Expect `{"Hello":"World"}` and HTTP 200.
+Expect an initial `[]` and HTTP 200.
 To use a different port, add an option such as `--port 7072` to the start command.
+This command also accepts `--repository cosmosdb` or `TASK_REPOSITORY`.
+The CLI passes selection to the Functions child process without changing the parent environment.
 
 ### Before publishing
 
 - `function_app.py` loads the same FastAPI app through `AsgiFunctionApp`, following
   the [Azure sample](https://github.com/Azure-Samples/fastapi-on-azure-functions).
-- `host.json` removes the `/api` prefix, so the URLs are `/` and `/docs`.
+- `host.json` removes the `/api` prefix, so the URLs are `/tasks` and `/docs`.
 - The HTTP trigger is **anonymous**. Add access controls before handling sensitive data.
 - In Azure, the runtime loads `function_app.py` directly. This CLI is only for local use.
 - `.env` and `local.settings.json` are excluded from publishing and Docker builds.
@@ -144,7 +161,7 @@ The Dockerfile starts `serve-container-apps` on `0.0.0.0:8000`.
 
 | Check | Command |
 | --- | --- |
-| Start a container, check `/` and `/docs`, then stop it | `make docker-smoke-test` |
+| Start a container, check `/tasks` and `/docs`, then stop it | `make docker-smoke-test` |
 | Run Dockerfile lint, build, scan, and startup checks | `make ci-test-docker` |
 
 The smoke test starts its own container; it does not need `make docker-run` to be running.

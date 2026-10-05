@@ -12,13 +12,11 @@ from template_azure_python.api import app, create_app
 from template_azure_python.domain import Task
 
 
-def test_root_returns_hello_world():
+def test_mock_root_is_removed():
     with TestClient(app) as client:
         response = client.get("/")
 
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "application/json"
-    assert response.json() == {"Hello": "World"}
+    assert response.status_code == 404
 
 
 def test_app_factory_configures_telemetry():
@@ -27,7 +25,7 @@ def test_app_factory_configures_telemetry():
 
     configure.assert_called_once_with()
     with TestClient(application) as client:
-        assert client.get("/").status_code == 200
+        assert client.get("/tasks").status_code == 200
 
 
 def test_no_items_endpoint():
@@ -48,8 +46,7 @@ def test_router_is_in_openapi():
     with TestClient(app) as client:
         schema = client.get("/openapi.json").json()
 
-    assert set(schema["paths"]) == {"/", "/tasks", "/tasks/{task_id}"}
-    assert schema["paths"]["/"]["get"]["operationId"] == "read_root__get"
+    assert set(schema["paths"]) == {"/tasks", "/tasks/{task_id}"}
     assert schema["paths"]["/tasks"]["post"]["operationId"] == "create_task"
 
 
@@ -182,3 +179,49 @@ def test_task_duplicate_returns_conflict():
 
     assert response.status_code == 409
     assert response.json() == {"detail": f"Task {task.id} already exists"}
+
+
+def test_explicit_repository_is_used_and_ambiguous_injection_is_rejected():
+    from template_azure_python.infrastructure import InMemoryTaskRepository
+    from template_azure_python.settings import TaskRepositoryBackend
+
+    repository = InMemoryTaskRepository()
+    with TestClient(create_app(repository=repository)) as client:
+        task = client.post("/tasks", json={"title": "Injected"}).json()
+    with TestClient(create_app(repository=repository)) as client:
+        assert client.get("/tasks").json() == [task]
+    with pytest.raises(ValueError, match="either"):
+        create_app(repository=repository, repository_backend=TaskRepositoryBackend.IN_MEMORY)
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "operation"),
+    [
+        ("post", "/tasks", "add"),
+        ("get", "/tasks", "list"),
+        ("get", "/tasks/00000000-0000-0000-0000-000000000001", "get"),
+        ("put", "/tasks/00000000-0000-0000-0000-000000000001", "get"),
+        ("delete", "/tasks/00000000-0000-0000-0000-000000000001", "delete"),
+    ],
+)
+def test_storage_failure_matches_openapi(method, path, operation, caplog):
+    from unittest.mock import AsyncMock
+
+    from template_azure_python.application import TaskRepositoryError
+    from template_azure_python.infrastructure import InMemoryTaskRepository
+
+    repository = InMemoryTaskRepository()
+    with (
+        patch.object(repository, operation, AsyncMock(side_effect=TaskRepositoryError())),
+        TestClient(create_app(repository=repository)) as client,
+    ):
+        body = {"title": "Task", "status": "todo"} if method == "put" else {"title": "Task"}
+        response = client.request(method, path, json=body)
+        schema = client.get("/openapi.json").json()
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Task storage is unavailable"}
+    schema_path = "/tasks" if path == "/tasks" else "/tasks/{task_id}"
+    assert schema["paths"][schema_path][method]["responses"]["503"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ErrorResponse"
+    }
+    assert "Task storage unavailable" in caplog.text

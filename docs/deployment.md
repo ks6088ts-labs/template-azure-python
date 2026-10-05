@@ -21,7 +21,15 @@ Publish the app or documentation after checking it locally.
 - The sample API is anonymous. Set up access controls before exposing it publicly.
   Azure resources and image storage may incur charges.
 
-For API checks, expect `{"Hello":"World"}` from `/` and HTTP 200 from `/docs`.
+For API checks, expect a Task array (initially `[]`) from `/tasks` and HTTP 200 from `/docs`.
+The mock `/` has been removed. Probes use `/docs` to avoid repeatedly fetching all Tasks.
+
+InMemory is the default and does not share data between replicas.
+For Cosmos, [prepare the Task container](cosmosdb.md#task-api-persistence-and-container-management),
+then set `TASK_REPOSITORY=cosmosdb`, `AZURE_COSMOS_DB_ENDPOINT`, `AZURE_COSMOS_DB_DATABASE`,
+and `AZURE_COSMOS_DB_TASK_CONTAINER` in Functions app settings / Container Apps environment variables.
+Grant the API managed identity the appropriate data-plane RBAC, not management CLI permissions.
+Management account-name/subscription/resource-group settings are unnecessary for API startup.
 
 ## Azure Functions
 
@@ -53,7 +61,7 @@ dedicated Docker image is needed. Configure app settings in Azure; do not publis
 #### 3. Check the response
 
 ```shell
-curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/"
+curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/tasks"
 curl --fail --show-error --output /dev/null "https://$FUNCTION_APP_NAME.azurewebsites.net/docs"
 ```
 
@@ -101,7 +109,7 @@ Run both commands again after changing code or dependencies.
 Microsoft Entra authentication is off by default:
 
 ```shell
-curl --fail --show-error "$FUNCTION_APP_URL/"
+curl --fail --show-error "$FUNCTION_APP_URL/tasks"
 curl --fail --show-error --output /dev/null "$FUNCTION_APP_URL/docs"
 ```
 
@@ -111,7 +119,7 @@ Acquire a token for the application ID URI from the same state:
 ```shell
 AUTH_RESOURCE=$(terraform -chdir="$SCENARIO_DIR" output -raw function_app_authentication_identifier_uri)
 ACCESS_TOKEN=$(az account get-access-token --subscription "$SUBSCRIPTION_ID" --resource "$AUTH_RESOURCE" --query accessToken --output tsv)
-curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/"
+curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/tasks"
 curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACCESS_TOKEN" "$FUNCTION_APP_URL/docs"
 unset ACCESS_TOKEN
 ```
@@ -156,7 +164,7 @@ az containerapp update --name "$CONTAINER_APP_NAME" \
 
 ```shell
 CONTAINER_APP_FQDN=$(az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query properties.configuration.ingress.fqdn -o tsv)
-curl --fail --show-error "https://$CONTAINER_APP_FQDN/"
+curl --fail --show-error "https://$CONTAINER_APP_FQDN/tasks"
 curl --fail --show-error --output /dev/null "https://$CONTAINER_APP_FQDN/docs"
 ```
 
@@ -208,7 +216,7 @@ Pin the pushed image by digest. The command below updates
 | --- | --- |
 | Image | Pushed image digest |
 | Ingress and health probe port | `8000` |
-| Health probe path | `/` |
+| Health probe path | `/docs` |
 | Container command | Dockerfile default |
 
 ```shell
@@ -227,7 +235,7 @@ Pin the pushed image by digest. The command below updates
   TEMP_FILE=$(mktemp "${VARS_FILE}.XXXXXX")
   trap 'rm -f "$TEMP_FILE"' EXIT
   jq -e --arg image "$IMAGE_BY_DIGEST" \
-    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/" | .container_command = []' \
+    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/docs" | .container_command = []' \
     "$VARS_FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$VARS_FILE"
 )
@@ -256,7 +264,7 @@ Check this API's routes:
 
 ```shell
 CONTAINER_APP_URL=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_url)
-curl --fail --show-error "$CONTAINER_APP_URL/"
+curl --fail --show-error "$CONTAINER_APP_URL/tasks"
 curl --fail --show-error --output /dev/null "$CONTAINER_APP_URL/docs"
 ```
 
@@ -265,7 +273,7 @@ If Microsoft Entra authentication is enabled, use this instead:
 ```shell
 AUTH_RESOURCE=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_authentication_identifier_uri)
 ACCESS_TOKEN=$(az account get-access-token --subscription "$SUBSCRIPTION_ID" --resource "$AUTH_RESOURCE" --query accessToken -o tsv)
-curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/"
+curl --fail --show-error --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/tasks"
 curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACCESS_TOKEN" "$CONTAINER_APP_URL/docs"
 unset ACCESS_TOKEN
 ```

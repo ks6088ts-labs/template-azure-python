@@ -16,6 +16,11 @@ class TaskAlreadyExistsError(RuntimeError):
         super().__init__(f"Task {task_id} already exists")
 
 
+class TaskRepositoryError(RuntimeError):
+    def __init__(self) -> None:
+        super().__init__("Task storage is unavailable")
+
+
 @dataclass(frozen=True, slots=True)
 class CreateTaskCommand:
     title: str

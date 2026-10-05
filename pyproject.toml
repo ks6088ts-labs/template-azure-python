@@ -121,4 +121,16 @@ forbidden_modules = [
     "pydantic",
     "template_azure_python.infrastructure",
     "template_azure_python.presentation",
+    "template_azure_python.settings",
+    "template_azure_python.internals",
 ]
+
+[[tool.importlinter.contracts]]
+name = "HTTP and composition root do not import Azure SDKs directly"
+type = "forbidden"
+source_modules = [
+    "template_azure_python.presentation",
+    "template_azure_python.api",
+]
+forbidden_modules = ["azure"]
+allow_indirect_imports = true
