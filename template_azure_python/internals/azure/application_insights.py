@@ -23,7 +23,7 @@ from template_azure_python.internals.azure._common import (
     validate_arm_id,
     validate_guid,
 )
-from template_azure_python.settings import get_azure_settings, telemetry_environment
+from template_azure_python.settings import get_azure_settings, get_project_settings, telemetry_environment
 
 FLUSH_TIMEOUT_MILLIS = 5000
 INSTRUMENTATIONS = (
@@ -113,6 +113,7 @@ def emit_telemetry(count: int) -> dict[str, object]:
     secret = get_azure_settings().application_insights.connection_string
     if secret is None or not secret.get_secret_value().strip():
         raise InputError("set APPLICATIONINSIGHTS_CONNECTION_STRING in the environment")
+    live_metrics_enabled = get_project_settings().telemetry_live_metrics_enabled
     run_id = str(uuid4())
     logger_name = f"quickstart.application_insights.{run_id}"
     logger = logging.getLogger(logger_name)
@@ -124,7 +125,7 @@ def emit_telemetry(count: int) -> dict[str, object]:
                 connection_string=secret.get_secret_value(),
                 logger_name=logger_name,
                 disable_offline_storage=True,
-                enable_live_metrics=False,
+                enable_live_metrics=live_metrics_enabled,
                 enable_performance_counters=False,
                 sampling_ratio=1.0,
                 instrumentation_options={name: {"enabled": False} for name in INSTRUMENTATIONS},

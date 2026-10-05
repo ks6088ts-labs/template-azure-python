@@ -54,6 +54,9 @@ def test_project_settings_from_template():
     settings = ProjectSettings(_env_file=Path(__file__).resolve().parents[1] / ".env.template")
     assert settings.project_name == "template-azure-python"
     assert settings.project_log_level == "INFO"
+    assert settings.telemetry_enabled is False
+    assert settings.telemetry_traces_per_second == 5
+    assert settings.telemetry_live_metrics_enabled is False
 
 
 def test_template_environment_variables_are_declared():
@@ -74,12 +77,35 @@ def test_template_environment_variables_are_declared():
 
 def test_settings_defaults_without_dotenv():
     assert get_project_settings().project_name == "default-project"
+    assert get_project_settings().telemetry_enabled is False
+    assert get_project_settings().telemetry_traces_per_second == 5
+    assert get_project_settings().telemetry_live_metrics_enabled is False
     settings = get_azure_settings()
     assert settings.cosmos_db.endpoint is None
     assert settings.cosmos_db.database == "cosmicworks"
     assert settings.cosmos_db.container == "products"
     assert settings.event_hubs.consumer_group == "$Default"
     assert settings.resource.resource_group is None
+
+
+def test_telemetry_project_settings_from_environment(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("TELEMETRY_ENABLED", "true")
+    monkeypatch.setenv("TELEMETRY_TRACES_PER_SECOND", "2.5")
+    monkeypatch.setenv("TELEMETRY_LIVE_METRICS_ENABLED", "true")
+
+    settings = ProjectSettings(_env_file=None)
+
+    assert settings.telemetry_enabled is True
+    assert settings.telemetry_traces_per_second == 2.5
+    assert settings.telemetry_live_metrics_enabled is True
+
+
+@pytest.mark.parametrize("value", ["0", "-1"])
+def test_telemetry_traces_per_second_must_be_positive(monkeypatch: pytest.MonkeyPatch, value: str):
+    monkeypatch.setenv("TELEMETRY_TRACES_PER_SECOND", value)
+
+    with pytest.raises(ValueError, match="greater than 0"):
+        ProjectSettings(_env_file=None)
 
 
 def test_dotenv_from_working_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

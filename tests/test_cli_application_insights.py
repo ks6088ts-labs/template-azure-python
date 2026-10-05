@@ -6,6 +6,7 @@ import subprocess
 import sys
 import textwrap
 from datetime import timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from uuid import UUID
@@ -14,10 +15,12 @@ import pytest
 from azure.core.exceptions import AzureError
 from azure.monitor.query import LogsQueryPartialResult, LogsQueryResult, LogsTable
 from opentelemetry.trace import SpanKind
+from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from scripts.cli_application_insights import app
 from template_azure_python.internals.azure.application_insights import FLUSH_TIMEOUT_MILLIS, INSTRUMENTATIONS
+from template_azure_python.settings import ProjectSettings
 
 GUID = "01234567-89ab-cdef-0123-456789abcdef"
 RESOURCE_ID = f"/subscriptions/{GUID}/resourceGroups/rg/providers/Microsoft.Insights/components/app"
@@ -216,6 +219,59 @@ def test_emit_all_signals(count: int | None, telemetry: SimpleNamespace):
     assert "secret" not in result.output
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+def test_emit_live_metrics_environment(enabled: bool, telemetry: SimpleNamespace):
+    result = CliRunner().invoke(
+        app,
+        ["emit-telemetry", "--count", "1"],
+        env={
+            "APPLICATIONINSIGHTS_CONNECTION_STRING": CONNECTION,
+            "TELEMETRY_ENABLED": "false",
+            "TELEMETRY_LIVE_METRICS_ENABLED": str(enabled).lower(),
+        },
+    )
+    assert result.exit_code == 0, result.output
+    assert telemetry.config.call_args.kwargs["enable_live_metrics"] is enabled
+    assert json.loads(result.output)["flushed"] is True
+    for provider in telemetry.providers:
+        provider.force_flush.assert_called_once_with(timeout_millis=FLUSH_TIMEOUT_MILLIS)
+        provider.shutdown.assert_called_once()
+
+
+@pytest.mark.parametrize("override", [None, "false"])
+def test_emit_live_metrics_dotenv(
+    override: str | None,
+    telemetry: SimpleNamespace,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    env_file = tmp_path / ".env"
+    env_file.write_text("TELEMETRY_LIVE_METRICS_ENABLED=true\n", encoding="utf-8")
+    config = ProjectSettings.model_config.copy()
+    config["env_file"] = env_file
+    monkeypatch.setattr(ProjectSettings, "model_config", config)
+    env = {"APPLICATIONINSIGHTS_CONNECTION_STRING": CONNECTION}
+    if override is not None:
+        env["TELEMETRY_LIVE_METRICS_ENABLED"] = override
+    result = CliRunner().invoke(app, ["emit-telemetry", "--count", "1"], env=env)
+    assert result.exit_code == 0, result.output
+    assert telemetry.config.call_args.kwargs["enable_live_metrics"] is (override is None)
+
+
+def test_emit_invalid_live_metrics_before_configuration(telemetry: SimpleNamespace):
+    result = CliRunner().invoke(
+        app,
+        ["emit-telemetry"],
+        env={"APPLICATIONINSIGHTS_CONNECTION_STRING": CONNECTION, "TELEMETRY_LIVE_METRICS_ENABLED": "invalid"},
+    )
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ValidationError)
+    assert result.exception.errors()[0]["loc"] == ("telemetry_live_metrics_enabled",)
+    assert result.exception.errors()[0]["type"] == "bool_parsing"
+    assert CONNECTION not in str(result.exception)
+    telemetry.config.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "args",
     [
@@ -245,7 +301,10 @@ def test_emit_missing_connection(connection: str, telemetry: SimpleNamespace):
 
 @pytest.mark.parametrize("index", [0, 1, 2])
 @pytest.mark.parametrize("mode", ["false", "exception", "log", "shutdown"])
-def test_emit_flush_failures_are_independent_and_sanitized(index: int, mode: str, telemetry: SimpleNamespace):
+@pytest.mark.parametrize("live_metrics_enabled", [False, True])
+def test_emit_flush_failures_are_independent_and_sanitized(
+    index: int, mode: str, live_metrics_enabled: bool, telemetry: SimpleNamespace
+):
     provider = telemetry.providers[index]
     if mode == "false":
         provider.force_flush.return_value = False
@@ -263,7 +322,14 @@ def test_emit_flush_failures_are_independent_and_sanitized(index: int, mode: str
             return True
 
         provider.force_flush.side_effect = log_failure
-    result = CliRunner().invoke(app, ["emit-telemetry"], env={"APPLICATIONINSIGHTS_CONNECTION_STRING": CONNECTION})
+    result = CliRunner().invoke(
+        app,
+        ["emit-telemetry"],
+        env={
+            "APPLICATIONINSIGHTS_CONNECTION_STRING": CONNECTION,
+            "TELEMETRY_LIVE_METRICS_ENABLED": str(live_metrics_enabled).lower(),
+        },
+    )
     assert result.exit_code == 1, result.output
     output = json.loads(result.output)
     assert output["flushed"] is False
@@ -322,10 +388,12 @@ def test_disable_auxiliary_telemetry_and_restore_environment(
     assert "APPLICATIONINSIGHTS_STATSBEAT_DISABLED_ALL" not in os.environ
 
 
-def test_real_distro_exporter_construction_offline():
+@pytest.mark.parametrize("live_metrics_enabled", [False, True])
+def test_real_distro_exporter_construction_offline(live_metrics_enabled: bool):
     # Global OTel providers are write-once; keep real SDK setup in a fresh process.
     script = textwrap.dedent("""
         import json
+        import os
         from unittest.mock import patch
         from azure.monitor.opentelemetry.exporter._generated import AzureMonitorClient
         from azure.monitor.opentelemetry.exporter._generated.exporter.models import TrackResponse
@@ -344,9 +412,13 @@ def test_real_distro_exporter_construction_offline():
         with (
             patch.object(AzureMonitorClient, "track", track),
             patch("requests.sessions.Session.send", side_effect=AssertionError("Network forbidden")),
+            patch("azure.monitor.opentelemetry._configure._setup_live_metrics") as live_setup,
         ):
             result = CliRunner().invoke(app, ["emit-telemetry", "--count", "2"])
         assert result.exit_code == 0, result.output
+        assert live_setup.call_count == int(
+            os.environ["TELEMETRY_LIVE_METRICS_ENABLED"] == "true"
+        )
         summary = json.loads(result.output)
         assert summary["flushed"] is True, summary
         assert summary["ingestion_guaranteed"] is False
@@ -364,6 +436,7 @@ def test_real_distro_exporter_construction_offline():
         env={
             **os.environ,
             "APPLICATIONINSIGHTS_CONNECTION_STRING": f"InstrumentationKey={GUID}",
+            "TELEMETRY_LIVE_METRICS_ENABLED": str(live_metrics_enabled).lower(),
             "OTEL_EXPERIMENTAL_RESOURCE_DETECTORS": "",
         },
     )

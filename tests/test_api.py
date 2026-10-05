@@ -7,7 +7,7 @@ import azure.functions as func
 from fastapi.testclient import TestClient
 
 from function_app import app as functions_app
-from template_azure_python.api import app
+from template_azure_python.api import app, create_app
 
 
 def test_root_returns_hello_world():
@@ -17,6 +17,15 @@ def test_root_returns_hello_world():
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
     assert response.json() == {"Hello": "World"}
+
+
+def test_app_factory_configures_telemetry():
+    with patch("template_azure_python.api.configure_api_telemetry") as configure:
+        application = create_app()
+
+    configure.assert_called_once_with()
+    with TestClient(application) as client:
+        assert client.get("/").status_code == 200
 
 
 def test_no_items_endpoint():

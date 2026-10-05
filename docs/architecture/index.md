@@ -11,15 +11,19 @@ flowchart LR
     launcher["scripts/template.py<br/>Uvicorn"] --> api["api.py<br/>FastAPI app"]
     functions["function_app.py<br/>AsgiFunctionApp"] --> api
     api --> root["routers/root.py<br/>GET /"]
+    api --> telemetry["telemetry.py<br/>Process-level initialization"]
     cli["scripts/cli_*.py"] --> operations["internals/azure<br/>Service operations"]
     cli --> presentation["scripts/_cli.py<br/>Output and CLI errors"]
     operations --> settings["settings<br/>Typed configuration"]
+    telemetry --> settings
+    telemetry --> sdk
     launcher --> settings
     operations --> sdk["Azure SDK / OpenTelemetry"]
 ```
 
 - `template_azure_python.api:app` remains the Uvicorn entrypoint.
-  `api.py` creates the app and explicitly registers routers with `include_router`.
+  `api.py` uses a small application factory that initializes optional telemetry,
+  creates the app, and explicitly registers routers with `include_router`.
   It serves the same role as `main.py` in the FastAPI guide; a second entrypoint is unnecessary.
 - `function_app.py` passes that same app to Azure Functions. The existing anonymous
   trigger and absence of an `/api` prefix are unchanged.
@@ -29,14 +33,17 @@ flowchart LR
   Scripts handle options, presentation, deletion confirmation, and exit codes,
   not SDK clients or SDK models.
 
-The API does not create Azure clients at startup or require Azure configuration.
+With telemetry disabled (the default), the API does not create Azure clients at
+startup or require Azure configuration. Enabling telemetry requires a valid
+Application Insights connection string and fails startup if initialization fails.
 See [local development](../scripts.md) and [deployment](../deployment.md) for execution.
 
 ## Package boundaries
 
 ```text
 template_azure_python/
-  api.py                       # app creation and router registration
+  api.py                       # telemetry call, app creation, router registration
+  telemetry.py                 # process-level Azure Monitor initialization
   routers/
     root.py                    # current HTTP domain
   settings/
@@ -66,6 +73,10 @@ SDK clients and result models stay inside the adapters.
 There is no generic service base class, repository layer, router auto-discovery,
 or dependency-injection container. Add an abstraction only when an actual shared
 responsibility requires it.
+
+API telemetry follows the same rule. Azure Monitor is configured behind one small
+module boundary, without an unused exporter registry or hand-built provider stack.
+Routers and domain code use OpenTelemetry APIs if they need custom spans or metrics.
 
 ## Configuration
 
