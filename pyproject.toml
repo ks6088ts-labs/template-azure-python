@@ -39,6 +39,8 @@ test = [
 dev = [
     { include-group = "test" },
     "coverage>=7.8.0",
+    "import-linter>=2.9",
+    "mypy>=1.18.2",
     "prek>=0.5.4,<0.6",
     "pyrefly>=0.44.1",
     "ruff>=0.11.7",
@@ -62,7 +64,7 @@ select = ["E", "F", "I", "UP"]
 ignore = ["D203"]
 
 [tool.pytest.ini_options]
-addopts = "-ra --cov"
+addopts = "-ra --cov=template_azure_python --cov=scripts --cov=function_app"
 testpaths = ["tests"]
 pythonpath = ['.']
 log_cli = true
@@ -80,4 +82,43 @@ environment = { python-version = "3.10" }
 project-includes = [
     "**/*.py*",
     "**/*.ipynb",
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = [
+    "template_azure_python/api.py",
+    "template_azure_python/domain",
+    "template_azure_python/application",
+    "template_azure_python/infrastructure",
+    "template_azure_python/presentation",
+]
+
+[tool.importlinter]
+root_packages = ["template_azure_python"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture layers point inward"
+type = "layers"
+layers = [
+    "template_azure_python.presentation | template_azure_python.infrastructure",
+    "template_azure_python.application",
+    "template_azure_python.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain and application are framework independent"
+type = "forbidden"
+source_modules = [
+    "template_azure_python.domain",
+    "template_azure_python.application",
+]
+forbidden_modules = [
+    "azure",
+    "fastapi",
+    "pydantic",
+    "template_azure_python.infrastructure",
+    "template_azure_python.presentation",
 ]

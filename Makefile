@@ -41,8 +41,10 @@ fix: format ## apply auto-fixes
 .PHONY: lint
 lint: ## lint
 	uv run --locked ruff check .
+	uv run --locked mypy
 	uv run --locked ty check
 	uv run --locked pyrefly check
+	uv run --locked lint-imports
 	actionlint
 	uv run --locked zizmor --offline --strict-collection --min-severity high .
 

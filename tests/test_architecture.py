@@ -8,6 +8,12 @@ PACKAGE = ROOT / "template_azure_python"
 SCRIPTS = ROOT / "scripts"
 
 
+def test_coverage_options_do_not_consume_test_paths(pytestconfig: pytest.Config):
+    options = pytestconfig.getini("addopts")
+    assert "--cov" not in options
+    assert any(option.startswith("--cov=") for option in options)
+
+
 def _imports(tree: ast.AST) -> list[str]:
     modules = []
     for node in ast.walk(tree):

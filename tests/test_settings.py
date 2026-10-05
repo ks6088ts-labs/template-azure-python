@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 from template_azure_python.settings import (
@@ -24,6 +25,7 @@ from template_azure_python.settings.azure import (
     ResourceSettings,
     ServiceBusSettings,
 )
+from template_azure_python.settings.azure._base import AzureServiceSettings
 
 AZURE_SERVICE_SETTINGS = (
     ApplicationInsightsSettings,
@@ -38,6 +40,13 @@ AZURE_SERVICE_SETTINGS = (
     ResourceSettings,
     ServiceBusSettings,
 )
+
+ALIASED_FIELDS = [
+    (settings_type, field_name)
+    for settings_type in AZURE_SERVICE_SETTINGS
+    for field_name, field in settings_type.model_fields.items()
+    if isinstance(field.validation_alias, str)
+]
 
 
 def environment_variable_names(settings_type: type[BaseSettings]) -> set[str]:
@@ -135,6 +144,37 @@ def test_settings_priority(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     settings = AzureSettings(cosmos_db={"database": "explicit"}, _env_file=env_file)
     assert settings.cosmos_db.database == "explicit"
     assert settings.cosmos_db.endpoint is None
+
+
+@pytest.mark.parametrize("source", ["environment", "dotenv"])
+def test_alias_settings_ignore_unrelated_names(source: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    values = {field_name.upper(): "unrelated-value" for _, field_name in ALIASED_FIELDS}
+    env_file = None
+    if source == "environment":
+        for name, value in values.items():
+            monkeypatch.setenv(name, value)
+    else:
+        env_file = tmp_path / ".env"
+        env_file.write_text("\n".join(f"{name}={value}" for name, value in values.items()), encoding="utf-8")
+
+    for settings_type, field_name in ALIASED_FIELDS:
+        settings = settings_type(_env_file=env_file)
+        assert getattr(settings, field_name) == settings_type.model_fields[field_name].default
+
+
+@pytest.mark.parametrize(("settings_type", "field_name"), ALIASED_FIELDS)
+def test_alias_settings_accept_explicit_field_names(
+    settings_type: type[AzureServiceSettings], field_name: str, monkeypatch: pytest.MonkeyPatch
+):
+    alias = settings_type.model_fields[field_name].validation_alias
+    assert isinstance(alias, str)
+    monkeypatch.setenv(alias, "environment-value")
+
+    settings = settings_type(_env_file=None, **{field_name: "explicit-value"})
+    value = getattr(settings, field_name)
+    if isinstance(value, SecretStr):
+        value = value.get_secret_value()
+    assert value == "explicit-value"
 
 
 def test_empty_environment_values_use_defaults(monkeypatch: pytest.MonkeyPatch):

@@ -1,188 +1,233 @@
 # Architecture
 
-This project follows [FastAPI's multiple-files guide](https://fastapi.tiangolo.com/tutorial/bigger-applications/)
-without adding unused application layers. HTTP routing, configuration, Azure operations,
-and command-line presentation have separate responsibilities.
+## Project overview
+
+A development template using Python 3.10+, FastAPI, Typer, and Azure SDKs.
+It provides an **HTTP Task CRUD reference implementation** and **independent Azure service CLI samples**.
+The same FastAPI app runs through Uvicorn, Azure Functions, and Azure Container Apps.
+It is not a complete business system or a production persistence/authentication platform.
+
+| Start here to understand... | Read |
+| --- | --- |
+| Local setup and startup | [Local development](../scripts.md). No Azure resources or sign-in are needed with telemetry disabled |
+| The HTTP path | `api.py` → `presentation/http` → `application/task.py` → `domain/task.py` |
+| The Azure path | `scripts/cli_<service>.py` → `internals/azure/<service>.py` → `settings` |
+| Deployment and operations | [Deployment](../deployment.md), [monitoring and logs](../monitoring.md) |
+
+Source paths and commands below are relative to the repository root.
+Package-internal paths refer to locations under `template_azure_python/`.
+
+```shell
+make install-deps-dev
+uv run --locked python -m scripts.template serve-container-apps
+```
+
+`http://127.0.0.1:8000/` returns `{"Hello":"World"}`; `/docs` provides an interactive API.
+`install-deps-dev` replaces an existing pre-commit hook. See the development guide for details.
 
 ## Components and entrypoints
 
 ```mermaid
 flowchart LR
-    launcher["scripts/template.py<br/>Uvicorn"] --> api["api.py<br/>FastAPI app"]
+    launcher["scripts/template.py / Docker<br/>Uvicorn"] --> api["api.py<br/>composition root"]
     functions["function_app.py<br/>AsgiFunctionApp"] --> api
     api --> root["routers/root.py<br/>GET /"]
-    api --> telemetry["telemetry.py<br/>Process-level initialization"]
-    cli["scripts/cli_*.py"] --> operations["internals/azure<br/>Service operations"]
-    cli --> presentation["scripts/_cli.py<br/>Output and CLI errors"]
-    operations --> settings["settings<br/>Typed configuration"]
+    api --> http["presentation/http<br/>/tasks"]
+    http --> usecases["application/task.py<br/>use cases"]
+    usecases --> domain["domain/task.py<br/>Task"]
+    usecases --> port["application/ports<br/>TaskRepository"]
+    api --> memory["infrastructure/repositories<br/>in-memory"]
+    memory -. implements .-> port
+    api --> telemetry["telemetry.py<br/>optional process initialization"]
+    cli["scripts/cli_*.py"] --> operations["internals/azure<br/>SDK operations"]
+    cli --> output["scripts/_cli.py<br/>output and exit codes"]
+    operations --> settings["settings<br/>typed configuration"]
+    operations --> sdk["Azure SDK / OpenTelemetry"]
     telemetry --> settings
     telemetry --> sdk
-    launcher --> settings
-    operations --> sdk["Azure SDK / OpenTelemetry"]
 ```
 
-- `template_azure_python.api:app` remains the Uvicorn entrypoint.
-  `api.py` uses a small application factory that initializes optional telemetry,
-  creates the app, and explicitly registers routers with `include_router`.
-  It serves the same role as `main.py` in the FastAPI guide; a second entrypoint is unnecessary.
-- `function_app.py` passes that same app to Azure Functions. The existing anonymous
-  trigger and absence of an `/api` prefix are unchanged.
-- `routers/root.py` owns the existing `GET /`, returning `{"Hello":"World"}`.
-  `/docs` and OpenAPI remain available. There are no new Azure HTTP endpoints.
-- Azure commands delegate to service operations in `internals/azure`.
-  Scripts handle options, presentation, deletion confirmation, and exit codes,
-  not SDK clients or SDK models.
+Solid arrows show calls/dependencies; the dotted arrow shows a port implementation.
+`create_app()` explicitly connects use cases to a concrete repository and creates independent storage for each app.
+Uvicorn uses `template_azure_python.api:app`; Functions wraps that same app.
+The Functions HTTP trigger is anonymous; `host.json` removes the `/api` prefix.
+No Azure-backed HTTP endpoints are implemented yet.
 
-With telemetry disabled (the default), the API does not create Azure clients at
-startup or require Azure configuration. Enabling telemetry requires a valid
-Application Insights connection string and fails startup if initialization fails.
-See [local development](../scripts.md) and [deployment](../deployment.md) for execution.
+| Location | Responsibility |
+| --- | --- |
+| `api.py` | App creation, use-case/adapter composition, router registration, optional telemetry initialization |
+| `domain/` | Task, ID/status types, normalization, and value invariants |
+| `application/`, `application/ports/` | Commands, CRUD use cases, asynchronous repository Protocol, application errors |
+| `infrastructure/repositories/` | In-memory storage implementing the port |
+| `presentation/http/`, `routers/root.py` | HTTP DTOs, routing, response/error mapping, existing root endpoint |
+| `scripts/` | Launch commands, CLI arguments, presentation, deletion confirmation, exit codes |
+| `internals/azure/` | Service SDK operations, result mapping, input validation, credential/client lifetime |
+| `settings/`, `telemetry.py` | Public configuration access and caching, process-level Azure Monitor initialization |
+| `tests/`, `pyproject.toml`, `Makefile` | Regression/structural tests, dependency/type rules, development/CI commands |
+| `docs/`, `mkdocs.yml` | English/Japanese usage and design guides, site configuration |
 
-## Package boundaries
+## Design principles
 
-```text
-template_azure_python/
-  api.py                       # telemetry call, app creation, router registration
-  telemetry.py                 # process-level Azure Monitor initialization
-  routers/
-    root.py                    # current HTTP domain
-  settings/
-    _base.py                   # shared dotenv configuration
-    project.py                 # ProjectSettings and cached getter
-    azure/
-      settings.py              # nested AzureSettings aggregate and cached getter
-      <domain>.py              # service-specific Pydantic Settings models
-    _telemetry.py              # scoped SDK environment controls
-    __init__.py                # public configuration access
-  internals/
-    azure/
-      _common.py               # validation, errors, client lifetime, Logs results
-      <service>.py             # SDK operations and result conversion
-scripts/
-  _cli.py                      # CLI errors, JSON output, confirmation
-  template.py                  # local launchers and basic commands
-  cli_<service>.py              # Azure command entrypoints
-```
+Treat a rule, its rationale, and its implementation/check together.
+Matching layer names alone does not establish the design.
 
-Each Azure service has its own module: `cosmosdb`, `foundry`, `event_grid`,
-`event_hubs`, `service_bus`, `queue_storage`, `azure_monitor`, `log_analytics`,
-`application_insights`, `network_watcher`, and `activity_log`.
-Internal operations return ordinary dictionaries, lists, strings, or counts.
-SDK clients and result models stay inside the adapters.
+| Rule | Rationale | Implementation/check |
+| --- | --- | --- |
+| Task dependencies point inward | Changing HTTP or storage technology should not change business code | `domain` ← `application` ← `presentation` / `infrastructure`; import-linter |
+| Define I/O ports in inner layers | Use cases do not import concrete SDKs or repositories | `TaskRepository` Protocol and repository contract tests |
+| Compose explicitly | Make dependencies and app-level state isolation traceable | `create_app()`; no router auto-discovery or custom DI container |
+| Use the standard library in the Task domain | Keep business models independent of HTTP/JSON and external libraries | Frozen dataclasses, enums, domain tests; use Pydantic in HTTP DTOs and settings |
+| Separate HTTP validation from business invariants | Business constraints also hold for non-HTTP callers | DTOs validate format/required fields; domain normalizes/validates values; use cases orchestrate |
+| Separate SDK operations from CLI presentation | Keep operations independent of Typer and output code | `internals/azure` returns ordinary values or invokes callbacks; no SDK imports in scripts |
+| Resolve settings centrally | Keep precedence and required-setting decisions consistent | Public `settings` package; do not scatter environment/dotenv access |
+| Own credential/client lifetime | Avoid leaks on success, failure, and cancellation | Context managers, asynchronous close, cleanup tests; future shared API clients use lifespan |
+| Do not make failures look successful | Users and automation must distinguish failure/partial results | HTTP error models, `InputError` / `OperationError`, CLI exit codes |
+| Make telemetry an explicit opt-in | Preserve Azure-independent local use without hiding initialization failure | Disabled by default for the API; fail-fast when enabled; initialize once per process |
+| Abstract only when needed | Avoid unused mechanisms in a template | Retain simple CRUD/thin CLIs; no generic service base class or exporter registry |
 
-There is no generic service base class, repository layer, router auto-discovery,
-or dependency-injection container. Add an abstraction only when an actual shared
-responsibility requires it.
+### Clean Architecture and DDD
 
-API telemetry follows the same rule. Azure Monitor is configured behind one small
-module boundary, without an unused exporter registry or hand-built provider stack.
-Routers and domain code use OpenTelemetry APIs if they need custom spans or metrics.
+Clean Architecture concerns **technology/business separation and source dependency direction**.
+DDD concerns **shared business language, models, and consistency boundaries**, a separate decision from layering.
+Task demonstrates a vertical slice, not a business-analyzed Bounded Context or a complete DDD model.
 
-## Configuration
+`TaskId` uses `NewType` for static type distinction, not a Value Object with runtime business validation.
+Frozen dataclasses prevent direct attribute changes but do not generate business-operation rules.
+Avoiding Pydantic in inner layers and choosing immutable Entities are template-specific decisions,
+not universal Clean Architecture/DDD requirements.
+Consider Aggregates, Domain Events, Unit of Work, and multiple Contexts when the business requires them.
 
-Application code accesses configuration through `template_azure_python.settings`:
+## Contracts to preserve
 
-- `get_project_settings()` supplies project name and logging level.
-- `get_azure_settings()` supplies the application Azure settings listed in `.env.template`.
-- `ProjectSettings` is a Pydantic Settings model. `AzureSettings` composes
-  service-specific Pydantic Settings models and exposes values through nested
-  paths such as `settings.cosmos_db.endpoint` and `settings.resource.subscription_id`.
-  The models share UTF-8 dotenv loading, case-insensitive field names, and ignored
-  unrelated keys while retaining the flat environment variable names in `.env.template`.
+### HTTP and repository
 
-```mermaid
-flowchart LR
-    environment["OS environment"] --> model["Pydantic Settings"]
-    dotenv[".env in working directory"] --> model
-    defaults["Field defaults"] --> model
-    model --> resolved["Resolved operation arguments"]
-    options["Explicit CLI options"] --> resolved
-    resolved --> operation["Azure operation"]
-```
+| Operation | Contract |
+| --- | --- |
+| `GET /` | 200, `{"Hello":"World"}` |
+| `POST /tasks` | 201; generates a UUID with initial status `todo` |
+| `GET /tasks`, `GET /tasks/{task_id}` | 200; an array of Tasks or one Task |
+| `PUT /tasks/{task_id}` | 200; title/status required; omitted description replaces it with an empty string; not a partial update |
+| `DELETE /tasks/{task_id}` | 204, no response body |
+| Errors | Input/domain validation: 422; not-found: 404; duplicate: 409. Body: `{"detail": "message"}`; keep OpenAPI aligned |
 
-The priority is **explicit CLI options > OS environment > `.env` > field defaults**.
-Operation adapters resolve omitted options from settings; an explicit option does not
-modify the environment or the cached model.
+HTTP DTOs reject unknown input fields.
+Titles cannot be whitespace-only and allow at most 200 characters; descriptions allow at most 2,000.
+HTTP validates the original input length; the domain trims surrounding whitespace before validating values.
+Statuses are `todo`, `in_progress`, and `done`; current PUT allows any change between these states.
+The HTTP validation exception handler is registered app-wide: future routers must match its response format.
 
-The relative `.env` path is resolved from the current working directory, not by
-searching parent directories. Run documented commands from the repository root.
-A missing file is allowed: OS values and defaults still apply. An operation that
-requires a missing endpoint or ID reports a missing option before authentication.
-Azure settings ignore empty environment values, preserving optional resource-group
-filters and the existing database, container, and consumer-group defaults.
+`TaskRepository` defines asynchronous `add/get/list/update/delete` operations.
+Missing `get` returns `None`; missing `update/delete` returns `False`;
+duplicate `add` raises `TaskAlreadyExistsError`. Use cases translate absence into an application error.
+The in-memory adapter's lock is per operation, not a transaction/concurrency guarantee for future adapters.
 
-Getters load settings on first use and cache the snapshot. Changing a configuration
-file while a process is running requires a restart; tests clear caches explicitly.
-Service-specific validation runs when that service is used, so unrelated missing
-settings do not prevent API startup, another CLI, or `--help`.
+### Settings and authentication
 
-Scripts do not call `load_dotenv`, and Typer options do not use `envvar`.
-Pydantic reads dotenv values without injecting the entire file into `os.environ`.
-Azure SDK authentication still uses `DefaultAzureCredential`, including `az login`
-and managed identity. Configure SDK-owned authentication variables in the OS or
-hosting environment; arbitrary extra dotenv keys are not exported to the SDK.
+- Precedence: **explicit CLI arguments → OS environment → `.env` in the working directory → defaults**.
+  Azure settings ignore empty OS values, so an existing dotenv value still applies.
+- `get_project_settings()` supplies project name, logging level, and API telemetry configuration;
+  `get_azure_settings()` supplies nested service settings.
+  Retain the flat, case-insensitive environment names in `.env.template`.
+  Do not use unrelated `NAME` or `RESOURCE_ID` variables for aliased fields.
+- Getters cache their first snapshot. Restart after changes; clear caches in tests.
+  Do not search parent directories for `.env` or inject its contents into the OS environment.
+- Validate required endpoints/IDs and service-specific input at operation time.
+  Unrelated missing Azure settings must not prevent API startup or another service's `--help`.
+- Azure operations use `DefaultAzureCredential`, including Azure CLI login and managed identity.
+  SDK-owned authentication variables belong in the OS/hosting environment, not arbitrary extra dotenv keys.
+- Only Application Insights emission passes a connection string to the SDK; query authentication is separate.
+  Keep it as a `SecretStr` excluded from dumps, never in CLI arguments, logs, or source.
 
-`APPLICATIONINSIGHTS_CONNECTION_STRING` is a `SecretStr` excluded from settings dumps.
-It is never a CLI argument or part of the basic command's project-settings output.
-The only application-owned environment mutation is `telemetry_environment()`:
-it temporarily applies SDK controls for one emission and restores original values,
-including unset variables, even on failure.
+### CLI, resource lifetime, and telemetry
 
-See [Pydantic Settings](https://pydantic.dev/docs/validation/latest/concepts/pydantic_settings/)
-for the underlying sources and precedence.
+- Input errors exit 2; operation failures exit 1. Preserve service-specific JSON/stderr diagnostics.
+  Logs partial results retain tables and an error with exit 1, not complete success.
+- Event Hubs preserves a global partition-wide idle timeout, event limit, and task cancellation; no checkpoints.
+  Service Bus completes messages after successful display and does not acknowledge failed display.
+  Queue Storage receive does not delete; queue deletion requires confirmation or explicit `--yes`.
+- Cosmos CLI demonstrates products with a `/category` partition. Queries stay parameterized;
+  omitted throughput is not passed to container creation. This is not Task persistence.
+- Foundry uses a project URL and preserves two-turn output order.
+- API instrumentation and CLI `emit-telemetry` are separate paths.
+  The CLI explicitly emits even when `TELEMETRY_ENABLED=false`; it owns process-wide providers/logging,
+  so do not call it inside the API.
+  SDK environment mutations stay within `telemetry_environment()` and are restored even on failure.
+  Successful provider flushing does not guarantee Azure ingestion or Live Metrics display.
 
-## Errors, streaming, and client lifetime
+See [Foundry](../foundry.md), [Cosmos DB](../cosmosdb.md), [messaging](../messaging.md),
+and [monitoring](../monitoring.md) for service procedures and side effects.
 
-Internal validation raises `InputError`; missing configuration raises its
-`MissingSetting` subtype. SDK failures become `OperationError`. The CLI maps these
-to input errors (exit 2) or operation failures (exit 1), keeping the existing
-service-specific JSON or stderr diagnostics. Azure Logs partial results retain
-their tables and a sanitized error, with exit 1 rather than a success-shaped fallback.
+<a id="extending-existing-services"></a>
 
-Context managers scope credentials and synchronous/asynchronous clients to each
-CLI operation and close them on success, failure, and cancellation. Cosmos queries
-remain parameterized and partition-scoped; omitting throughput does not set it
-when creating a container.
+## Changing the code
 
-Event Hubs and Service Bus use callbacks to hand ordinary records to the CLI.
-This preserves streaming output without importing Typer in the adapters.
-Service Bus displays a message before completing it; a failed display does not
-acknowledge that message. Event Hubs retains its global idle timeout, event limit,
-and cancellation of partition tasks. Foundry preserves two-turn output order.
+### Add HTTP business functionality
 
-Application Insights emission changes process-wide OpenTelemetry providers and
-temporarily isolates logging. It is a **single-process CLI operation**, not a
-per-request API helper. Provider flushing does not guarantee ingestion.
-See [monitoring](../monitoring.md) for operational details.
+1. Define shared terms, user actions, successful/prohibited scenarios, and required consistency boundaries.
+   Reuse the vertical-slice structure, not Task classes in unrelated business domains.
+2. Put business operations/invariants in `domain/<feature>.py`, commands/orchestration in `application/<feature>.py`.
+   Introduce Protocols in `application/ports` only for needed I/O.
+3. Add adapters in `infrastructure` and DTOs/routers/error mapping in `presentation/http`.
+   Wire them through `api.py` and the relevant `__init__.py` public exports.
+4. Test domain rules, use cases, repository contracts, API responses, and OpenAPI.
+   Check whether existing PUT or other paths bypass a new rule; explicitly record contract changes.
 
-## Adding a domain or service
+"Only started Tasks can be completed" is a **possible future business rule**, not current behavior.
+A Cosmos Task Repository is also unimplemented. Do not reuse the synchronous product CLI as-is:
+design asynchronous I/O, document/domain mapping, partitioning, client lifespan, and SDK error translation.
+Protecting concurrent updates requires versions/ETags and conditional saves; consider port/use-case contract changes too.
 
-### HTTP domain
+### Add Azure CLI technical operations
 
-1. Add `routers/<domain>.py` with an `APIRouter` and its path operations.
-   Put a shared prefix, tags, responses, or dependencies on the router when needed.
-2. Import the router module in `api.py` and register its `router` with `app.include_router`.
-   Explicit module imports avoid collisions between variables named `router`.
-3. Add response, validation, and OpenAPI tests. Use `Depends` for real shared
-   dependencies; introduce `dependencies.py` only when it has a responsibility.
+1. Update models under `settings/azure` and nonsecret examples in `.env.template`.
+   Compose new models into `AzureSettings` and public exports.
+2. Implement operations in `internals/azure`, reusing shared helpers.
+   Preserve service-specific endpoint requirements; check pre-auth validation, mapping, and cleanup.
+3. Add a thin `scripts/cli_<service>.py` with `cli_errors` and existing output helpers.
+   Test argument precedence, required settings, failures, exit codes, output shape, and cancellation.
+4. Update directly related guides in both languages, preserving valid inputs and existing CLI output contracts.
 
-An Azure-backed HTTP domain should manage reusable clients through application
-lifespan and inject them, rather than opening a Cosmos client for every request.
-Choose asynchronous operations where appropriate. This is a future extension,
-not initialization that the current root endpoint needs.
+## Validation and automated guards
 
-### Azure CLI
+| Check | Command/scope |
+| --- | --- |
+| Task changes | `uv run --locked pytest tests/test_task_domain.py tests/test_task_application.py tests/test_api.py` |
+| Settings/Azure operations | `tests/test_settings.py`, relevant `test_cli_<service>.py`, shared-operation tests |
+| Format/types/dependencies/workflows | `make format-check lint` |
+| Full regression | `make test`; coverage targets package, scripts, and Functions runtime code |
+| CI checks including dependency setup | `make ci-test` |
+| English/Japanese documentation | `make ci-test-docs` |
 
-1. Add or extend the service-specific model under `settings/azure` and add
-   nonsecret examples to `.env.template`. Compose a new service model in
-   `AzureSettings` when needed.
-2. Add a service operation under `internals/azure`. Resolve omitted configuration
-   through the public settings package, validate before authentication, manage
-   resources, and convert SDK results into ordinary values.
-3. Add a thin `scripts/cli_<service>.py` using `cli_errors` and existing output helpers.
-   Test explicit options, settings fallback, failures, output shape, and resource cleanup.
+Strict mypy covers `api.py` and the Task vertical slice; ty/Pyrefly check their configured project scopes.
+Import-linter enforces inward layer order, presentation/infrastructure independence,
+and forbidden dependencies such as FastAPI, Pydantic, and Azure from domain/application.
+Structural tests check SDK imports in scripts, environment access outside settings, and CLI dependencies in Azure operations.
 
-Tests enforce that SDK imports stay out of scripts, environment access stays in
-settings, and Azure adapters do not depend on CLI presentation. Regression tests
-mock SDK boundaries; the OpenTelemetry construction test runs offline in a separate
-process to isolate write-once providers.
+**Policy and automated guarantees differ.** The standard-library-only domain policy does not
+automatically forbid every external library or unlisted internal package.
+Review scopes/contracts in `pyproject.toml` when introducing dependencies or Contexts.
+Type checks do not guarantee runtime business rules, transactions, or operation in Azure.
+Mock SDK boundaries; construct write-once OpenTelemetry providers in separate offline test processes.
+
+## Intentional limits and non-goals
+
+- Tasks disappear on restart and are not shared across workers/processes/replicas.
+  Persistence, pagination, optimistic concurrency, and business state-transition rules are unimplemented.
+- HTTP is an anonymous reference implementation. Production sensitive-data handling needs access controls and storage design.
+- Azure CLIs are technical SDK samples, not Task API business use cases.
+  They can delete messages or overwrite data; use test resources.
+- Infrastructure provisioning is outside this repository; deployment/service guides explain external Terraform scenarios.
+- HTTP 200, empty query results, and successful local flushing alone do not establish Azure ingestion,
+  monitoring coverage, or production readiness.
+
+## Sources and further reading
+
+Distinguish general principles from this template's application decisions.
+
+- Robert C. Martin, [The Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html): dependency rules and responsibilities.
+- Eric Evans / Domain Language, [DDD Reference](https://www.domainlanguage.com/ddd/reference/): language, models, and boundaries.
+- Microsoft, [Domain analysis](https://learn.microsoft.com/en-us/azure/architecture/microservices/model/domain-analysis) / [Tactical DDD](https://learn.microsoft.com/en-us/azure/architecture/microservices/model/tactical-domain-driven-design): guidance from business to models; microservices are not mandatory for this template.
+- FastAPI, [Bigger Applications](https://fastapi.tiangolo.com/tutorial/bigger-applications/) / [Lifespan Events](https://fastapi.tiangolo.com/advanced/events/): router separation and shared-resource lifetime.
+- Python, [Protocols](https://typing.python.org/en/latest/spec/protocol.html); Pydantic, [Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/): typing and configuration mechanisms.
+- Microsoft, [Cosmos DB transactions and optimistic concurrency](https://learn.microsoft.com/en-us/azure/cosmos-db/database-transactions-optimistic-concurrency): partition-scoped transactions and ETags.
+- Import-linter, [Layers contract](https://github.com/seddonym/import-linter/blob/main/docs/contract_types/layers.md): dependency guard scope.
