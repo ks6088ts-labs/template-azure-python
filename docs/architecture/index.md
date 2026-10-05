@@ -1,8 +1,65 @@
 # Architecture
 
-This project follows [FastAPI's multiple-files guide](https://fastapi.tiangolo.com/tutorial/bigger-applications/)
-without adding unused application layers. HTTP routing, configuration, Azure operations,
-and command-line presentation have separate responsibilities.
+This project combines [FastAPI's multiple-files guide](https://fastapi.tiangolo.com/tutorial/bigger-applications/)
+with Clean Architecture boundaries. HTTP routing, use cases, domain rules, persistence,
+configuration, Azure operations, and command-line presentation have separate responsibilities.
+
+## Clean Architecture template
+
+The `/tasks` API is a reference vertical slice. Dependencies point inward; inner layers
+do not know which web framework, database, or cloud SDK the application uses.
+
+```mermaid
+flowchart LR
+    http["HTTP / FastAPI<br/>presentation"] --> usecases["Commands and queries<br/>application"]
+    usecases --> domain["Task entity<br/>domain"]
+    memory["In-memory repository<br/>infrastructure"] -. implements .-> port["TaskRepository Protocol<br/>application"]
+    usecases --> port
+    composition["api.py<br/>composition root"] --> http
+    composition --> usecases
+    composition --> memory
+```
+
+| Layer | Responsibility | May depend on |
+| --- | --- | --- |
+| `domain` | Entities, value types, invariants | Python standard library |
+| `application` | Use cases, commands, queries, repository ports | `domain` |
+| `infrastructure` | Database and external-service adapters | `application`, `domain` |
+| `presentation` | HTTP DTOs, routing, error/status mapping | `application`, `domain` |
+| `api.py` | Construct and connect concrete objects | All layers |
+
+The domain uses frozen dataclasses and enums rather than Pydantic models. The application
+depends on the structural `TaskRepository` protocol rather than a concrete repository.
+FastAPI and Pydantic remain in the HTTP adapter. `create_app()` is the composition root;
+each app receives a separate repository, which keeps tests isolated and makes adapter
+replacement explicit.
+
+### Adding a feature
+
+Use the Task slice as a template rather than importing its classes into an unrelated domain:
+
+1. Model business state and invariants in `domain/<feature>.py`.
+2. Define required I/O as application `Protocol` ports and implement use cases in
+   `application/<feature>.py`.
+3. Implement infrastructure adapters against those ports. Do not expose SDK or database
+   models through the port.
+4. Define transport DTOs and mapping in `presentation/http`; translate application errors
+   into HTTP responses there.
+5. Wire concrete implementations only in `api.py`.
+6. Add domain and use-case unit tests, an adapter contract test, and API integration tests.
+
+To replace the in-memory adapter with Cosmos DB, implement the same `TaskRepository`
+protocol, map Cosmos documents to and from `Task` inside that adapter, handle optimistic
+concurrency there, and change only the construction in `api.py`. Domain and application
+modules must not import Azure packages or settings.
+
+### Automated guardrails
+
+Run `make lint` to execute Ruff, strict mypy checks for the Clean Architecture packages,
+ty, Pyrefly, and import-linter. Import-linter enforces the inward layer order, prevents
+presentation and infrastructure from depending on each other, and prevents framework or
+SDK imports in domain/application code. `make test` exercises each layer and the composed API.
+The same commands run in CI.
 
 ## Components and entrypoints
 
@@ -70,9 +127,9 @@ Each Azure service has its own module: `cosmosdb`, `foundry`, `event_grid`,
 Internal operations return ordinary dictionaries, lists, strings, or counts.
 SDK clients and result models stay inside the adapters.
 
-There is no generic service base class, repository layer, router auto-discovery,
-or dependency-injection container. Add an abstraction only when an actual shared
-responsibility requires it.
+There is no generic service base class, router auto-discovery, or dependency-injection
+container. Repository protocols are introduced only at application boundaries that need
+persistence; add other abstractions only when an actual responsibility requires them.
 
 API telemetry follows the same rule. Azure Monitor is configured behind one small
 module boundary, without an unused exporter registry or hand-built provider stack.

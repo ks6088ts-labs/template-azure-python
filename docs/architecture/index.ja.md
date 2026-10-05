@@ -1,8 +1,61 @@
 # アーキテクチャ
 
-[FastAPI の複数ファイル構成ガイド](https://fastapi.tiangolo.com/tutorial/bigger-applications/)に従い、
-HTTP のルーティング、設定、Azure 操作、CLI の表示を分離しています。
-未使用のアプリケーション層を先回りして増やさず、実際に必要な責務だけを置きます。
+[FastAPI の複数ファイル構成ガイド](https://fastapi.tiangolo.com/tutorial/bigger-applications/)と
+Clean Architecture の境界を組み合わせ、HTTP ルーティング、ユースケース、ドメインルール、
+永続化、設定、Azure 操作、CLI 表示の責務を分離しています。
+
+## Clean Architecture テンプレート
+
+`/tasks` API は代表的な縦スライスです。依存は内側へ向かい、内側の層は Web framework、
+database、cloud SDK の選択を知りません。
+
+```mermaid
+flowchart LR
+    http["HTTP / FastAPI<br/>presentation"] --> usecases["Command と query<br/>application"]
+    usecases --> domain["Task entity<br/>domain"]
+    memory["In-memory repository<br/>infrastructure"] -. implements .-> port["TaskRepository Protocol<br/>application"]
+    usecases --> port
+    composition["api.py<br/>composition root"] --> http
+    composition --> usecases
+    composition --> memory
+```
+
+| 層 | 責務 | 依存可能な対象 |
+| --- | --- | --- |
+| `domain` | Entity、値の型、不変条件 | Python 標準ライブラリ |
+| `application` | Use case、command、query、Repository port | `domain` |
+| `infrastructure` | Database・外部 service adapter | `application`、`domain` |
+| `presentation` | HTTP DTO、routing、error/status mapping | `application`、`domain` |
+| `api.py` | 具象 object の生成と接続 | すべての層 |
+
+domain は Pydantic model ではなく frozen dataclass と enum を使います。application は
+具象 repository ではなく構造的部分型の `TaskRepository` protocol に依存します。
+FastAPI と Pydantic は HTTP adapter 内に限定します。`create_app()` が composition root であり、
+app ごとに独立した repository を生成するため、test の状態分離と adapter の明示的な差し替えが可能です。
+
+### 機能追加の手順
+
+Task の class を無関係な domain から再利用するのではなく、縦スライスの構成をテンプレートにします。
+
+1. `domain/<feature>.py` に業務状態と不変条件を定義する。
+2. 必要な I/O を application の `Protocol` port として定義し、
+   `application/<feature>.py` に use case を実装する。
+3. port に対する infrastructure adapter を実装する。SDK や database の model を port から公開しない。
+4. `presentation/http` に transport DTO と変換を定義し、application error を HTTP response へ変換する。
+5. 具象実装の配線は `api.py` だけで行う。
+6. domain/use case の unit test、adapter contract test、API integration test を追加する。
+
+in-memory adapter を Cosmos DB へ差し替える場合は、同じ `TaskRepository` protocol を実装し、
+Cosmos document と `Task` の変換および楽観的 concurrency を adapter 内へ閉じ込め、
+`api.py` の生成処理だけを変更します。domain/application から Azure package や settings を
+import してはいけません。
+
+### 自動ガードレール
+
+`make lint` は Ruff、Clean Architecture package に対する mypy strict、ty、Pyrefly、
+import-linter を実行します。import-linter は内向きの層順序、presentation と infrastructure の
+相互非依存、domain/application から framework・SDK を import しないことを強制します。
+`make test` は各層と配線済み API を検証し、同じ command を CI でも実行します。
 
 ## 構成と起動経路
 
@@ -69,8 +122,9 @@ Azure 操作は `cosmosdb`、`foundry`、`event_grid`、`event_hubs`、`service_
 操作の戻り値は通常の辞書・リスト・文字列・件数です。
 SDK のクライアントと結果モデルは内部実装に閉じ込めます。
 
-汎用サービス基底クラス、repository 層、ルーター自動探索、独自 DI コンテナーはありません。
-実際に共有する責務が生まれたときだけ、必要な抽象化を追加します。
+汎用サービス基底クラス、ルーター自動探索、独自 DI コンテナーはありません。
+Repository protocol は永続化が必要な application 境界だけに導入し、その他の抽象化は
+実際の責務が生まれたときだけ追加します。
 
 API テレメトリも同じ方針です。未使用の exporter registry や自作 provider stack は追加せず、
 小さな module 境界の内側で Azure Monitor を設定します。カスタム span や metric が必要な

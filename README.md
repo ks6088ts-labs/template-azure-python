@@ -8,6 +8,11 @@
 
 A template repository for Python projects.
 
+The FastAPI application includes a typed Task CRUD vertical slice that demonstrates
+Clean Architecture boundaries, repository ports/adapters, explicit composition, strict
+type checking, and CI-enforced import rules. See the architecture guide below before
+copying the pattern for a new feature.
+
 ## Documentation
 
 | Topic | English | 日本語 |
