@@ -79,6 +79,7 @@ def test_settings_defaults_without_dotenv():
     assert get_project_settings().project_name == "default-project"
     assert get_project_settings().telemetry_enabled is False
     assert get_project_settings().telemetry_traces_per_second == 5
+    assert get_project_settings().telemetry_live_metrics_enabled is False
     settings = get_azure_settings()
     assert settings.cosmos_db.endpoint is None
     assert settings.cosmos_db.database == "cosmicworks"
