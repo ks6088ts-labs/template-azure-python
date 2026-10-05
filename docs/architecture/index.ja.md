@@ -11,15 +11,19 @@ flowchart LR
     launcher["scripts/template.py<br/>Uvicorn"] --> api["api.py<br/>FastAPI アプリ"]
     functions["function_app.py<br/>AsgiFunctionApp"] --> api
     api --> root["routers/root.py<br/>GET /"]
+    api --> telemetry["telemetry.py<br/>プロセス単位の初期化"]
     cli["scripts/cli_*.py"] --> operations["internals/azure<br/>サービス別操作"]
     cli --> presentation["scripts/_cli.py<br/>表示と CLI エラー"]
     operations --> settings["settings<br/>型付き設定"]
+    telemetry --> settings
+    telemetry --> sdk
     launcher --> settings
     operations --> sdk["Azure SDK / OpenTelemetry"]
 ```
 
 - Uvicorn の起動パスは `template_azure_python.api:app` のままです。
-  `api.py` がアプリを生成し、`include_router` でルーターを明示的に登録します。
+  `api.py` の小さな application factory が任意のテレメトリを初期化してからアプリを生成し、
+  `include_router` でルーターを明示的に登録します。
   公式ガイドの `main.py` と同じ責務を担うため、別の起動ファイルは不要です。
 - `function_app.py` は同じアプリを Azure Functions でラップします。
   既存の匿名 HTTP トリガーと、`/api` プレフィックスを付けない設定は維持しています。
@@ -28,14 +32,17 @@ flowchart LR
 - Azure CLI は `internals/azure` のサービス別操作へ委譲します。
   scripts は引数・表示・削除確認・終了コードを担当し、SDK のクライアントやモデルを扱いません。
 
-API の起動時には Azure クライアントを作らず、Azure 設定も必須にしません。
+テレメトリが無効（既定）の場合、API 起動時に Azure クライアントを作らず、
+Azure 設定も必須にしません。有効にした場合は有効な Application Insights 接続文字列が必要で、
+初期化に失敗すると起動を止めます。
 実行手順は[ローカル開発](../scripts.md)と[デプロイ](../deployment.md)を参照してください。
 
 ## パッケージの責務
 
 ```text
 template_azure_python/
-  api.py                       # アプリ生成とルーター登録
+  api.py                       # テレメトリ呼び出し・アプリ生成・ルーター登録
+  telemetry.py                 # プロセス単位の Azure Monitor 初期化
   routers/
     root.py                    # 現在の HTTP ドメイン
   settings/
@@ -64,6 +71,10 @@ SDK のクライアントと結果モデルは内部実装に閉じ込めます�
 
 汎用サービス基底クラス、repository 層、ルーター自動探索、独自 DI コンテナーはありません。
 実際に共有する責務が生まれたときだけ、必要な抽象化を追加します。
+
+API テレメトリも同じ方針です。未使用の exporter registry や自作 provider stack は追加せず、
+小さな module 境界の内側で Azure Monitor を設定します。カスタム span や metric が必要な
+router・ドメインコードは OpenTelemetry API を使います。
 
 ## 設定の集約
 

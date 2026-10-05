@@ -2,6 +2,11 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "",
-    "FUNCTIONS_WORKER_RUNTIME": "python"
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "PROJECT_NAME": "template-azure-python",
+    "TELEMETRY_ENABLED": "false",
+    "TELEMETRY_TRACES_PER_SECOND": "5",
+    "TELEMETRY_LIVE_METRICS_ENABLED": "false",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": ""
   }
 }

@@ -139,7 +139,98 @@ uv run --locked python -m scripts.cli_activity_log summarize-events --hours 24 -
 | Log Analytics の `summarize-activity` | 時間範囲内の全一致行を集計した後のグループ数 |
 | Activity Log の `summarize-events` | 取得・集計するイベント数。期間内の総数ではない |
 
-## 4. テレメトリを送って確認する（任意）
+## 4. API を計装する
+
+API は Azure Monitor OpenTelemetry Distro を使い、FastAPI のリクエスト、
+標準メトリック、パッケージログの相関、計装済み HTTP / Azure SDK の依存関係を収集します。
+アプリケーションコードは環境変数を直接読みません。`.env` またはホスティング環境の値を
+Pydantic Settings で集約し、プロセス単位の初期化関数へ渡します。
+
+ローカル開発で Azure を必須にしない既定値は次のとおりです。
+
+```dotenv
+PROJECT_NAME=template-azure-python
+TELEMETRY_ENABLED=false
+TELEMETRY_TRACES_PER_SECOND=5
+TELEMETRY_LIVE_METRICS_ENABLED=false
+APPLICATIONINSIGHTS_CONNECTION_STRING=
+```
+
+`PROJECT_NAME` は OpenTelemetry の `service.name` と Application Insights の
+クラウドロール名になります。`TELEMETRY_TRACES_PER_SECOND` は正数で、
+1 プロセスごとの上限です。既定値のまま 5 replica を動かすと、全体では最大でおよそ
+毎秒 25 trace をサンプリングできます。worker / replica 数と取り込み予算に合わせて
+調整してください。Live Metrics は常時接続を追加するため、別設定にしています。
+
+### 無効時の動作を確認する
+
+`TELEMETRY_ENABLED=false` のまま、次を実行します。
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps
+curl --fail http://127.0.0.1:8000/
+```
+
+期待する応答は `{"Hello":"World"}` です。接続文字列は不要で、
+Azure Monitor provider も設定されません。
+
+### fail-fast を確認する
+
+`TELEMETRY_ENABLED=true`、`APPLICATIONINSIGHTS_CONNECTION_STRING` は空のままにして、
+再度サーバーを起動します。
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps
+```
+
+接続文字列が未設定であることを示す、秘匿済みのエラーで起動に失敗するのが期待結果です。
+API が起動した場合は設定契約が壊れています。この確認のために接続文字列を
+コマンドラインへ貼り付けないでください。
+
+### Azure で API テレメトリを確認する
+
+Git の無視対象 `.env` に `APPLICATIONINSIGHTS_CONNECTION_STRING` を非公開で設定し、
+`TELEMETRY_ENABLED=true` のままサーバーを起動してリクエストを送ります。
+
+```shell
+curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/docs
+```
+
+取り込みを待ち、同じ Application Insights リソースを検索します。
+
+```shell
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 1 --limit 100
+```
+
+成功した `GET /` と `GET /docs` を探し、HTTP status が `200`、
+クラウドロール名・サービス名が `PROJECT_NAME` と一致することを確認します。
+少数のリクエストはサンプリングで表示されないことがあります。上限を決めて複数回送り、
+待ってから再検索してください。本番で確認のためだけにサンプリングを無効化しないでください。
+
+API ルートが計装済み HTTP / Azure SDK を呼ぶ場合は `AppDependencies` を検索し、
+operation / trace ID が親リクエストにつながることを確認します。
+`template_azure_python` 配下の logger でログを出した場合は `AppTraces` を検索して、
+同じ相関を確認します。標準・カスタムメトリックは `AppMetrics` で確認します。
+root endpoint は、テーブルを埋めるためだけの偽の依存関係、リクエストごとの INFO ログ、
+デモメトリックを生成しません。
+
+### 大規模運用と拡張の境界
+
+- バッチ処理、再試行、exporter の寿命、対応する FastAPI / Azure SDK 計装は
+  Distro に任せます。初期化はプロセスごとに 1 回だけで、リクエストごとには行いません。
+- Resource とメトリックの属性は安定した低カーディナリティ値に限定します。
+  request ID、user ID、payload、token、機密値、無制限に増える値を付けないでください。
+- レート制限はデプロイ全体ではなく各プロセスに適用されます。worker / replica 数を
+  変更したら再評価し、取り込みコストとサンプリングの影響を監視してください。
+- 明示的に有効にした場合だけ、初期化失敗で起動を止めます。ローカル利用を維持しつつ、
+  本番が未監視のまま正常に見える状態を防ぎます。
+- 実装済み backend は Azure Monitor だけです。将来の OTLP exporter は初期化境界の
+  内側へ追加し、router やドメインコードは exporter 固有 API ではなく
+  OpenTelemetry API を使い続けます。
+
+## 5. CLI からテレメトリを送って確認する（任意）
 
 **この手順だけデータを送信します。取り込み料金が発生する場合があります。**
 

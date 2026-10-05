@@ -142,7 +142,100 @@ See the [Activity Log overview](https://learn.microsoft.com/azure/azure-monitor/
 | Log Analytics `summarize-activity` | Groups returned after aggregating all matching rows in the time window |
 | Activity Log `summarize-events` | Events retrieved and counted; not the total for the time window |
 
-## 4. Emit and find telemetry, optionally
+## 4. Instrument the API
+
+The API uses the Azure Monitor OpenTelemetry Distro for FastAPI requests, standard
+metrics, correlated package logs, and instrumented HTTP/Azure SDK dependencies.
+Application code reads no environment variables directly. Values flow from `.env`
+or the hosting environment through Pydantic settings into the process-level
+telemetry initializer.
+
+The following defaults keep local development Azure-independent:
+
+```dotenv
+PROJECT_NAME=template-azure-python
+TELEMETRY_ENABLED=false
+TELEMETRY_TRACES_PER_SECOND=5
+TELEMETRY_LIVE_METRICS_ENABLED=false
+APPLICATIONINSIGHTS_CONNECTION_STRING=
+```
+
+`PROJECT_NAME` becomes the OpenTelemetry `service.name` and Application Insights
+cloud role name. `TELEMETRY_TRACES_PER_SECOND` is a positive, per-process limit.
+Five replicas with the default can therefore sample up to about 25 traces per
+second in total. Size it against the number of workers/replicas and the ingestion
+budget. Live Metrics is separately controlled because it adds a continuous channel.
+
+### Verify disabled behavior
+
+Leave `TELEMETRY_ENABLED=false`, then run:
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps
+curl --fail http://127.0.0.1:8000/
+```
+
+The expected response is `{"Hello":"World"}`. No connection string is required,
+and no Azure Monitor provider is installed.
+
+### Verify fail-fast configuration
+
+Set `TELEMETRY_ENABLED=true` while leaving
+`APPLICATIONINSIGHTS_CONNECTION_STRING` empty, then start the server again:
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps
+```
+
+Startup must fail with a sanitized message stating that the connection string is
+not configured. If the API starts, the configuration contract is broken. Do not
+paste the secret into the command line to perform this check.
+
+### Verify API telemetry in Azure
+
+Privately set `APPLICATIONINSIGHTS_CONNECTION_STRING` in the Git-ignored `.env`,
+keep `TELEMETRY_ENABLED=true`, start the server, and generate requests:
+
+```shell
+curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/docs
+```
+
+Allow for ingestion delay, then query the same Application Insights resource:
+
+```shell
+uv run --locked python -m scripts.cli_application_insights query-telemetry \
+  --table AppRequests --hours 1 --limit 100
+```
+
+Find successful `GET /` and `GET /docs` requests. Confirm HTTP status `200` and
+that the cloud role/service name matches `PROJECT_NAME`. Sampling means a small
+number of requests may not appear; send a bounded batch, wait, and query again
+rather than disabling sampling in production.
+
+When an API route makes an instrumented HTTP or Azure SDK call, query
+`AppDependencies` and confirm its operation/trace ID links to the parent request.
+When code logs through a logger under `template_azure_python`, query `AppTraces`
+and confirm the same correlation. Query `AppMetrics` for generated standard or
+custom metrics. The root endpoint intentionally does not create fake dependencies,
+per-request informational logs, or demo metrics merely to populate these tables.
+
+### Scale and extension boundaries
+
+- The Distro owns batch processing, retries, exporter lifetime, and supported
+  FastAPI/Azure SDK instrumentation. The application initializes it once per
+  process, never per request.
+- Keep resource and metric attributes stable and low-cardinality. Do not attach
+  request IDs, user IDs, payloads, tokens, or other sensitive/unbounded values.
+- Rate limiting bounds each process, not the whole deployment. Re-evaluate it when
+  worker or replica counts change, and monitor ingestion cost and sampling effects.
+- Telemetry initialization fails startup only when explicitly enabled. This avoids
+  a healthy-looking but unobserved production process while preserving local use.
+- Azure Monitor is the only implemented backend. A future OTLP exporter belongs
+  behind the initialization boundary; routers and domain code should continue to
+  use OpenTelemetry APIs rather than exporter-specific APIs.
+
+## 5. Emit and find telemetry from the CLI, optionally
 
 **Only this step sends data. It may incur ingestion charges.**
 
