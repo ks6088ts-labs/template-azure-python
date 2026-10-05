@@ -260,6 +260,110 @@ Settings are cached in a running process; editing the file alone does not switch
 Explicit API initialization failures stop startup; the CLI reports detected SDK
 warnings or export failures. Check portal display separately.
 
+### Verify Live Metrics display with the local API
+
+The simplest check is to call the local API while watching Azure portal graphs.
+**The API runs locally, but Live Metrics display requires an Azure connection.**
+Normal telemetry is also emitted and may incur ingestion charges.
+Run these Bash-compatible commands from the repository root.
+
+#### 1. Prepare the destination
+
+Set `PROJECT_NAME=template-azure-python` in the existing `.env`, and privately
+configure `APPLICATIONINSIGHTS_CONNECTION_STRING` for the target Application Insights.
+Obtain the connection string from that resource's Azure portal **Overview**.
+Do not overwrite the existing file or paste the secret into shell arguments or shared logs.
+Exported OS values for these settings take precedence over `.env`.
+
+#### 2. Open Live Metrics for that resource
+
+Open **Live Metrics** in the same Application Insights resource and keep it open
+during verification. Browser sign-in and resource access are required separately
+from Azure CLI login.
+
+The SDK pings the live endpoint and publishes live data when the subscription
+response becomes `true`. Without an open view, continued pings with
+`subscribed: false` are different from connection failure.
+Normal API startup logs do not necessarily show this response.
+
+#### 3. Start the API in terminal 1
+
+Stop any other server using port 8000, then run:
+
+```shell
+TELEMETRY_ENABLED=true TELEMETRY_LIVE_METRICS_ENABLED=true \
+  uv run --locked python -m scripts.template serve-container-apps
+```
+
+These flags apply only to this process and do not edit `.env`. Keep the server running.
+
+#### 4. Generate requests in terminal 2
+
+First check a normal response:
+
+```shell
+curl --fail http://127.0.0.1:8000/
+```
+
+Expect `{"Hello":"World"}`. Then send up to 30 requests one second apart:
+at most 31 including the initial check. Stop the loop if `curl` fails.
+
+```shell
+for i in $(seq 1 30); do
+  curl --fail --silent --show-error --output /dev/null \
+    --write-out 'HTTP %{http_code}\n' http://127.0.0.1:8000/ || break
+  sleep 1
+done
+```
+
+#### 5. Check changes in the portal
+
+| Item | Expected state |
+| --- | --- |
+| Connected server/instance | The local process appears connected |
+| Role name | `template-azure-python`, or the effective OS override of `PROJECT_NAME` |
+| Request count/rate | Increases while sending |
+| Request duration | Values are displayed |
+| Failed requests | With no other traffic, successful `/` calls do not increase failures |
+
+**Both HTTP 200 responses and changing live graphs are required to verify display.**
+Connection and rendering can take time. Wait for a connection, then observe graphs
+during and immediately after the batch. If the first batch finished before connection,
+you may send the same batch once more after connecting.
+If nothing appears, mark display unverified and investigate the target resource,
+both flags, network restrictions, and SDK warnings. Do not send or wait indefinitely.
+
+#### 6. Stop and restore settings
+
+Press `Ctrl+C` in terminal 1 and wait for server shutdown.
+Closing the portal view alone does not stop the API.
+Restore flags changed in `.env` and remove only connection strings added for this exercise.
+Stopping locally or removing settings does not stop charges for Azure resources themselves.
+
+#### Verify with Docker Compose instead
+
+`compose.yml` passes `.env` values into the container environment.
+With the connection string configured privately, set these in the existing `.env`.
+Prefixing a host command with flags alone does not guarantee they reach the container.
+
+```dotenv
+TELEMETRY_ENABLED=true
+TELEMETRY_LIVE_METRICS_ENABLED=true
+```
+
+Stop the local API, then start the container:
+
+```shell
+docker compose up --build
+```
+
+Use the same request and portal checks. The current `compose.yml` overrides
+`PROJECT_NAME=hello`, so **the portal role name is `hello`**.
+Its current port mapping exposes all host interfaces; restrict it locally when needed.
+See [local development's Compose instructions](scripts.md#use-compose).
+Stop with `Ctrl+C`; use `docker compose down` to clean up resources created by this Compose project.
+Check their purpose first if existing containers serve another task.
+
 ### Verify disabled behavior
 
 Leave `TELEMETRY_ENABLED=false`, then run:

@@ -159,6 +159,12 @@ docker compose up --build
 
 Compose starts the same FastAPI app.
 
+To check Azure live monitoring from a local process, follow the
+[Live Metrics verification steps](monitoring.md#verify-live-metrics-display-with-the-local-api).
+Compose passes `.env` into the container and overrides `PROJECT_NAME` to `hello`.
+The current port mapping exposes all interfaces; for local-only access,
+change the port in `compose.yml` to `127.0.0.1:8000:8000`.
+
 ## Common setup for Azure samples
 
 Complete these steps only if you want to try an Azure sample:
