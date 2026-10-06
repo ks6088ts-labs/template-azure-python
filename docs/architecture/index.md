@@ -12,6 +12,7 @@ It is not a complete business system or a production persistence/authentication 
 | Local setup and startup | [Local development](../scripts.md). No Azure resources or sign-in are needed with InMemory and telemetry disabled |
 | The HTTP path | `api.py` → `presentation/http` → `application/task.py` → `domain/task.py` |
 | The Azure path | `scripts/cli_<service>.py` → `internals/azure/<service>.py` → `settings` |
+| Foundry Agent quality checks | [LLM evaluation](../evaluation.md). `tests/evaluations/` is opt-in and separate from runtime code; CI validates only offline plumbing |
 | Deployment and operations | [Deployment](../deployment.md), [monitoring and logs](../monitoring.md) |
 
 Source paths and commands below are relative to the repository root.

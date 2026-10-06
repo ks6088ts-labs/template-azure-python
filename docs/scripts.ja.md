@@ -27,7 +27,8 @@ make install-deps-dev
 
 開発用の依存関係をすべてインストールし、[prek](https://prek.j178.dev/) の
 Git hook を設定します。**既存の pre-commit hook は置き換えられます。**
-CI は JupyterLab を含まない依存関係セットを使います。
+CI は JupyterLab を含まない依存関係セットを使います。課金される LLM 評価の依存は、
+通常の開発・CI インストールから除外します。任意の `eval` グループは [LLM 評価](evaluation.md)を参照してください。
 
 ## 2. FastAPI を動かす
 

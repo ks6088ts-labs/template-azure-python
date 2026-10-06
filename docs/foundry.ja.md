@@ -3,6 +3,8 @@
 AI モデルへの質問と、エージェントの作成・会話を試します。
 使う CLI は `scripts.cli_foundry` です。
 
+DeepEval を使った opt-in の Agent 品質検証は [LLM 評価](evaluation.md)を参照してください。
+
 ## 1. 接続先を設定する
 
 [開発環境と Azure の共通準備](scripts.md)を済ませてから、次を用意します。

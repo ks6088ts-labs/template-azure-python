@@ -64,6 +64,35 @@ jobs:
         run: |
           uv sync --locked --no-dev --group test
           uv run --locked --no-dev --group test pytest --capture=no -vv
+  evaluation-compatibility:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.14"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEEPEVAL_TELEMETRY_OPT_OUT: "1"
+      DEEPEVAL_DISABLE_DOTENV: "1"
+      DEEPEVAL_DISABLE_LEGACY_KEYFILE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.12.19"
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate evaluation plumbing without credentials or LLM calls
+        run: |
+          uv sync --locked --group dev --group eval
+          uv run --locked --group eval pytest tests/test_evaluation_harness.py tests/test_evaluation_deepeval.py --no-cov
+          make lint-eval
+          make test-eval EVAL_ARGS=--collect-only
   hooks:
     runs-on: ubuntu-latest
     timeout-minutes: 5

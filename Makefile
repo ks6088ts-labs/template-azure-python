@@ -14,7 +14,7 @@ info: ## show information
 
 .PHONY: install-deps-dev
 install-deps-dev: ## install dependencies for development
-	uv sync --locked --all-groups
+	uv sync --locked --all-groups --no-group eval
 	uv run --locked prek install -f
 	@which actionlint || echo "install actionlint https://github.com/rhysd/actionlint"
 
@@ -51,6 +51,24 @@ lint: ## lint
 .PHONY: test
 test: ## run tests
 	uv run --locked pytest --capture=no -vv
+
+EVAL_ARGS ?=
+
+.PHONY: test-eval
+test-eval: ## run paid local Foundry evaluations explicitly (EVAL_ARGS='-m llm_eval_smoke' for one case)
+	env -u CONFIDENT_API_KEY \
+		DEEPEVAL_TELEMETRY_OPT_OUT=1 DEEPEVAL_DISABLE_DOTENV=1 DEEPEVAL_DISABLE_LEGACY_KEYFILE=1 \
+		DEEPEVAL_EVAL_MODE=llm DEEPEVAL_MODE=stable CONFIDENT_OPEN_BROWSER=0 \
+		DEEPEVAL_RETRY_MAX_ATTEMPTS=2 DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=60 \
+		DEEPEVAL_RESULTS_FOLDER=artifacts/evaluations \
+		uv run --locked --no-dev --group eval deepeval test run tests/evaluations \
+		--run-llm-evals --override-ini='addopts=-ra --strict-markers' --override-ini='log_cli=false' \
+		--capture=fd --junitxml=artifacts/evaluations/junit.xml $(EVAL_ARGS)
+
+.PHONY: lint-eval
+lint-eval: ## type-check optional evaluation code with its dependencies installed
+	uv run --locked --group eval ty check tests/evaluations tests/test_evaluation_deepeval.py
+	uv run --locked --group eval pyrefly check tests/evaluations tests/test_evaluation_deepeval.py
 
 .PHONY: hooks-check
 hooks-check: ## check all configured hooks

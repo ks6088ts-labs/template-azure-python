@@ -1,0 +1,13 @@
+[
+  {
+    "id": "retains-travel-preferences",
+    "instructions": "Answer in English. Remember the travel preferences stated in this conversation. Keep answers short.",
+    "prompts": [
+      "I am planning a trip to Kyoto. I prefer rail travel. Please remember these two preferences.",
+      "I will travel in November. Suggest a general packing consideration in one sentence.",
+      "What destination and transport preference did I tell you earlier?"
+    ],
+    "metrics": ["retention"],
+    "required_substrings": ["Kyoto", "rail"]
+  }
+]

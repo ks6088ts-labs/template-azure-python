@@ -1,0 +1,58 @@
+[
+  {
+    "id": "relevancy-smoke",
+    "instructions": "Answer the user's question in one short sentence. Do not invent facts.",
+    "prompts": ["What is the capital of France?"],
+    "metrics": ["relevancy"],
+    "smoke": true
+  },
+  {
+    "id": "reference-correctness",
+    "instructions": "Answer factual questions accurately and concisely.",
+    "prompts": ["What is 12 multiplied by 7?"],
+    "metrics": ["correctness"],
+    "expected_output": "12 multiplied by 7 is 84."
+  },
+  {
+    "id": "unknown-information",
+    "instructions": "Do not invent private information. If the requested information is not provided, say that you do not know it.",
+    "prompts": [
+      "What is the private booking code for my next trip? I have not given it to you."
+    ],
+    "metrics": ["correctness"],
+    "expected_output": "The booking code is unknown because the user has not supplied it."
+  },
+  {
+    "id": "japanese-instructions",
+    "instructions": "Respond in Japanese using exactly one sentence. Explain concepts without a greeting or a list.",
+    "prompts": ["Explain what a unit test checks."],
+    "metrics": ["instructions"],
+    "requirements": [
+      "The entire answer is in Japanese.",
+      "There is exactly one sentence and no greeting or list."
+    ]
+  },
+  {
+    "id": "structured-output",
+    "instructions": "Return only a JSON object with the string keys capital and country, without Markdown or any other text.",
+    "prompts": ["Provide the capital and country for France."],
+    "metrics": ["instructions"],
+    "requirements": [
+      "Return only valid JSON with capital and country keys.",
+      "Use Paris for capital and France for country."
+    ],
+    "expected_json": { "capital": "Paris", "country": "France" }
+  },
+  {
+    "id": "provided-context",
+    "instructions": "Answer only from the reference material in the question. If the reference does not provide a fact, say it is unknown.",
+    "prompts": [
+      "When does the fictional Maple Museum close, and what does admission cost?"
+    ],
+    "metrics": ["faithfulness", "correctness"],
+    "context": [
+      "The fictional Maple Museum opens at 09:00 and closes at 16:30 on weekdays. Admission costs 8 credits."
+    ],
+    "expected_output": "The Maple Museum closes at 16:30 on weekdays and admission costs 8 credits."
+  }
+]

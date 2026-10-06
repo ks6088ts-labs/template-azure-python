@@ -1,9 +1,35 @@
+import os
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 
 from template_azure_python.settings import AzureSettings, ProjectSettings, get_azure_settings, get_project_settings
+
+pytest_plugins = ["pytester"]
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption("--run-llm-evals", action="store_true", default=False, help="Allow paid local LLM evaluations")
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    enabled = config.getoption("--run-llm-evals")
+    if enabled and not config.option.collectonly and (os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS")):
+        raise pytest.UsageError("Live LLM evaluations are local-only; CI may only use --collect-only.")
+    directory = config.rootpath / "tests" / "evaluations"
+    if not enabled:
+        for argument in config.args:
+            target = (config.invocation_params.dir / argument.split("::", 1)[0]).resolve()
+            if target.is_relative_to(directory.resolve()):
+                raise pytest.UsageError("LLM evaluations require the explicit --run-llm-evals option.")
+
+
+def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool | None:
+    directory = config.rootpath / "tests" / "evaluations"
+    if not config.getoption("--run-llm-evals") and collection_path.resolve().is_relative_to(directory.resolve()):
+        return True
+    return None
 
 
 @pytest.fixture(autouse=True)
