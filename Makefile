@@ -53,6 +53,7 @@ test: ## run tests
 	uv run --locked pytest --capture=no -vv
 
 EVAL_ARGS ?=
+EVAL_OUTPUT_ARGS ?= --verbose --capture=no --override-ini='log_cli=true'
 
 .PHONY: test-eval
 test-eval: ## run paid local Foundry evaluations explicitly (EVAL_ARGS='-m llm_eval_smoke' for one case)
@@ -62,13 +63,14 @@ test-eval: ## run paid local Foundry evaluations explicitly (EVAL_ARGS='-m llm_e
 		DEEPEVAL_RETRY_MAX_ATTEMPTS=2 DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=60 \
 		DEEPEVAL_RESULTS_FOLDER=artifacts/evaluations \
 		uv run --locked --no-dev --group eval deepeval test run tests/evaluations \
-		--run-llm-evals --override-ini='addopts=-ra --strict-markers' --override-ini='log_cli=false' \
-		--capture=fd --junitxml=artifacts/evaluations/junit.xml $(EVAL_ARGS)
+		--run-llm-evals --override-ini='addopts=-ra --strict-markers' \
+		--junitxml=artifacts/evaluations/junit.xml $(EVAL_OUTPUT_ARGS) $(EVAL_ARGS)
 
 .PHONY: lint-eval
 lint-eval: ## type-check optional evaluation code with its dependencies installed
-	uv run --locked --group eval ty check tests/evaluations tests/test_evaluation_deepeval.py
-	uv run --locked --group eval pyrefly check tests/evaluations tests/test_evaluation_deepeval.py
+	uv run --locked --group eval ty check --verbose tests/evaluations tests/test_evaluation_deepeval.py
+	uv run --locked --group eval pyrefly check --verbose --progress-bar simple --summary=full \
+		tests/evaluations tests/test_evaluation_deepeval.py
 
 .PHONY: hooks-check
 hooks-check: ## check all configured hooks

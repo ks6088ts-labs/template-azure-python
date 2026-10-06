@@ -80,6 +80,8 @@ make test-eval EVAL_ARGS='-k provided-context'
 
 `make test-eval` runs the official `deepeval test run` command and passes `--run-llm-evals` to pytest.
 The flag is required even when selecting a test file directly; `-m llm_eval` alone does not authorize calls.
+The command uses verbose output, live logging, and disables pytest output capture by default so progress remains
+visible during long-running evaluations. Set `EVAL_OUTPUT_ARGS=''` to restore the CLI's standard output behavior.
 The ordinary pytest configuration disables the DeepEval plugin and excludes evaluation modules before import.
 The dedicated command enables the plugin, removes unit-test coverage options, disables anonymous telemetry,
 dotenv/legacy-key autoload in DeepEval and Confident AI uploads, and evaluates locally.

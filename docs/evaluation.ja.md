@@ -81,6 +81,8 @@ make test-eval EVAL_ARGS='-k provided-context'
 
 `make test-eval` は公式の `deepeval test run` を実行し、pytest に `--run-llm-evals` を渡します。
 ファイルの直接指定でもこのフラグは必要で、`-m llm_eval` だけでは許可されません。
+長時間の評価でも進捗が見えるよう、詳細出力とライブログを有効にし、pytest の出力 capture を
+デフォルトで無効にします。CLI 標準の出力へ戻す場合は `EVAL_OUTPUT_ARGS=''` を指定してください。
 通常の pytest は DeepEval プラグインを無効化し、評価モジュールを import 前に除外します。
 専用コマンドだけがプラグインを有効化し、unit test 用 coverage を外します。
 匿名 telemetry、DeepEval の dotenv・旧 key 設定の自動読み込み、Confident AI への送信は無効です。
