@@ -165,3 +165,11 @@ requirements.txt
 local.settings.json
 .deepeval/
 artifacts/evaluations/
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
+*.duckdb
+*.duckdb.wal

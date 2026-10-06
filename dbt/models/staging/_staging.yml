@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_tasks
+    description: Task records normalized for downstream analytics models.
+    columns:
+      - name: task_id
+        description: Stable task identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: title
+        description: Human-readable task title.
+        data_tests:
+          - not_null
+      - name: status
+        description: Current task lifecycle status.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - todo
+                  - in_progress
+                  - done

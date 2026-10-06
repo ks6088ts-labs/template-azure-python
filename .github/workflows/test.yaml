@@ -93,6 +93,25 @@ jobs:
           uv run --locked --group eval pytest tests/test_evaluation_harness.py tests/test_evaluation_deepeval.py --no-cov
           make lint-eval
           make test-eval EVAL_ARGS=--collect-only
+  dbt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up uv with caching enabled
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.12.19"
+          python-version: "3.13"
+      - name: Set up Python 3.13
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Build and test dbt models
+        run: make dbt-build
   hooks:
     runs-on: ubuntu-latest
     timeout-minutes: 5

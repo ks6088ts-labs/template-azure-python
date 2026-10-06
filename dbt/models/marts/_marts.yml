@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: task_status_summary
+    description: Number of tasks in each lifecycle status.
+    columns:
+      - name: status
+        description: Task lifecycle status.
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - todo
+                  - in_progress
+                  - done
+      - name: task_count
+        description: Number of tasks with this status.
+        data_tests:
+          - not_null

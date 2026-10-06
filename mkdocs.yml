@@ -7,6 +7,7 @@ nav:
   - Getting started: index.md
   - Local development: scripts.md
   - Architecture: architecture/index.md
+  - Data transformation with dbt: dbt.md
   - LLM evaluation: evaluation.md
   - Azure samples:
       - Microsoft Foundry: foundry.md
@@ -66,6 +67,7 @@ plugins:
             Getting started: はじめに
             Local development: ローカル開発
             Architecture: アーキテクチャ
+            Data transformation with dbt: dbt によるデータ変換
             LLM evaluation: LLM 評価
             Azure samples: Azure サンプル
             Messaging: メッセージング

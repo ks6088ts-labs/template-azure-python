@@ -1,0 +1,7 @@
+task_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: dbt/target/task_analytics.duckdb
+      threads: 1

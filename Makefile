@@ -77,6 +77,20 @@ hooks-check: ## check all configured hooks
 .PHONY: ci-test
 ci-test: install-deps-ci format-check lint test ## run CI tests
 
+.PHONY: install-deps-dbt
+install-deps-dbt: ## install dependencies for dbt
+	uv sync --locked --only-group dbt
+
+DBT_ARGS ?=
+
+.PHONY: dbt-build
+dbt-build: ## build and test dbt models
+	uv run --locked --only-group dbt dbt build --project-dir dbt --profiles-dir dbt $(DBT_ARGS)
+
+.PHONY: dbt-clean
+dbt-clean: ## remove dbt generated files
+	uv run --locked --only-group dbt dbt clean --project-dir dbt --profiles-dir dbt
+
 .PHONY: update
 update: ## update packages
 	uv lock --upgrade

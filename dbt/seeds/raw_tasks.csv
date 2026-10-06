@@ -1,0 +1,7 @@
+id,title,description,status
+00000000-0000-0000-0000-000000000001,Define API contract,Document the first service endpoint,done
+00000000-0000-0000-0000-000000000002,Implement task repository,Add the persistence adapter,in_progress
+00000000-0000-0000-0000-000000000003,Add integration tests,Cover the repository boundary,in_progress
+00000000-0000-0000-0000-000000000004,Review telemetry fields,Confirm the required dimensions,todo
+00000000-0000-0000-0000-000000000005,Prepare release notes,Summarize user-visible changes,todo
+00000000-0000-0000-0000-000000000006,Plan next service,Reuse the validated template,todo

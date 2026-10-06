@@ -1,0 +1,30 @@
+name: task_analytics
+version: "1.0.0"
+config-version: 2
+
+profile: task_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  task_analytics:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+
+seeds:
+  task_analytics:
+    raw_tasks:
+      +column_types:
+        id: varchar
+        title: varchar
+        description: varchar
+        status: varchar
