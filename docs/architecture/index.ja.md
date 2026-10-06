@@ -12,6 +12,7 @@ Python 3.10+ / FastAPI / Typer と Azure SDK を使う開発テンプレート�
 | 起動と開発環境 | [ローカル開発](../scripts.md)。InMemory・テレメトリ無効なら Azure リソース・サインインは不要 |
 | HTTP の全体像 | `api.py` → `presentation/http` → `application/task.py` → `domain/task.py` |
 | Azure 操作の全体像 | `scripts/cli_<service>.py` → `internals/azure/<service>.py` → `settings` |
+| Foundry Agent の品質検証 | [LLM 評価](../evaluation.md)。`tests/evaluations/` を実行時コードから分離し、明示有効化する。CI は offline の基盤検証だけ実行 |
 | 公開と運用 | [デプロイ](../deployment.md)、[監視とログ](../monitoring.md) |
 
 以下のソースパスとコマンドはリポジトリルート基準です。

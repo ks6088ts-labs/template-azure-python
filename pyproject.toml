@@ -36,6 +36,10 @@ test = [
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
 ]
+eval = [
+    { include-group = "test" },
+    "deepeval>=4.2.8,<5",
+]
 dev = [
     { include-group = "test" },
     "coverage>=7.8.0",
@@ -64,8 +68,12 @@ select = ["E", "F", "I", "UP"]
 ignore = ["D203"]
 
 [tool.pytest.ini_options]
-addopts = "-ra --cov=template_azure_python --cov=scripts --cov=function_app"
+addopts = "-ra -p no:deepeval --cov=template_azure_python --cov=scripts --cov=function_app"
 testpaths = ["tests"]
+markers = [
+    "llm_eval: paid Foundry evaluations (requires --run-llm-evals)",
+    "llm_eval_smoke: one small paid evaluation for checking connectivity",
+]
 pythonpath = ['.']
 log_cli = true
 log_cli_level = "INFO"
@@ -78,11 +86,15 @@ show_missing = true
 [tool.ty]
 environment = { python-version = "3.10" }
 
+[tool.ty.src]
+exclude = ["tests/evaluations/**", "tests/test_evaluation_deepeval.py"]
+
 [tool.pyrefly]
 project-includes = [
     "**/*.py*",
     "**/*.ipynb",
 ]
+project-excludes = ["tests/evaluations/**", "tests/test_evaluation_deepeval.py"]
 
 [tool.mypy]
 python_version = "3.10"

@@ -27,7 +27,8 @@ make install-deps-dev
 
 This installs all development dependencies and the [prek](https://prek.j178.dev/)
 Git hook. **It replaces any existing pre-commit hook.**
-CI uses a smaller dependency set without JupyterLab.
+CI uses a smaller dependency set without JupyterLab. Paid LLM evaluation dependencies are excluded from both
+default development and CI installation; see [LLM evaluation](evaluation.md) for the optional `eval` group.
 
 ## 2. Run FastAPI
 

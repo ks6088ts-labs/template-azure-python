@@ -3,6 +3,8 @@
 Ask an AI model a question, or create and chat with an agent.
 The CLI module is `scripts.cli_foundry`.
 
+For opt-in Agent quality checks with DeepEval, see [LLM evaluation](evaluation.md).
+
 ## 1. Set the endpoint
 
 Complete the [development and common Azure setup](scripts.md), then prepare:

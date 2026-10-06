@@ -26,6 +26,7 @@ from template_azure_python.settings.azure import (
     ServiceBusSettings,
 )
 from template_azure_python.settings.azure._base import AzureServiceSettings
+from tests.evaluations.config import EvaluationSettings
 
 AZURE_SERVICE_SETTINGS = (
     ApplicationInsightsSettings,
@@ -76,7 +77,7 @@ def test_template_environment_variables_are_declared():
         if line.strip() and not line.lstrip().startswith("#")
     }
     declared_names = ProjectSettings.model_fields.keys() | set().union(
-        *(environment_variable_names(settings_type) for settings_type in AZURE_SERVICE_SETTINGS)
+        *(environment_variable_names(settings_type) for settings_type in (*AZURE_SERVICE_SETTINGS, EvaluationSettings))
     )
     assert names <= declared_names
     settings = AzureSettings(_env_file=template)
