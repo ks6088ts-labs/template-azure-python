@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -29,7 +29,7 @@ def create_app(
         task_repository = InMemoryTaskRepository()
 
     @asynccontextmanager
-    async def lifespan(_application: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(_application: FastAPI) -> AsyncGenerator[None, None]:
         nonlocal task_repository
         if backend is TaskRepositoryBackend.COSMOSDB:
             async with open_cosmos_task_repository(get_azure_settings().cosmos_db) as cosmos_repository:
