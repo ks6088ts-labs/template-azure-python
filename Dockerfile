@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bookworm AS requirements-stage
+FROM python:3.14-slim-bookworm AS requirements-stage
 
 WORKDIR /build
 
@@ -8,7 +8,7 @@ COPY ./pyproject.toml ./uv.lock ./
 
 RUN uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
 
-FROM python:3.13-slim-bookworm
+FROM python:3.14-slim-bookworm
 
 ARG GIT_REVISION="0000000"
 ARG GIT_TAG="x.x.x"
