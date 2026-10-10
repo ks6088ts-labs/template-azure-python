@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncGenerator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager
 from uuid import UUID
 
@@ -123,7 +123,7 @@ def validate_cosmos_task_settings(settings: CosmosDBSettings) -> tuple[str, str,
 
 
 @asynccontextmanager
-async def open_cosmos_task_repository(settings: CosmosDBSettings) -> AsyncIterator[CosmosdbTaskRepository]:
+async def open_cosmos_task_repository(settings: CosmosDBSettings) -> AsyncGenerator[CosmosdbTaskRepository, None]:
     endpoint, database_id, container_id = validate_cosmos_task_settings(settings)
     try:
         async with AsyncExitStack() as stack:
