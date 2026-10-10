@@ -54,6 +54,9 @@ dev = [
 notebook = [
     "jupyterlab>=4.4.2",
 ]
+dbt = [
+    "dbt>=2.0.8",
+]
 
 [build-system]
 requires = ["hatchling"]
