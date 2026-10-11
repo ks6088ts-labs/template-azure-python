@@ -8,7 +8,11 @@ import uvicorn
 from pydantic import ValidationError
 
 from template_azure_python.core import hello_world
-from template_azure_python.infrastructure import TaskStorageConfigurationError, validate_cosmos_task_settings
+from template_azure_python.infrastructure import (
+    TaskStorageConfigurationError,
+    validate_cosmos_task_settings,
+    validate_duckdb_task_path,
+)
 from template_azure_python.loggers import get_logger
 from template_azure_python.settings import (
     TaskRepositoryBackend,
@@ -35,6 +39,8 @@ def _repository(value: TaskRepositoryBackend | None) -> TaskRepositoryBackend:
         backend = value if value is not None else get_project_settings().task_repository
         if backend is TaskRepositoryBackend.COSMOSDB:
             validate_cosmos_task_settings(get_azure_settings().cosmos_db)
+        elif backend is TaskRepositoryBackend.DUCKDB:
+            validate_duckdb_task_path(get_project_settings().duckdb_path)
         return backend
     except (ValidationError, TaskStorageConfigurationError) as error:
         raise typer.BadParameter(str(error), param_hint="--repository") from None

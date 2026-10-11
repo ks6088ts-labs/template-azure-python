@@ -11,119 +11,125 @@ It is not a complete business system or a production persistence/authentication 
 | --- | --- |
 | Local setup and startup | [Local development](../scripts.md). No Azure resources or sign-in are needed with InMemory and telemetry disabled |
 | The HTTP path | `api.py` → `presentation/http` → `application/task.py` → `domain/task.py` |
+| Storage selection and lifetime | [Task API composition and storage](#task-storage) |
+| Run or understand DuckDB | [API exercise](../dbt/tutorial.md#api-persistence-exercise), [implementation guide](../dbt/backends.md#duckdb-implementation) |
 | The Azure path | `scripts/cli_<service>.py` → `internals/azure/<service>.py` → `settings` |
 | Foundry Agent quality checks | [LLM evaluation](../evaluation.md). `tests/evaluations/` is opt-in and separate from runtime code; CI validates only offline plumbing |
 | Deployment and operations | [Deployment](../deployment.md), [monitoring and logs](../monitoring.md) |
 
 Source paths and commands below are relative to the repository root.
 Package-internal paths refer to locations under `template_azure_python/`.
+`install-deps-dev` replaces an existing pre-commit hook.
+Read the [local setup instructions](../scripts.md) before running it.
 
 ```shell
 make install-deps-dev
 uv run --locked python -m scripts.template serve-container-apps
 ```
 
-`http://127.0.0.1:8000/tasks` initially returns `[]`; `/docs` provides an interactive API.
+With the default InMemory backend, `http://127.0.0.1:8000/tasks` initially returns `[]`;
+`/docs` provides an interactive API.
 The old mock `GET /` has been removed and returns 404.
-`install-deps-dev` replaces an existing pre-commit hook. See the development guide for details.
 
 ## Components and entrypoints
 
 ### Task API - Clean Architecture
 
+This diagram shows **major code dependencies**. Solid arrows indicate code/driver use;
+dotted arrows indicate Protocol conformance. It is not a request timeline or data-transfer diagram.
+
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph ApiEntrypoints["Entrypoints"]
-        launcher["Uvicorn and Container Apps"]
-        functions["Azure Functions"]
+        entry["Uvicorn / Functions / Container Apps"]
     end
-
     subgraph ApiOuter["Interface adapters"]
-        api["api.py composition root"]
-        http["FastAPI task router"]
-        memory["In-memory repository"]
-        cosmos["Cosmos DB repository"]
-        telemetry["Telemetry initialization"]
-        settings["Typed settings"]
+        api["api.py"]
+        http["Task HTTP router"]
+        repos["InMemory / Cosmos / DuckDB"]
     end
-
     subgraph ApiCore["Clean Architecture core"]
         subgraph ApiApplication["Application layer"]
             usecases["Task CRUD use cases"]
-            port["TaskRepository port"]
+            port["TaskRepository Protocol"]
         end
         subgraph ApiDomain["Domain layer"]
-            domain["Task model and invariants"]
+            domain["Task domain"]
         end
     end
-
-    subgraph ApiExternal["External systems"]
-        cosmossdk["Azure Cosmos DB SDK"]
-        data[("Task container")]
-        monitor["Azure Monitor"]
+    subgraph ApiExternal["Storage libraries"]
+        drivers["Storage drivers"]
     end
 
-    launcher -->|"starts"| api
-    functions -->|"wraps"| api
-    api -->|"registers"| http
-    http -->|"invokes"| usecases
-    usecases -->|"enforces"| domain
+    entry -->|"uses app"| api
+    api -->|"references"| http
+    api -->|"references"| usecases
+    api -->|"references"| repos
+    http -->|"depends on"| usecases
+    usecases -->|"depends on"| domain
     usecases -->|"depends on"| port
-    api -->|"injects"| memory
-    api -->|"injects and owns"| cosmos
-    memory -.->|"implements"| port
-    cosmos -.->|"implements"| port
-    cosmos -->|"uses async client"| cosmossdk
-    cosmossdk -->|"reads and writes"| data
-    api -->|"loads"| settings
-    api -->|"initializes when enabled"| telemetry
-    telemetry -->|"exports"| monitor
+    port -->|"uses domain types"| domain
+    repos -.->|"conforms to"| port
+    repos -->|"depends on"| domain
+    repos -->|"uses required driver"| drivers
 
     classDef entry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
     classDef adapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
     classDef application fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
     classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
     classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
-    class launcher,functions entry
-    class api,http,memory,cosmos,telemetry,settings adapter
+    class entry entry
+    class api,http,repos adapter
     class usecases,port application
     class domain domain
-    class cosmossdk,data,monitor external
+    class drivers external
     style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
     style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
     style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px
 ```
 
 Blue is an entrypoint, purple is an interface adapter, amber is the application layer,
-green is the domain, and gray is an external system. Dependencies cross the core boundary
-inward; dotted arrows show implementations of the application-owned port.
+green is the domain, and gray is a storage library.
+The three repositories are grouped in the diagram but remain separate implementations.
+Business code depends on the application-owned port, not concrete repository imports.
+The responsibility table covers settings/telemetry; [component wiring](#repository-wiring) shows creation and injection.
+
+<a id="task-storage"></a>
+
+### Task API composition and storage
+
+`create_app()` connects use cases to a concrete repository and passes providers to the HTTP router.
+A provider creates a use case for a request; lifespan owns connections for Cosmos/DuckDB backends.
+The launcher passes the backend to the factory. Direct Uvicorn uses `template_azure_python.api:app`;
+Functions wraps that same app. Its HTTP trigger is anonymous and `host.json` removes the `/api` prefix.
+
+| Backend | Storage and preparation | Lifetime and limits |
+| --- | --- | --- |
+| `in-memory` (default) | App-local dictionary; no Azure or DB setup | Isolated per app; lost on restart |
+| `cosmosdb` | Configured existing Task container with partition key `/id` | Lifespan initializes/closes async client and credential; API does not create resources |
+| `duckdb` | `DUCKDB_PATH`: existing `main.fct_tasks` built by dbt | Lifespan validates/closes the connection; sync driver runs off the event loop with per-repository exclusion |
+
+DuckDB assumes **one writing app/repository instance per file**.
+Do not create multiple writers even in the same process; stop the API before running dbt.
+API writes do not synchronize raw/report tables, and dbt rebuilds overwrite fact mutations.
+Changing storage does not migrate Tasks automatically. See the [implementation/extension guide](../dbt/backends.md).
 
 ### Azure operations CLI - independent technical path
 
+Solid arrows here show **runtime calls and output**, not the code-dependency view above.
+
 ```mermaid
-flowchart LR
-    subgraph CliPresentation["CLI presentation"]
-        cli["Service CLI commands"]
-        output["Output and exit codes"]
-    end
+flowchart TD
+    cli["Service CLI"]
+    operations["SDK data operations"]
+    admin["Task management adapter"]
+    sdk["Azure SDK"]
+    az["Azure CLI"]
+    arm["Azure Resource Manager"]
 
-    subgraph CliOperations["Technical operations"]
-        operations["Azure SDK operations"]
-        admin["Task resource admin adapter"]
-        cliSettings["Typed settings"]
-    end
-
-    subgraph CliExternal["Azure tools and services"]
-        sdk["Azure SDK and OpenTelemetry"]
-        az["Azure CLI"]
-        arm["Azure Resource Manager"]
-    end
-
-    cli -->|"formats results"| output
     cli -->|"runs data operations"| operations
     cli -->|"runs resource management"| admin
-    operations -->|"loads"| cliSettings
-    admin -->|"loads"| cliSettings
     operations -->|"calls"| sdk
     admin -->|"executes"| az
     az -->|"manages resources"| arm
@@ -131,29 +137,23 @@ flowchart LR
     classDef cliEntry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
     classDef cliAdapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
     classDef cliExternalNode fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
-    class cli,output cliEntry
-    class operations,admin,cliSettings cliAdapter
+    class cli cliEntry
+    class operations,admin cliAdapter
     class sdk,az,arm cliExternalNode
 ```
 
 This path is deliberately outside the Task API core: it demonstrates technical Azure operations
 without making the domain or use cases depend on SDKs, Typer, or control-plane tools.
-`create_app()` explicitly connects use cases to a concrete repository.
-InMemory storage is isolated per app; Cosmos apps share the configured container.
-Use-case providers live in the composition root and HTTP routes receive them through FastAPI DI.
-The launcher injects the selected backend; direct Uvicorn uses `template_azure_python.api:app`.
-Functions wraps that same app.
-The Functions HTTP trigger is anonymous; `host.json` removes the `/api` prefix.
-With `TASK_REPOSITORY=cosmosdb`, tasks API uses the asynchronous Azure SDK.
-Lifespan initializes one client/credential per app and closes them on shutdown, failure, or cancellation.
-The API does not create databases/containers: startup verifies their existence and the `/id` partition.
+The diagram focuses on major calls; the table and service guides cover arguments, output and settings.
+
+### Main locations and responsibilities
 
 | Location | Responsibility |
 | --- | --- |
 | `api.py` | App creation, use-case/adapter composition, router registration, optional telemetry initialization |
 | `domain/` | Task, ID/status types, normalization, and value invariants |
 | `application/`, `application/ports/` | Commands, CRUD use cases, asynchronous repository Protocol, application errors |
-| `infrastructure/repositories/` | InMemory/Cosmos port implementations, document mapping, SDK errors, asynchronous resource factory |
+| `infrastructure/repositories/` | InMemory/Cosmos/DuckDB port implementations, storage mapping, driver errors, resource factories |
 | `presentation/http/` | HTTP DTOs, routing, response/error mapping |
 | `scripts/` | Launch commands, CLI arguments, presentation, deletion confirmation, exit codes |
 | `internals/azure/` | Service SDK operations and Task management az adapter, mapping, validation, resource lifetime |
@@ -176,7 +176,7 @@ Matching layer names alone does not establish the design.
 | Separate SDK operations from CLI presentation | Keep operations independent of Typer and output code | `internals/azure` returns ordinary values or invokes callbacks; no SDK imports in scripts |
 | Resolve settings centrally | Keep precedence and required-setting decisions consistent | Public `settings` package; do not scatter environment/dotenv access |
 | Own credential/client lifetime | Avoid leaks on success, initialization failure, and cancellation | API lifespan, asynchronous resource factory, immediate cleanup registration, cleanup tests |
-| Keep API SDK boundaries in infrastructure | Do not leak storage technology into HTTP/business code | Cosmos adapter; forbid direct Azure imports in API/presentation |
+| Keep API storage-driver boundaries in infrastructure | Do not leak storage technology into HTTP/business code | Cosmos/DuckDB adapters; forbid direct Azure/DuckDB imports in API/presentation |
 | Select storage in the composition root and settings | Keep the Azure-independent default and consistent entrypoints | `create_app()`, `--repository`, `TASK_REPOSITORY`; no concrete selection in routes |
 | Translate SDK errors into application failures | Distinguish absence/conflicts from outages without exposing SDK details | `TaskRepositoryError`, HTTP 503, safe type/status logging |
 | Separate resource management from API data operations | Entra database/container management requires the control plane | Task management CLI → az → ARM; no management privileges on the API identity |
@@ -188,19 +188,19 @@ Matching layer names alone does not establish the design.
 
 **Share the storage-operation contract, not the implementation of each storage technology.**
 The `TaskRepository` Protocol in `application/ports/task_repository.py` defines the asynchronous
-`add/get/list/update/delete` interface shared by InMemory and Cosmos.
+`add/get/list/update/delete` interface shared by InMemory, Cosmos and DuckDB.
 Use cases depend on this port; `api.py` selects and injects the concrete repository.
 
 Python Protocols use **structural typing**: an implementation with the required methods and compatible
 signatures satisfies the port without explicitly inheriting from it.
-Both `InMemoryTaskRepository` and `CosmosdbTaskRepository` currently use this approach.
+`InMemoryTaskRepository`, `CosmosdbTaskRepository`, and `DuckdbTaskRepository` use this approach.
 Explicitly inheriting from the existing Protocol is also an option when the implementation relationship
 should be visible in class declarations; it does not require a separate ABC or generic repository base class.
 
 Check conformance at two different levels:
 
 - **Type checking**: injection as `TaskRepository` checks compatibility of methods, arguments, and return types.
-- **Shared contract tests**: `test_repository_contract` in `tests/test_task_repositories.py` runs against both
+- **Shared contract tests**: `test_repository_contract` in `tests/test_task_repositories.py` runs against all three
   implementations, checking CRUD, absence, duplicates, and updates not creating missing Tasks.
   Matching method names alone does not guarantee these semantics.
 
@@ -210,8 +210,50 @@ Forcing storage logic into a common base class would introduce backend-specific 
 SDK call verification and connection-cleanup tests are distinct from the shared CRUD contract.
 
 The Cosmos resource factory and API lifespan own client/credential initialization and cleanup.
+The DuckDB factory similarly owns its connection; lifecycle methods are not added to the port.
 Do not make those operations mandatory CRUD port methods: InMemory and use cases should not be required
 to manage Cosmos-specific resource lifetimes.
+
+<a id="repository-wiring"></a>
+
+### Component wiring for a new storage adapter
+
+This is a **runtime creation, injection and invocation** view, not an import graph.
+DuckDB illustrates passing the same startup-created repository to each request's use case.
+
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+```mermaid
+flowchart TD
+    cSettings["ProjectSettings"]
+    subgraph cStartup["1. Lifespan startup and shutdown"]
+        cRoot["api.py lifespan"]
+        cFactory["open_duckdb_task_repository"]
+        cRepo["DuckdbTaskRepository"]
+    end
+    subgraph cRequest["2. Each HTTP request"]
+        cRouter["Task HTTP router"]
+        cProvider["api.py use-case provider"]
+        cUsecases["Task CRUD use case"]
+    end
+    cSettings -->|"backend and path"| cRoot
+    cRoot -->|"enter and close"| cFactory
+    cFactory -->|"yield adapter"| cRepo
+    cRepo -->|"same instance"| cProvider
+    cRouter -->|"resolve with Depends"| cProvider
+    cProvider -->|"construct with repository"| cUsecases
+    cUsecases -->|"invoke CRUD"| cRepo
+```
+
+`repository_dependency()` returns the adapter held by lifespan.
+The provider passes it to the use-case constructor; use cases use the Protocol type.
+Shutdown exits the factory context and closes the connection.
+When passing an existing instance with `create_app(repository=...)`, the caller owns its connection lifetime.
+Specifying both `repository` and `repository_backend` is rejected.
+This is explicit composition, not a new DI framework or adapter registry.
+Only settings, concrete storage and startup wiring change; business code and HTTP DTOs do not.
+The [extension guide](../dbt/backends.md#read-the-duckdb-implementation) walks through mapping,
+SQL parameters, errors, concurrency and cleanup using the actual implementation.
+The [hands-on](../dbt/tutorial.md#8-connect-the-task-api-and-verify-persistence) verifies the behavior.
 
 ### Clean Architecture and DDD
 
@@ -246,25 +288,31 @@ The HTTP validation exception handler is registered app-wide: future routers mus
 `TaskRepository` defines asynchronous `add/get/list/update/delete` operations.
 Missing `get` returns `None`; missing `update/delete` returns `False`;
 duplicate `add` raises `TaskAlreadyExistsError`. Use cases translate absence into an application error.
+`list` returns a Task tuple; ordering and HTTP pagination are not guaranteed.
 The in-memory adapter's lock is per operation, not a transaction/concurrency guarantee for future adapters.
 Cosmos uses the UUID string as both `id` and partition key, and stores status as a string.
 Not-found checks also verify container existence, so lost storage does not masquerade as a missing Task.
 Lists consume all cross-partition pages; partial failures and invalid documents produce 503.
 Full scans consume RUs/memory and updates remain last-writer-wins.
+DuckDB startup checks the file, physical table, column types and unique IDs.
+UUID/status/text/completion validation occurs when rows are read; malformed rows produce 503.
+The lock is per operation within one repository, not a transaction covering a use case's get → update.
 
 ### Settings and authentication
 
 - Precedence: **explicit CLI arguments → OS environment → `.env` in the working directory → defaults**.
   Azure settings ignore empty OS values, so an existing dotenv value still applies.
-- `get_project_settings()` supplies project name, logging level, and API telemetry configuration;
+- `get_project_settings()` supplies project name, logging level, API telemetry, backend and DuckDB path;
   `get_azure_settings()` supplies nested service settings.
   Retain the flat, case-insensitive environment names in `.env.template`.
   Do not use unrelated `NAME` or `RESOURCE_ID` variables for aliased fields.
 - Getters cache their first snapshot. Restart after changes; clear caches in tests.
   Do not search parent directories for `.env` or inject its contents into the OS environment.
 - Select storage using `--repository` → `TASK_REPOSITORY` → `in-memory`.
-  Cosmos uses `AZURE_COSMOS_DB_ENDPOINT` / `DATABASE` / `TASK_CONTAINER`,
+  Cosmos uses `AZURE_COSMOS_DB_ENDPOINT`, `AZURE_COSMOS_DB_DATABASE`,
+  and `AZURE_COSMOS_DB_TASK_CONTAINER`,
   separate from the product CLI's `AZURE_COSMOS_DB_CONTAINER`.
+  `DUCKDB_PATH` is required only for DuckDB; an empty value is not a valid file path.
   Functions CLI passes selection to the child environment without changing the parent.
 - Validate required endpoints/IDs and service-specific input at operation time.
   Unrelated missing Azure settings must not prevent API startup or another service's `--help`.
@@ -333,6 +381,7 @@ Protecting concurrent updates requires versions/ETags and conditional saves; con
 | Check | Command/scope |
 | --- | --- |
 | Task changes | `uv run --locked pytest tests/test_task_domain.py tests/test_task_application.py tests/test_task_repositories.py tests/test_api.py` |
+| DuckDB storage changes | Check persistence, decoding, cleanup and startup paths in addition to the shared contract using the command below |
 | Task container management | `tests/test_cli_cosmosdb_tasks.py`, product/Queue regressions; mock az subprocess |
 | Settings/Azure operations | `tests/test_settings.py`, relevant `test_cli_<service>.py`, shared-operation tests |
 | Format/types/dependencies/workflows | `make format-check lint` |
@@ -340,21 +389,30 @@ Protecting concurrent updates requires versions/ETags and conditional saves; con
 | CI checks including dependency setup | `make ci-test` |
 | English/Japanese documentation | `make ci-test-docs` |
 
+```shell
+uv run --locked pytest \
+  tests/test_duckdb_task_repository.py tests/test_task_repositories.py \
+  tests/test_api.py tests/test_cli.py tests/test_settings.py
+```
+
 Strict mypy covers `api.py` and the Task vertical slice; ty/Pyrefly check their configured project scopes.
 Import-linter enforces inward layer order, presentation/infrastructure independence,
-and forbidden dependencies such as FastAPI, Pydantic, and Azure from domain/application.
+and forbidden dependencies such as FastAPI, Pydantic, Azure and DuckDB from domain/application.
 Structural tests check SDK imports in scripts, environment access outside settings, and CLI dependencies in Azure operations.
 
 **Policy and automated guarantees differ.** The standard-library-only domain policy does not
 automatically forbid every external library or unlisted internal package.
 Review scopes/contracts in `pyproject.toml` when introducing dependencies or Contexts.
 Type checks do not guarantee runtime business rules, transactions, or operation in Azure.
-Mock SDK boundaries; construct write-once OpenTelemetry providers in separate offline test processes.
+Mock Azure SDK boundaries; test DuckDB with temporary files and its real driver.
+Construct write-once OpenTelemetry providers in separate offline test processes.
 
 ## Intentional limits and non-goals
 
 - Default InMemory Tasks disappear on restart and are not shared across workers/processes/replicas.
-  Cosmos persists/shared storage; pagination, optimistic concurrency, and business state transitions remain unimplemented.
+  Cosmos persists/shared storage; HTTP pagination, optimistic concurrency, and business state transitions remain unimplemented.
+- DuckDB uses an existing dbt-built table for local exercises. Multiple writers per file,
+  raw/report synchronization and backend data migration are not provided.
 - HTTP is an anonymous reference implementation. Production sensitive-data handling needs access controls and storage design.
 - Azure CLIs are technical SDK samples, not Task API business use cases.
   They can delete messages or overwrite data; use test resources.

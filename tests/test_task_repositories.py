@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 from uuid import UUID
 
 import azure.functions as func
+import duckdb
 import pytest
 from azure.core.exceptions import AzureError
 from azure.cosmos.aio import ContainerProxy, CosmosClient
@@ -16,6 +17,7 @@ from template_azure_python.application import TaskAlreadyExistsError, TaskReposi
 from template_azure_python.domain import Task, TaskId, TaskStatus
 from template_azure_python.infrastructure import (
     CosmosdbTaskRepository,
+    DuckdbTaskRepository,
     InMemoryTaskRepository,
     TaskStorageConfigurationError,
     open_cosmos_task_repository,
@@ -69,9 +71,30 @@ def container():
     return proxy
 
 
-@pytest.mark.parametrize("backend", ["in-memory", "cosmosdb"])
-def test_repository_contract(backend, container):
-    repository = InMemoryTaskRepository() if backend == "in-memory" else CosmosdbTaskRepository(container)
+@pytest.mark.parametrize("backend", ["in-memory", "cosmosdb", "duckdb"])
+def test_repository_contract(backend, container, duckdb_file):
+    with duckdb.connect(str(duckdb_file)) as connection:
+        repository = (
+            InMemoryTaskRepository()
+            if backend == "in-memory"
+            else CosmosdbTaskRepository(container)
+            if backend == "cosmosdb"
+            else DuckdbTaskRepository(connection)
+        )
+        _repository_contract(repository)
+    if backend == "cosmosdb":
+        container.create_item.assert_any_await(
+            body={"id": str(TASK.id), "title": "First", "description": "Details", "status": "todo"}
+        )
+        container.query_items.assert_called_with(query=TASK_QUERY)
+        container.replace_item.assert_any_await(
+            item=str(TASK.id),
+            partition_key=str(TASK.id),
+            body={"id": str(TASK.id), "title": "Updated", "description": "", "status": "done"},
+        )
+
+
+def _repository_contract(repository):
 
     async def scenario():
         assert await repository.list() == ()
@@ -94,16 +117,6 @@ def test_repository_contract(backend, container):
         assert await repository.list() == (second,)
 
     asyncio.run(scenario())
-    if backend == "cosmosdb":
-        container.create_item.assert_any_await(
-            body={"id": str(TASK.id), "title": "First", "description": "Details", "status": "todo"}
-        )
-        container.query_items.assert_called_with(query=TASK_QUERY)
-        container.replace_item.assert_any_await(
-            item=str(TASK.id),
-            partition_key=str(TASK.id),
-            body={"id": str(TASK.id), "title": "Updated", "description": "", "status": "done"},
-        )
 
 
 @pytest.mark.parametrize(

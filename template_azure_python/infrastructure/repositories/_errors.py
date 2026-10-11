@@ -1,0 +1,2 @@
+class TaskStorageConfigurationError(ValueError):
+    pass

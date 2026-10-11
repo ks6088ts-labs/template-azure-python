@@ -30,6 +30,7 @@ Press `Ctrl+C` in the server terminal to stop it.
 | I want to... | Guide |
 | --- | --- |
 | Set up development and run the API, tests, or Docker | [Local development](scripts.md) |
+| Learn data engineering with Task, dbt, and local DuckDB | [Data engineering](dbt/index.md) |
 | Try AI models and agents | [Microsoft Foundry](foundry.md) |
 | Store and retrieve data | [Azure Cosmos DB](cosmosdb.md) |
 | Send and receive events or messages | [Messaging](messaging.md) |

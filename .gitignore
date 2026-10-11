@@ -165,3 +165,4 @@ requirements.txt
 local.settings.json
 .deepeval/
 artifacts/evaluations/
+artifacts/dbt/
