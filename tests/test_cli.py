@@ -83,8 +83,8 @@ def test_serve_functions_propagates_host_failure():
 
 
 @pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
-@pytest.mark.parametrize("backend", ["in-memory", "cosmosdb"])
-def test_serve_repository_selection(command, backend):
+@pytest.mark.parametrize("backend", ["in-memory", "cosmosdb", "duckdb"])
+def test_serve_repository_selection(command, backend, duckdb_file):
     from template_azure_python.settings import TaskRepositoryBackend
 
     with (
@@ -95,13 +95,18 @@ def test_serve_repository_selection(command, backend):
         result = CliRunner().invoke(
             app,
             [command, "--repository", backend],
-            env={"AZURE_COSMOS_DB_ENDPOINT": "https://example.documents.azure.com/"},
+            env={
+                "AZURE_COSMOS_DB_ENDPOINT": "https://example.documents.azure.com/",
+                "DUCKDB_PATH": str(duckdb_file),
+            },
         )
     assert result.exit_code == 0, result.output
     if command == "serve-container-apps":
         create_app.assert_called_once_with(repository_backend=TaskRepositoryBackend(backend))
     else:
         assert run.call_args.kwargs["env"]["TASK_REPOSITORY"] == backend
+        if backend == "duckdb":
+            assert run.call_args.kwargs["env"]["DUCKDB_PATH"] == str(duckdb_file)
 
 
 @pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
@@ -128,3 +133,25 @@ def test_explicit_memory_overrides_environment_cosmos_without_endpoint(command):
         assert create_app.call_args.kwargs["repository_backend"].value == "in-memory"
     else:
         assert run.call_args.kwargs["env"]["TASK_REPOSITORY"] == "in-memory"
+
+
+@pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
+@pytest.mark.parametrize("path", [None, "", "/nonexistent/task-file.duckdb"])
+def test_duckdb_cli_rejects_missing_file(command, path):
+    env = {} if path is None else {"DUCKDB_PATH": path}
+    with patch("scripts.template.uvicorn.run") as server, patch("scripts.template.subprocess.run") as functions:
+        result = CliRunner().invoke(app, [command, "--repository", "duckdb"], env=env)
+    assert result.exit_code == 2
+    assert "DUCKDB_PATH" in result.output
+    server.assert_not_called()
+    functions.assert_not_called()
+
+
+@pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
+def test_memory_override_does_not_require_duckdb_file(command):
+    with (
+        patch("scripts.template.uvicorn.run"),
+        patch("scripts.template.subprocess.run", return_value=subprocess.CompletedProcess([], 0)),
+    ):
+        result = CliRunner().invoke(app, [command, "--repository", "in-memory"], env={"TASK_REPOSITORY": "duckdb"})
+    assert result.exit_code == 0, result.output

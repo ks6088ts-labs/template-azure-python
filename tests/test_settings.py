@@ -224,6 +224,25 @@ def test_repository_setting_precedence_and_functions_environment(tmp_path, monke
         ProjectSettings(_env_file=None, task_repository="invalid")
 
 
+def test_duckdb_path_setting_precedence_and_functions_environment(tmp_path, monkeypatch, duckdb_file):
+    from template_azure_python.settings import TaskRepositoryBackend, functions_environment
+
+    env_file = tmp_path / ".env"
+    env_file.write_text(f"TASK_REPOSITORY=duckdb\nDUCKDB_PATH={duckdb_file}\n", encoding="utf-8")
+    assert ProjectSettings(_env_file=None).duckdb_path is None
+    from_file = ProjectSettings(_env_file=env_file)
+    assert from_file.task_repository is TaskRepositoryBackend.DUCKDB
+    assert from_file.duckdb_path == duckdb_file
+    override = tmp_path / "override.duckdb"
+    monkeypatch.setenv("DUCKDB_PATH", str(override))
+    assert ProjectSettings(_env_file=env_file).duckdb_path == override
+    assert ProjectSettings(_env_file=env_file, duckdb_path=duckdb_file).duckdb_path == duckdb_file
+    child = functions_environment(TaskRepositoryBackend.DUCKDB)
+    assert child["TASK_REPOSITORY"] == "duckdb"
+    assert child["DUCKDB_PATH"] == str(override)
+    assert "TASK_REPOSITORY" not in os.environ
+
+
 @pytest.mark.parametrize("fail", [False, True])
 def test_telemetry_environment_restored(monkeypatch: pytest.MonkeyPatch, fail: bool):
     monkeypatch.setenv("OTEL_TRACES_SAMPLER", "always_off")

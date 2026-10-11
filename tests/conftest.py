@@ -2,6 +2,7 @@ import os
 from collections.abc import Generator
 from pathlib import Path
 
+import duckdb
 import pytest
 
 from template_azure_python.settings import AzureSettings, ProjectSettings, get_azure_settings, get_project_settings
@@ -49,3 +50,14 @@ def isolated_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, 
     finally:
         get_project_settings.cache_clear()
         get_azure_settings.cache_clear()
+
+
+@pytest.fixture
+def duckdb_file(tmp_path: Path) -> Path:
+    path = tmp_path / "tasks.duckdb"
+    with duckdb.connect(str(path)) as connection:
+        connection.execute(
+            "CREATE TABLE main.fct_tasks (task_id VARCHAR, task_title VARCHAR, "
+            "task_description VARCHAR, status VARCHAR, is_completed BOOLEAN)"
+        )
+    return path

@@ -61,11 +61,12 @@ flowchart LR
 
 実線は教材で動かす流れ、API からの破線は **未実装の取り込み境界** です。
 固定 CSV は API と同期していません。dbt が処理を管理し、DuckDB が SQL と保存を担うことを分けて考えます。
+後述の任意の DuckDB Repository は API から fact を直接編集するものであり、取り込み処理ではありません。
 
 ## Task と教材の境界
 
 [既存の Task](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/domain/task.py)
-は次の4項目です。アプリの実装・保存先は変更しません。
+は次の4項目です。Domain と use case は変更せず、同じ CRUD port の実装として任意の DuckDB Repository を追加しています。
 
 | 項目 | ドメインの意味 | 教材での扱い |
 | --- | --- | --- |
@@ -96,7 +97,8 @@ Task には日時や担当者がありません。計算できるのは **現在
 - 以下は macOS / Linux の shell 用。**すべてリポジトリルートで実行**する。
 - 最初の依存取得にはネットワークが必要。取得後のデータ処理はローカル完結。
 - 既存の dependency group `dbt` を使う。v2 は DuckDB アダプター内蔵のため、
-  `dbt-core`、`dbt-duckdb`、Python の `duckdb` を追加インストールしない。
+  `dbt-core`、`dbt-duckdb` は追加インストールしない。API の Repository 用の Python `duckdb`
+  driver は通常のアプリ依存に含まれ、dbt 内蔵 driver とは別のものです。
   これは [v2 の公式説明](https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup#installing-dbt-duckdb)
   に基づく手順で、v1 の adapter インストール手順とは異なる。
   拡張ドライバーが必要な機能や CSV の直接 `read_csv()` は使わない。
@@ -188,6 +190,44 @@ flowchart LR
 完成版の CSV を直接編集せず、作業用コピーで演習します。
 この図はデータの依存を表す DAG です。すべての node は同じ DuckDB 内にあり、
 矢印はネットワーク転送や別の DB サーバーを意味しません。
+
+## dbt 生成 Task を API で操作する
+
+`dbt build` 後、dbt Docs・エディターのクエリ・その他の DB 接続を停止します。
+前述の `DBT_PROJECT_DIR` を設定したリポジトリルートのターミナルで起動します。
+
+```shell
+export DUCKDB_PATH="$DBT_PROJECT_DIR/task_analytics.duckdb"
+export TELEMETRY_ENABLED=false
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+別のターミナルで確認します。
+
+```shell
+curl --fail --silent --show-error http://127.0.0.1:8000/tasks |
+  uv run --locked python -c 'import json,sys; tasks=json.load(sys.stdin); assert len(tasks)==6; assert all(set(t)=={"id","title","description","status"} for t in tasks); print("6 Tasks, unchanged API schema")'
+```
+
+InMemory / Cosmos と同じ非同期 TaskRepository 契約と HTTP API を使います。
+DUCKDB_PATH は必須で、既存ファイルと物理テーブル main.fct_tasks の列を検証します。
+API は dbt を実行せず、空 DB も初期化しません。
+API の既定値は引き続き **in-memory**、**dbt 教材**の既定の接続先が `type: duckdb` です。
+
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+```mermaid
+flowchart LR
+    apiCrud["Task API"] -->|"同じ CRUD port"| duckRepo["DuckDB Repository"]
+    duckRepo -->|"CRUD と完了フラグ"| duckFact[("main.fct_tasks")]
+    duckBuild["dbt build"] -->|"raw から再構築"| duckFact
+    duckFact -->|"dbt 再構築時のみ"| duckSummary[("task_status_summary")]
+```
+
+API 更新で is_completed は維持しますが、CSV・raw・保存済み集計表は更新しません。
+dbt 再構築で API 更新は上書きされます。同じ DB を開く dbt コマンドの前に API を停止し、
+複数 writer / API worker を使わないでください。
+[ハンズオン](tutorial.md)で CRUD・再起動後の永続性・古い集計・意図的なテスト失敗・再構築の復旧を検証します。
+[拡張ガイド](backends.md)では実装の読み方と、将来の Cosmos / 分析基盤との境界を説明します。
 
 ## 仕様・設計判断・期待値を区別する
 

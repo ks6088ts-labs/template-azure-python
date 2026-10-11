@@ -91,6 +91,10 @@ uv run --locked python -m scripts.cli_cosmosdb upsert-item --help
 
 ## Task API persistence and container management
 
+Switching the API backend does not migrate existing Tasks or change dbt's input.
+See [storage and analytics extensions](dbt/backends.md) for the existing Repository pattern
+and future Cosmos export / analytical source design.
+
 Separate from the product CLI above, the Task API uses the async SDK and a **dedicated `/id` container**.
 The API never creates databases/containers. Prepare them with the management CLI before startup.
 Select an existing account and resource group. Management calls Azure CLI Core `az cosmosdb sql`,

@@ -94,6 +94,10 @@ uv run --locked python -m scripts.cli_cosmosdb upsert-item --help
 
 ## Task API の永続化とコンテナー管理
 
+API の backend を切り替えても、既存 Task は移行されず、dbt の入力も変わりません。
+既存 Repository pattern と将来の Cosmos export・分析 source 設計は
+[保存先と分析基盤の拡張ガイド](dbt/backends.md)を参照してください。
+
 上記の商品 CLI とは別に、Task API は非同期 SDK と **Task 専用の `/id` コンテナー**を使います。
 API は database / container を自動作成しません。起動前に以下の管理 CLI で準備します。
 account と resource group は作成済みのものを指定してください。

@@ -465,7 +465,158 @@ CLI と同じ絶対パスの `DBT_PROJECT_DIR` / `DBT_PROFILES_DIR` を VS Code 
 拡張の接続設定でこの profile と DB パスを確認し、モデルを開いて Lineage / Query Results を確認します。
 拡張の利用・アカウント機能は任意で、CLI とローカル Docs だけでも教材を完了できます。
 
-## 8. トラブルシューティング・復習・後片付け
+## 8. Task API を接続し、永続性を確かめる
+
+### 目的
+
+**同じ Repository 契約**で dbt 生成 Task を扱い、実際の永続性と、
+業務 CRUD / 再構築可能な分析の境界を検証します。
+列変換・エラー・接続寿命と将来の Cosmos / warehouse 拡張は [実装・拡張ガイド](backends.md)で説明します。
+
+この演習は意図的に dbt 管理 fact を編集します。CSV・raw・集計表は同期しません。
+API 再起動では変更が残りますが、**dbt build では上書きされます**。
+自分の作業 project だけを使い、完成サンプルや重要なデータは更新しないでください。
+
+### 作業: ターミナル A で準備・起動
+
+前節の dbt Docs・エディター・Python の DB 接続を停止します。
+リポジトリルートで、第1節と同じ絶対パスの DBT_PROJECT_DIR / DBT_PROFILES_DIR を使います。
+新しいターミナルから再開するなら、先に export を再実行してください。
+前節で戻した場合も初期 CSV に復旧し、以降の期待値を元の6件に揃えます。
+
+```shell
+cp "$DBT_TASK_EXAMPLE_DIR/seeds/raw_tasks.csv" "$DBT_PROJECT_DIR/seeds/raw_tasks.csv"
+uv run --locked --no-dev --group dbt dbt build
+export DUCKDB_PATH="$DBT_PROJECT_DIR/task_analytics.duckdb"
+export TELEMETRY_ENABLED=false
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+A は起動したままにします。Azure の account・サインイン・dbt platform account・jq・DB サーバーは不要です。
+Python duckdb driver は通常のアプリ依存であり、dbt 内蔵 driver とは別です。
+ポート8000を使用中なら --port を指定し、B の URL も合わせます。
+
+### 作業: ターミナル B で HTTP の確認と更新
+
+B も**リポジトリルート**で開きます。A の export は B に継承されません。
+B は HTTP だけを使い、A の稼働中は別プロセスから DuckDB を開かないでください。
+各 assert / test は成功する必要があります。非ゼロ終了なら、先へ進む前に原因を調べます。
+
+```shell
+export TASK_API_URL=http://127.0.0.1:8000
+TASK_HTTP_DIR=$(mktemp -d)
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); by_id={t["id"]:t for t in rows}; assert len(rows)==6; assert all(set(t)=={"id","title","description","status"} for t in rows); assert by_id["00000000-0000-0000-0000-000000000001"]["title"]=="Plan ingestion"; assert by_id["00000000-0000-0000-0000-000000000002"]["description"]==""; print("Initial 6 Tasks, normalized fields")' < "$TASK_HTTP_DIR/tasks.json"
+
+test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
+  -H 'Content-Type: application/json' -d '{"title":"API exercise","description":"Temporary"}' \
+  -o "$TASK_HTTP_DIR/created.json" -w '%{http_code}')" = 201
+TASK_ID=$(uv run --locked python -c 'import json,sys; t=json.load(sys.stdin); assert t["status"]=="todo"; print(t["id"])' < "$TASK_HTTP_DIR/created.json")
+curl --fail --silent --show-error "$TASK_API_URL/tasks/$TASK_ID"
+
+test "$(curl --silent --show-error -X PUT \
+  "$TASK_API_URL/tasks/00000000-0000-0000-0000-000000000001" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Plan ingestion","description":"Define the input columns","status":"done"}' \
+  -o /dev/null -w '%{http_code}')" = 200
+```
+
+PUT は Task 全体の置換です。存在しない PATCH を使わず title / description / status を指定します。
+TASK_ID は固定値ではなく、実際の POST 応答から取得した UUID です。
+
+### 確認: A を再起動して B で読み取る
+
+A で Ctrl+C を押し、shutdown 完了後に同じパスで再起動します。
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+B で、生成 UUID が残り、総数7件・done 3件であることを確認します。
+
+```shell
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==7; assert sum(t["status"]=="done" for t in rows)==3; assert any(t["id"]==sys.argv[1] for t in rows); print("Restart retained 7 Tasks, 3 done")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+
+test "$(curl --silent --show-error -X DELETE "$TASK_API_URL/tasks/$TASK_ID" \
+  -o /dev/null -w '%{http_code}')" = 204
+test "$(curl --silent --show-error "$TASK_API_URL/tasks/$TASK_ID" \
+  -o "$TASK_HTTP_DIR/missing.json" -w '%{http_code}')" = 404
+test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
+  -H 'Content-Type: application/json' -d '{"title":" "}' \
+  -o "$TASK_HTTP_DIR/invalid.json" -w '%{http_code}')" = 422
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==3; print("Deleted exercise Task; 6 Tasks, 3 done")' < "$TASK_HTTP_DIR/tasks.json"
+```
+
+### 確認: A を停止して保存済み分析結果を読む
+
+SQL / dbt の実行**前**に A を Ctrl+C で停止し、shutdown を待ちます。
+A で、同じ project の export を維持して実行します。
+
+```shell
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select task_id, status, is_completed from {{ ref('fct_tasks') }} where task_id = '00000000-0000-0000-0000-000000000001'"
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select status, count(*) as task_count from {{ ref('raw_tasks') }} group by status order by status"
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select status, task_count from {{ ref('task_status_summary') }} order by status_order"
+uv run --locked --no-dev --group dbt dbt test
+```
+
+fact の末尾001は **done / true**、raw・保存済み summary は各状態2件のままです。
+fact は todo=1 / in_progress=2 / done=3、summary は 2 / 2 / 2 なので、
+assert_task_summary_consistent が**非ゼロ終了で失敗**することを確認します。
+これは意図した失敗です。test を削除せず、他の失敗があれば別途調査してください。
+保存済み表を見るには show --inline と ref() を使います。show --select は model SQL の preview です。
+
+### 作業と確認: 再構築して復旧する
+
+API を停止したまま A で実行します。
+
+```shell
+uv run --locked --no-dev --group dbt dbt build
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select count(*) as total_tasks, sum(case when is_completed then 1 else 0 end) as completed_tasks from {{ ref('fct_tasks') }}"
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+期待値は data tests 42件成功、total_tasks=6 / completed_tasks=2 です。
+再構築は変更していない CSV を読み、**API からの状態更新を破棄**します。
+B で確認します。
+
+```shell
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==2; assert next(t for t in rows if t["id"]=="00000000-0000-0000-0000-000000000001")["status"]=="todo"; assert all(t["id"]!=sys.argv[1] for t in rows); print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+```
+
+| 段階 | Fact の件数 | done の件数 | 保存済み summary |
+| --- | --- | --- | --- |
+| 初期 build | 6 | 2 | 2 / 2 / 2 |
+| POST | 7 | 2 | 変更なし |
+| 既存001の PUT | 7 | 3 | 変更なし |
+| API 再起動 | 7 | 3 | 変更なし |
+| 演習 UUID の DELETE | 6 | 3 | 2 / 2 / 2 のまま。test が不整合を検知 |
+| dbt 再構築 | 6 | 2 | 2 / 2 / 2 に復旧 |
+
+再起動でデータが残ることと、自動同期を混同しないでください。
+業務 Cosmos と別の分析基盤の設計は [拡張ガイド](backends.md)で説明します。
+
+### 後片付け
+
+A を再度停止します。B で自分が作成した4つの HTTP 応答だけを削除します。
+
+```shell
+rm "$TASK_HTTP_DIR/created.json" "$TASK_HTTP_DIR/tasks.json" \
+  "$TASK_HTTP_DIR/missing.json" "$TASK_HTTP_DIR/invalid.json"
+rmdir "$TASK_HTTP_DIR"
+unset TASK_ID TASK_HTTP_DIR TASK_API_URL
+```
+
+A で演習用の DUCKDB_PATH / TELEMETRY_ENABLED を解除し、元の値があれば復元します。
+DB の削除は API と他の接続を停止してから行ってください。
+
+## 9. トラブルシューティング・復習・後片付け
 
 | 症状 | 確認すること |
 | --- | --- |
@@ -474,6 +625,12 @@ CLI と同じ絶対パスの `DBT_PROJECT_DIR` / `DBT_PROFILES_DIR` を VS Code 
 | table が見つからない | 同じ DB パスで seed / build 済みか。別のターミナルでも同じ環境変数か |
 | CSV を変えても結果が変わらない | `run` だけでは Load しない。`build` または `seed` → `run` → `test` を使う |
 | DuckDB の file lock エラー | 別の dbt / Python / DuckDB プロセスの接続を閉じる。同じ DB を複数プロセスで同時に書き込まない |
+| API で DUCKDB_PATH の不備 | 起動ターミナルで既存ファイルの絶対パスを export する。ディレクトリを指定しない |
+| API 起動時に table / column がない | 同じ DBT_PROJECT_DIR で build し、main.fct_tasks がサンプル列を持つ実テーブルか確認 |
+| API と dbt の Task が違う | DUCKDB_PATH と profile の path を照合。ターミナル間で export は独立 |
+| API CRUD 後に summary test が失敗 | fact だけが変化した場合の想定動作。API を停止し、演習の復旧を実行 |
+| dbt build で API 更新が消える | 想定動作。dbt は API 更新ではなく上流入力から fact を再構築 |
+| Functions がファイルを参照できない | 起動元 / host へ DUCKDB_PATH を渡し、filesystem のパスを確認。自動 mount はない |
 | Docs に列の lineage がない | strict static analysis と `--generate-info-schema` 付きで build し、`docs generate --no-compile` で生成したか |
 | Docs が `no data to serve` になる | `--target-path "$DBT_PROJECT_DIR/target"` で対象プロジェクトの生成物を指定したか |
 | Docs のポートが使用中 | 自分の Docs を停止するか、`--port 8581` にして対応する URL を開く |

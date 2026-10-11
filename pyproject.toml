@@ -18,6 +18,7 @@ dependencies = [
     "azure-monitor-query>=2.0.0",
     "azure-servicebus>=7.14.3",
     "azure-storage-queue>=12.18.0",
+    "duckdb>=1.5.6",
     "fastapi[standard]>=0.142.2",
     "opentelemetry-api>=1.44.0",
     "opentelemetry-sdk>=1.44.0",
@@ -132,6 +133,7 @@ source_modules = [
 ]
 forbidden_modules = [
     "azure",
+    "duckdb",
     "fastapi",
     "pydantic",
     "template_azure_python.infrastructure",
@@ -141,11 +143,11 @@ forbidden_modules = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "HTTP and composition root do not import Azure SDKs directly"
+name = "HTTP and composition root do not import storage SDKs directly"
 type = "forbidden"
 source_modules = [
     "template_azure_python.presentation",
     "template_azure_python.api",
 ]
-forbidden_modules = ["azure"]
+forbidden_modules = ["azure", "duckdb"]
 allow_indirect_imports = true

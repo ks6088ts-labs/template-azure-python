@@ -10,6 +10,7 @@ from azure.identity.aio import DefaultAzureCredential
 
 from template_azure_python.application import TaskAlreadyExistsError, TaskRepositoryError
 from template_azure_python.domain import Task, TaskId, TaskStatus
+from template_azure_python.infrastructure.repositories._errors import TaskStorageConfigurationError
 from template_azure_python.internals.azure._common import (
     InputError,
     required_value,
@@ -21,10 +22,6 @@ from template_azure_python.settings.azure import CosmosDBSettings
 PARTITION_KEY_PATH = "/id"
 TASK_QUERY = "SELECT c.id, c.title, c.description, c.status FROM c"
 logger = logging.getLogger(__name__)
-
-
-class TaskStorageConfigurationError(ValueError):
-    pass
 
 
 def _failure(operation: str, error: Exception) -> TaskRepositoryError:

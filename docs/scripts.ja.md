@@ -67,7 +67,7 @@ uv run --locked python -m scripts.template serve-container-apps --host 0.0.0.0 -
 
 ### 保存先を選ぶ
 
-`--repository in-memory`（既定）または `--repository cosmosdb` を指定できます。
+`--repository in-memory`（既定）、`--repository cosmosdb`、`--repository duckdb` を指定できます。
 省略時は `TASK_REPOSITORY` を OS 環境変数 → `.env` → 既定値の順で解決します。
 Cosmos の設定・権限・コンテナー準備は [Cosmos DB](cosmosdb.md#task-api) を参照してください。
 API はリソースを自動作成しません。
@@ -83,6 +83,25 @@ Cosmos DB 選択時に `CosmosResourceNotFoundError, status=404` で起動に失
 直接 `uvicorn template_azure_python.api:app` を起動する場合も `TASK_REPOSITORY` が使われます。
 Docker / Compose でも同じ環境設定を渡せます。InMemory はアプリごとに独立し、
 Cosmos は設定したコンテナーを共有します。
+
+dbt が構築したローカル DuckDB を使う場合は、先に [dbt のクイック実行](dbt/index.md)を完了します。
+同じファイルへの他の接続を閉じ、**既存ファイル**の絶対パスを指定します。
+
+```shell
+export DUCKDB_PATH="$DBT_PROJECT_DIR/task_analytics.duckdb"
+export TELEMETRY_ENABLED=false
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+`GET /tasks` は空配列ではなく、サンプルの6件を返します。
+`serve-functions` も同じ `--repository duckdb` を使えます。起動するターミナルで
+`DUCKDB_PATH` を export してください。直接 Uvicorn を使う場合は `TASK_REPOSITORY=duckdb` も必要です。
+ファイル不存在や `main.fct_tasks` の不備は明示的なエラーになり、API は自動作成しません。
+これは**単一プロセスのローカル演習**用であり、分散永続化の選択肢ではありません。
+同じファイルに dbt を実行する前に API を停止してください。
+API の更新先は fct_tasks だけで、raw・集計表とは同期せず、dbt 再構築で上書きされます。
+確認方法と設計は [API 連携演習](dbt/tutorial.md)と
+[保存先と分析基盤の拡張ガイド](dbt/backends.md)を参照してください。
 
 ## 3. Functions で動かす場合
 

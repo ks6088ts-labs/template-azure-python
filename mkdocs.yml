@@ -10,6 +10,7 @@ nav:
   - Data engineering:
       - dbt and DuckDB: dbt/index.md
       - Task analytics hands-on: dbt/tutorial.md
+      - Storage and analytics extensions: dbt/backends.md
   - LLM evaluation: evaluation.md
   - Azure samples:
       - Microsoft Foundry: foundry.md
@@ -78,6 +79,7 @@ plugins:
             Data engineering: データエンジニアリング
             dbt and DuckDB: dbt と DuckDB 入門
             Task analytics hands-on: Task 分析ハンズオン
+            Storage and analytics extensions: 保存先と分析基盤の拡張
             LLM evaluation: LLM 評価
             Azure samples: Azure サンプル
             Messaging: メッセージング

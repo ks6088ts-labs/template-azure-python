@@ -61,11 +61,12 @@ flowchart LR
 
 Solid arrows show the implemented data path; the dashed API arrow marks an **unimplemented ingestion boundary**.
 The fixed CSV is not synchronized with the API. dbt coordinates work; DuckDB executes SQL and persists data.
+The optional DuckDB Repository below lets the API directly edit the fact table; it does not implement ingestion.
 
 ## Domain and scope
 
 The [existing Task](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/domain/task.py)
-has four fields. The application's implementation and storage backend remain unchanged.
+has four fields. The domain and use cases remain unchanged; an optional DuckDB Repository implements the same CRUD port.
 
 | Field | Domain meaning | Analytical representation |
 | --- | --- | --- |
@@ -96,7 +97,8 @@ not additions to the application domain.
 - The following shell commands are for macOS / Linux. Run **every command from the repository root**.
 - Initial dependency downloads require network access; data processing is entirely local afterwards.
 - Use the existing `dbt` dependency group. v2 includes its DuckDB adapter, so do not additionally
-  install `dbt-core`, `dbt-duckdb`, or Python's `duckdb` package.
+  install `dbt-core` or `dbt-duckdb`. The application's normal dependencies include Python's
+  `duckdb` driver for the API Repository; this is separate from dbt's bundled driver.
   This follows the [official v2 instructions](https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup#installing-dbt-duckdb),
   not the v1 adapter installation workflow.
   This tutorial avoids features needing an extension driver and direct CSV `read_csv()` calls.
@@ -189,6 +191,45 @@ including failed tests, recovery, updates, and local Docs / lineage.
 Use a working copy for exercises rather than editing the completed example's CSV.
 This DAG represents data dependencies. All nodes are in the same DuckDB database;
 arrows do not imply network transfers or separate database servers.
+
+## Use the dbt-built Tasks through the API
+
+After `dbt build`, stop dbt Docs, editor queries, and other database connections.
+In the same repository-root terminal, using the `DBT_PROJECT_DIR` set above:
+
+```shell
+export DUCKDB_PATH="$DBT_PROJECT_DIR/task_analytics.duckdb"
+export TELEMETRY_ENABLED=false
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+In another terminal, check:
+
+```shell
+curl --fail --silent --show-error http://127.0.0.1:8000/tasks |
+  uv run --locked python -c 'import json,sys; tasks=json.load(sys.stdin); assert len(tasks)==6; assert all(set(t)=={"id","title","description","status"} for t in tasks); print("6 Tasks, unchanged API schema")'
+```
+
+This uses the same async `TaskRepository` contract and HTTP API as InMemory / Cosmos.
+`DUCKDB_PATH` is required; the API opens an existing file and validates the physical
+`main.fct_tasks` table and its columns. It does **not** run dbt or initialize an empty database.
+The API default remains **in-memory**; `type: duckdb` is the **dbt example's** default, not the API's.
+
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+```mermaid
+flowchart LR
+    apiCrud["Task API"] -->|"same CRUD port"| duckRepo["DuckDB Repository"]
+    duckRepo -->|"CRUD and completion flag"| duckFact[("main.fct_tasks")]
+    duckBuild["dbt build"] -->|"rebuild from raw input"| duckFact
+    duckFact -->|"dbt rebuild only"| duckSummary[("task_status_summary")]
+```
+
+API writes maintain `is_completed` but do not update CSV, raw tables, or persisted summary tables.
+Rebuilding with dbt overwrites API changes. Stop the API before any dbt command opens the same file:
+do not run multiple writers or multiple API workers.
+The [hands-on](tutorial.md#8-connect-the-task-api-and-verify-persistence) verifies CRUD,
+restart persistence, stale reports, an intentional test failure, and rebuild recovery.
+The [extension guide](backends.md) explains the implementation and future Cosmos / warehouse boundaries.
 
 ## Distinguish specifications, design choices, and expected results
 

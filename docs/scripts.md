@@ -66,7 +66,7 @@ Use `--host 127.0.0.1` to restrict it to your own machine.
 
 ### Select storage
 
-Use `--repository in-memory` (default) or `--repository cosmosdb`.
+Use `--repository in-memory` (default), `--repository cosmosdb`, or `--repository duckdb`.
 When omitted, `TASK_REPOSITORY` resolves from OS environment → `.env` → default.
 See [Cosmos DB](cosmosdb.md#task-api-persistence-and-container-management) for settings, permissions,
 and container preparation. The API never creates resources automatically.
@@ -82,6 +82,25 @@ to check effective settings and Azure resources and safely prepare the missing d
 Direct `uvicorn template_azure_python.api:app` also reads `TASK_REPOSITORY`.
 Pass the same environment settings to Docker/Compose. InMemory is isolated per app;
 Cosmos shares the configured container.
+
+For a local dbt-built DuckDB, first complete the [dbt quick run](dbt/index.md).
+Stop other connections to that file, then set its **existing** absolute path:
+
+```shell
+export DUCKDB_PATH="$DBT_PROJECT_DIR/task_analytics.duckdb"
+export TELEMETRY_ENABLED=false
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+`GET /tasks` now returns the six sample Tasks, not an empty array.
+The same `--repository duckdb` option works with `serve-functions`; export `DUCKDB_PATH`
+in the terminal that starts the launcher. Direct Uvicorn additionally needs `TASK_REPOSITORY=duckdb`.
+Missing files or an incompatible `main.fct_tasks` table fail explicitly; the API never creates them.
+This is a **single-process local exercise**, not a distributed persistence option.
+Stop the API before running dbt against the same file.
+API writes update only `fct_tasks`, not raw data or reports; rebuilding with dbt overwrites them.
+Follow the [API integration exercise](dbt/tutorial.md#8-connect-the-task-api-and-verify-persistence)
+and [storage and analytics extension guide](dbt/backends.md) for verification and design details.
 
 ## 3. Run with Functions, if needed
 

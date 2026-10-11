@@ -31,6 +31,7 @@ uv run --locked python -m scripts.template serve-container-apps
 
 ### Task API - Clean Architecture
 
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
 flowchart LR
     subgraph ApiEntrypoints["起動ポイント"]
@@ -43,6 +44,7 @@ flowchart LR
         http["FastAPI Task ルーター"]
         memory["インメモリ Repository"]
         cosmos["Cosmos DB Repository"]
+        duck["DuckDB Repository"]
         telemetry["テレメトリ初期化"]
         settings["型付き設定"]
     end
@@ -60,6 +62,8 @@ flowchart LR
     subgraph ApiExternal["外部システム"]
         cosmossdk["Azure Cosmos DB SDK"]
         data[("Task コンテナー")]
+        duckdriver["Python DuckDB driver"]
+        duckdata[("dbt 生成 fct_tasks")]
         monitor["Azure Monitor"]
     end
 
@@ -71,10 +75,14 @@ flowchart LR
     usecases -->|"依存"| port
     api -->|"注入"| memory
     api -->|"注入と寿命管理"| cosmos
+    api -->|"注入と寿命管理"| duck
     memory -.->|"実装"| port
     cosmos -.->|"実装"| port
+    duck -.->|"実装"| port
     cosmos -->|"非同期クライアントを使用"| cosmossdk
     cosmossdk -->|"読み書き"| data
+    duck -->|"排他したスレッド処理"| duckdriver
+    duckdriver -->|"読み書き"| duckdata
     api -->|"読み込み"| settings
     api -->|"有効時に初期化"| telemetry
     telemetry -->|"送信"| monitor
@@ -85,10 +93,10 @@ flowchart LR
     classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
     classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
     class launcher,functions entry
-    class api,http,memory,cosmos,telemetry,settings adapter
+    class api,http,memory,cosmos,duck,telemetry,settings adapter
     class usecases,port application
     class domain domain
-    class cosmossdk,data,monitor external
+    class cosmossdk,data,duckdriver,duckdata,monitor external
     style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
     style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
     style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px
@@ -147,13 +155,18 @@ Functions の HTTP トリガーは匿名で、`host.json` により `/api` プ�
 `TASK_REPOSITORY=cosmosdb` の場合、tasks API が非同期 Azure SDK を利用します。
 SDK と資格情報は lifespan 内で一度だけ初期化し、正常終了・失敗・キャンセル時に解放します。
 API は database / container を作成せず、起動時に存在と `/id` partition を検証します。
+`TASK_REPOSITORY=duckdb` の場合、lifespan で既存の `DUCKDB_PATH` を開き、
+dbt 生成テーブルを検証して、終了・失敗・キャンセル時に接続を閉じます。
+同期 Python driver の CRUD はイベントループ外のスレッドへ退避し、接続への操作を排他します。
+API は dbt を実行せず raw・集計表とは同期しません。dbt 再構築で API 更新が上書きされます。
+同じファイルの writer は単一プロセスに限定します。
 
 | 場所 | 責務 |
 | --- | --- |
 | `api.py` | アプリ生成、use case / adapter の組み立て、router 登録、任意のテレメトリ初期化 |
 | `domain/` | Task、ID・status の型、値の正規化と不変条件 |
 | `application/`、`application/ports/` | command、CRUD use case、repository の非同期 Protocol、application error |
-| `infrastructure/repositories/` | InMemory / Cosmos の port 実装、document 変換、SDK error 変換、非同期 resource factory |
+| `infrastructure/repositories/` | InMemory / Cosmos / DuckDB の port 実装、保存形式変換、driver error 変換、resource factory |
 | `presentation/http/` | HTTP DTO、routing、応答・エラー変換 |
 | `scripts/` | 起動コマンド、CLI 引数、表示、削除確認、終了コード |
 | `internals/azure/` | サービス別 SDK 操作と Task 管理用 az adapter、結果変換、入力検証、リソース寿命 |
@@ -188,19 +201,19 @@ API は database / container を作成せず、起動時に存在と `/id` parti
 
 **共通化するのは保存操作の契約であり、保存技術ごとの実装ではありません。**
 `application/ports/task_repository.py` の `TaskRepository` Protocol が、
-InMemory と Cosmos に共通する非同期 `add/get/list/update/delete` のインタフェースです。
+InMemory・Cosmos・DuckDB に共通する非同期 `add/get/list/update/delete` のインタフェースです。
 use case はこの port に依存し、具象 repository の選択・注入は `api.py` が行います。
 
 Python の Protocol は**構造的型付け**です。必要なメソッドと互換性のあるシグネチャを備えていれば、
 明示的に継承しなくても port に適合します。
-現在の `InMemoryTaskRepository` と `CosmosdbTaskRepository` はこの方式を使っています。
+`InMemoryTaskRepository`、`CosmosdbTaskRepository`、`DuckdbTaskRepository` はこの方式を使っています。
 クラス宣言で実装関係を明示したい場合は、既存 Protocol を明示的に継承する整理も可能ですが、
 そのためだけに別の ABC や汎用 repository 基底クラスを追加する必要はありません。
 
 適合の確認は次の二つに分けます。
 
 - **型検査**: `TaskRepository` 型として注入するとき、メソッド・引数・戻り値の型の互換性を検査する。
-- **共通契約テスト**: `tests/test_task_repositories.py` の `test_repository_contract` を両実装に適用し、
+- **共通契約テスト**: `tests/test_task_repositories.py` の `test_repository_contract` を3実装に適用し、
   CRUD、未検出、重複、更新が新規作成にならないこと等の振る舞いを検査する。
   同じメソッド名だけでは、これらの意味まで保証されません。
 
@@ -210,7 +223,41 @@ dict と lock による保存、Cosmos の document 変換・partition・SDK err
 SDK 呼び出しの検証や接続解放のテストも、共通 CRUD 契約とは区別します。
 
 client・資格情報の初期化と解放は、Cosmos の resource factory と API lifespan が所有します。
+DuckDB の factory も接続を所有します。port にライフサイクル用のメソッドは追加しません。
 これを CRUD port の必須メソッドにせず、InMemory や use case に Cosmos 固有の寿命管理を要求しません。
+
+### 保存先を追加した際のコンポーネント接続
+
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+```mermaid
+flowchart LR
+    subgraph cOuter["組み立てとアダプター"]
+        cSettings["ProjectSettings"]
+        cRoot["create_app lifespan"]
+        cFactory["DuckDB resource factory"]
+        cRepo["DuckdbTaskRepository"]
+        cRouter["Task HTTP router"]
+    end
+    subgraph cCore["フレームワーク非依存のコア"]
+        cUsecases["Task CRUD use cases"]
+        cPort["TaskRepository Protocol"]
+        cTask["Task domain"]
+    end
+    cSettings -->|"backend と path"| cRoot
+    cRoot -->|"開始と解放"| cFactory
+    cFactory -->|"adapter を提供"| cRepo
+    cRoot -->|"use case を提供"| cRouter
+    cRouter -->|"実行"| cUsecases
+    cUsecases -->|"依存"| cPort
+    cUsecases -->|"値を検証"| cTask
+    cRepo -.->|"実装"| cPort
+```
+
+これは明示的な組み立てであり、新しい DI framework や adapter registry ではありません。
+変更するのは設定・具象保存先・起動時の接続だけで、業務コードと HTTP DTO は維持します。
+[拡張ガイド](../dbt/backends.md)で実際のコードに沿って、
+列変換・SQL パラメーター・エラー・排他・解放を説明します。
+[ハンズオン](../dbt/tutorial.md)で動作を確認できます。
 
 ### Clean Architecture と DDD の位置付け
 

@@ -469,7 +469,159 @@ Confirm the profile and database path in the extension's connection setup, then 
 and inspect Lineage / Query Results.
 The extension and account features are optional; the CLI and local Docs are sufficient for this tutorial.
 
-## 8. Troubleshooting, recap, and cleanup
+## 8. Connect the Task API and verify persistence
+
+### Purpose
+
+Use the **same** Repository contract with dbt-built Tasks, verify real persistence, and observe the
+boundary between operational CRUD and rebuildable analytics. See the [implementation guide](backends.md)
+for column mapping, errors, connection lifetime, and future Cosmos / warehouse extensions.
+
+This exercise deliberately edits a dbt-managed fact. CSV, raw data, and summary tables do not synchronize.
+API changes persist across API restarts but are **overwritten by dbt build**.
+Use only your working project, not the completed example or important data.
+
+### Action: prepare and start in terminal A
+
+Stop dbt Docs and editor / Python database connections from the previous section.
+Use the repository root and the same absolute DBT_PROJECT_DIR / DBT_PROFILES_DIR from section 1.
+If resuming in a new terminal, repeat those exports first. Restore the initial CSV even if the preceding
+exercise already did so; the verification below expects the original six rows.
+
+```shell
+cp "$DBT_TASK_EXAMPLE_DIR/seeds/raw_tasks.csv" "$DBT_PROJECT_DIR/seeds/raw_tasks.csv"
+uv run --locked --no-dev --group dbt dbt build
+export DUCKDB_PATH="$DBT_PROJECT_DIR/task_analytics.duckdb"
+export TELEMETRY_ENABLED=false
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+Keep A running. No Azure account, sign-in, dbt platform account, jq, or database server is needed.
+Python's duckdb driver is a normal application dependency, separate from dbt's built-in driver.
+If port 8000 is occupied, use `--port` and change the URL in B accordingly.
+
+### Action: verify and mutate in terminal B
+
+Open B at the **repository root**. Exports in A are not inherited by B.
+B calls HTTP only; do not open the DuckDB file with another process while A runs.
+Each `assert` / `test` below must succeed; a nonzero exit means investigate before continuing.
+
+```shell
+export TASK_API_URL=http://127.0.0.1:8000
+TASK_HTTP_DIR=$(mktemp -d)
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); by_id={t["id"]:t for t in rows}; assert len(rows)==6; assert all(set(t)=={"id","title","description","status"} for t in rows); assert by_id["00000000-0000-0000-0000-000000000001"]["title"]=="Plan ingestion"; assert by_id["00000000-0000-0000-0000-000000000002"]["description"]==""; print("Initial 6 Tasks, normalized fields")' < "$TASK_HTTP_DIR/tasks.json"
+
+test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
+  -H 'Content-Type: application/json' -d '{"title":"API exercise","description":"Temporary"}' \
+  -o "$TASK_HTTP_DIR/created.json" -w '%{http_code}')" = 201
+TASK_ID=$(uv run --locked python -c 'import json,sys; t=json.load(sys.stdin); assert t["status"]=="todo"; print(t["id"])' < "$TASK_HTTP_DIR/created.json")
+curl --fail --silent --show-error "$TASK_API_URL/tasks/$TASK_ID"
+
+test "$(curl --silent --show-error -X PUT \
+  "$TASK_API_URL/tasks/00000000-0000-0000-0000-000000000001" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Plan ingestion","description":"Define the input columns","status":"done"}' \
+  -o /dev/null -w '%{http_code}')" = 200
+```
+
+PUT replaces the whole Task; supply title / description / status, not an imaginary PATCH.
+The generated TASK_ID is taken from the real POST response, not a fixed sample ID.
+
+### Verification: restart A, then read in B
+
+In A press Ctrl+C, wait for shutdown, then restart with the same path:
+
+```shell
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+In B, verify seven Tasks and three done Tasks, including the newly created UUID:
+
+```shell
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==7; assert sum(t["status"]=="done" for t in rows)==3; assert any(t["id"]==sys.argv[1] for t in rows); print("Restart retained 7 Tasks, 3 done")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+
+test "$(curl --silent --show-error -X DELETE "$TASK_API_URL/tasks/$TASK_ID" \
+  -o /dev/null -w '%{http_code}')" = 204
+test "$(curl --silent --show-error "$TASK_API_URL/tasks/$TASK_ID" \
+  -o "$TASK_HTTP_DIR/missing.json" -w '%{http_code}')" = 404
+test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
+  -H 'Content-Type: application/json' -d '{"title":" "}' \
+  -o "$TASK_HTTP_DIR/invalid.json" -w '%{http_code}')" = 422
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==3; print("Deleted exercise Task; 6 Tasks, 3 done")' < "$TASK_HTTP_DIR/tasks.json"
+```
+
+### Verification: stop A and inspect persisted analytics
+
+Stop A with Ctrl+C and wait for shutdown **before** any SQL / dbt command.
+In A, using the same project exports:
+
+```shell
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select task_id, status, is_completed from {{ ref('fct_tasks') }} where task_id = '00000000-0000-0000-0000-000000000001'"
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select status, count(*) as task_count from {{ ref('raw_tasks') }} group by status order by status"
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select status, task_count from {{ ref('task_status_summary') }} order by status_order"
+uv run --locked --no-dev --group dbt dbt test
+```
+
+Expect the fact's ID ending in 001 to be **done / true**, while raw and persisted summary still have
+two Tasks per status. `assert_task_summary_consistent` must **fail with a nonzero exit code**:
+fact counts are now todo=1 / in_progress=2 / done=3 but the summary remains 2 / 2 / 2.
+This is the intended failure, not a reason to delete the test.
+If another failure occurs, investigate it separately.
+Use `show --inline` + `ref()` to inspect persisted tables; `show --select` would preview model SQL.
+
+### Action and verification: rebuild and recover
+
+Still with the API stopped, in A:
+
+```shell
+uv run --locked --no-dev --group dbt dbt build
+uv run --locked --no-dev --group dbt dbt show --inline \
+  "select count(*) as total_tasks, sum(case when is_completed then 1 else 0 end) as completed_tasks from {{ ref('fct_tasks') }}"
+uv run --locked python -m scripts.template serve-container-apps --repository duckdb
+```
+
+Expect 42 successful data tests and total_tasks=6 / completed_tasks=2.
+Rebuild reads the unchanged CSV and **discards the API's status change**.
+In B:
+
+```shell
+curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==2; assert next(t for t in rows if t["id"]=="00000000-0000-0000-0000-000000000001")["status"]=="todo"; assert all(t["id"]!=sys.argv[1] for t in rows); print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+```
+
+| Stage | Fact rows | Done rows | Persisted summary |
+| --- | --- | --- | --- |
+| Initial build | 6 | 2 | 2 / 2 / 2 |
+| POST | 7 | 2 | Unchanged |
+| PUT existing 001 | 7 | 3 | Unchanged |
+| API restart | 7 | 3 | Unchanged |
+| DELETE exercise UUID | 6 | 3 | Still 2 / 2 / 2; test detects inconsistency |
+| dbt rebuild | 6 | 2 | Restored 2 / 2 / 2 |
+
+Do not infer synchronization from restart persistence.
+For operational Cosmos data and separately rebuilt analytics, see the [extension guide](backends.md).
+
+### Cleanup
+
+Stop A again. In B remove only the four temporary HTTP response files you created:
+
+```shell
+rm "$TASK_HTTP_DIR/created.json" "$TASK_HTTP_DIR/tasks.json" \
+  "$TASK_HTTP_DIR/missing.json" "$TASK_HTTP_DIR/invalid.json"
+rmdir "$TASK_HTTP_DIR"
+unset TASK_ID TASK_HTTP_DIR TASK_API_URL
+```
+
+In A, unset DUCKDB_PATH / TELEMETRY_ENABLED if set only for the exercise, restoring previous values
+if applicable. Do not remove the database until the API and other connections have stopped.
+
+## 9. Troubleshooting, recap, and cleanup
 
 | Symptom | Check |
 | --- | --- |
@@ -478,6 +630,12 @@ The extension and account features are optional; the CLI and local Docs are suff
 | Missing table | Check whether seed / build ran on the same database path, including in other terminals |
 | CSV changes have no effect | `run` does not Load; use `build` or `seed` → `run` → `test` |
 | DuckDB file-lock error | Close other dbt / Python / DuckDB connections; do not write the same file concurrently from multiple processes |
+| API reports DUCKDB_PATH missing / invalid | Export the existing absolute file path in the launcher terminal; do not point at a directory |
+| API startup reports missing table / columns | Use the same DBT_PROJECT_DIR, run build, and verify main.fct_tasks is a physical table with the sample columns |
+| API and dbt show different Tasks | Compare DUCKDB_PATH with the dbt profile path; terminal exports are independent |
+| Summary test fails after API CRUD | Expected if fact changed without rebuilding reports; stop the API and follow the recovery exercise |
+| API writes disappear after dbt build | Expected: dbt recreates the fact from its upstream input, not from API changes |
+| Functions cannot see the file | Pass DUCKDB_PATH to the launcher / host and check its filesystem path; no automatic file mounting is supplied |
 | Missing column lineage | Build with strict static analysis and `--generate-info-schema`, then use `docs generate --no-compile` |
 | Docs reports `no data to serve` | Set `--target-path "$DBT_PROJECT_DIR/target"` to the intended project's artifacts |
 | Docs port is occupied | Stop your server or choose `--port 8581` and use the matching URL |

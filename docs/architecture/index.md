@@ -31,6 +31,7 @@ The old mock `GET /` has been removed and returns 404.
 
 ### Task API - Clean Architecture
 
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
 flowchart LR
     subgraph ApiEntrypoints["Entrypoints"]
@@ -43,6 +44,7 @@ flowchart LR
         http["FastAPI task router"]
         memory["In-memory repository"]
         cosmos["Cosmos DB repository"]
+        duck["DuckDB repository"]
         telemetry["Telemetry initialization"]
         settings["Typed settings"]
     end
@@ -60,6 +62,8 @@ flowchart LR
     subgraph ApiExternal["External systems"]
         cosmossdk["Azure Cosmos DB SDK"]
         data[("Task container")]
+        duckdriver["Python DuckDB driver"]
+        duckdata[("dbt-built fct_tasks")]
         monitor["Azure Monitor"]
     end
 
@@ -71,10 +75,14 @@ flowchart LR
     usecases -->|"depends on"| port
     api -->|"injects"| memory
     api -->|"injects and owns"| cosmos
+    api -->|"injects and owns"| duck
     memory -.->|"implements"| port
     cosmos -.->|"implements"| port
+    duck -.->|"implements"| port
     cosmos -->|"uses async client"| cosmossdk
     cosmossdk -->|"reads and writes"| data
+    duck -->|"serialized worker operations"| duckdriver
+    duckdriver -->|"reads and writes"| duckdata
     api -->|"loads"| settings
     api -->|"initializes when enabled"| telemetry
     telemetry -->|"exports"| monitor
@@ -85,10 +93,10 @@ flowchart LR
     classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
     classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
     class launcher,functions entry
-    class api,http,memory,cosmos,telemetry,settings adapter
+    class api,http,memory,cosmos,duck,telemetry,settings adapter
     class usecases,port application
     class domain domain
-    class cosmossdk,data,monitor external
+    class cosmossdk,data,duckdriver,duckdata,monitor external
     style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
     style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
     style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px
@@ -147,13 +155,17 @@ The Functions HTTP trigger is anonymous; `host.json` removes the `/api` prefix.
 With `TASK_REPOSITORY=cosmosdb`, tasks API uses the asynchronous Azure SDK.
 Lifespan initializes one client/credential per app and closes them on shutdown, failure, or cancellation.
 The API does not create databases/containers: startup verifies their existence and the `/id` partition.
+With `TASK_REPOSITORY=duckdb`, lifespan opens the existing `DUCKDB_PATH`, verifies the dbt-built table,
+and closes the connection on exit, failure, or cancellation. CRUD uses the synchronous Python driver
+off the event loop, with serialized connection access. The API neither runs dbt nor synchronizes
+raw / report tables; dbt rebuilds overwrite API changes. Use one writer process for that file.
 
 | Location | Responsibility |
 | --- | --- |
 | `api.py` | App creation, use-case/adapter composition, router registration, optional telemetry initialization |
 | `domain/` | Task, ID/status types, normalization, and value invariants |
 | `application/`, `application/ports/` | Commands, CRUD use cases, asynchronous repository Protocol, application errors |
-| `infrastructure/repositories/` | InMemory/Cosmos port implementations, document mapping, SDK errors, asynchronous resource factory |
+| `infrastructure/repositories/` | InMemory/Cosmos/DuckDB port implementations, storage mapping, driver errors, resource factories |
 | `presentation/http/` | HTTP DTOs, routing, response/error mapping |
 | `scripts/` | Launch commands, CLI arguments, presentation, deletion confirmation, exit codes |
 | `internals/azure/` | Service SDK operations and Task management az adapter, mapping, validation, resource lifetime |
@@ -188,19 +200,19 @@ Matching layer names alone does not establish the design.
 
 **Share the storage-operation contract, not the implementation of each storage technology.**
 The `TaskRepository` Protocol in `application/ports/task_repository.py` defines the asynchronous
-`add/get/list/update/delete` interface shared by InMemory and Cosmos.
+`add/get/list/update/delete` interface shared by InMemory, Cosmos and DuckDB.
 Use cases depend on this port; `api.py` selects and injects the concrete repository.
 
 Python Protocols use **structural typing**: an implementation with the required methods and compatible
 signatures satisfies the port without explicitly inheriting from it.
-Both `InMemoryTaskRepository` and `CosmosdbTaskRepository` currently use this approach.
+`InMemoryTaskRepository`, `CosmosdbTaskRepository`, and `DuckdbTaskRepository` use this approach.
 Explicitly inheriting from the existing Protocol is also an option when the implementation relationship
 should be visible in class declarations; it does not require a separate ABC or generic repository base class.
 
 Check conformance at two different levels:
 
 - **Type checking**: injection as `TaskRepository` checks compatibility of methods, arguments, and return types.
-- **Shared contract tests**: `test_repository_contract` in `tests/test_task_repositories.py` runs against both
+- **Shared contract tests**: `test_repository_contract` in `tests/test_task_repositories.py` runs against all three
   implementations, checking CRUD, absence, duplicates, and updates not creating missing Tasks.
   Matching method names alone does not guarantee these semantics.
 
@@ -210,8 +222,42 @@ Forcing storage logic into a common base class would introduce backend-specific 
 SDK call verification and connection-cleanup tests are distinct from the shared CRUD contract.
 
 The Cosmos resource factory and API lifespan own client/credential initialization and cleanup.
+The DuckDB factory similarly owns its connection; lifecycle methods are not added to the port.
 Do not make those operations mandatory CRUD port methods: InMemory and use cases should not be required
 to manage Cosmos-specific resource lifetimes.
+
+### Component wiring for a new storage adapter
+
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+```mermaid
+flowchart LR
+    subgraph cOuter["Composition and adapters"]
+        cSettings["ProjectSettings"]
+        cRoot["create_app lifespan"]
+        cFactory["DuckDB resource factory"]
+        cRepo["DuckdbTaskRepository"]
+        cRouter["Task HTTP router"]
+    end
+    subgraph cCore["Framework-independent core"]
+        cUsecases["Task CRUD use cases"]
+        cPort["TaskRepository Protocol"]
+        cTask["Task domain"]
+    end
+    cSettings -->|"backend and path"| cRoot
+    cRoot -->|"enter and close"| cFactory
+    cFactory -->|"yield adapter"| cRepo
+    cRoot -->|"provide use cases"| cRouter
+    cRouter -->|"invoke"| cUsecases
+    cUsecases -->|"depend on"| cPort
+    cUsecases -->|"validate values"| cTask
+    cRepo -.->|"implements"| cPort
+```
+
+This is explicit composition, not a new DI framework or adapter registry.
+Only settings, concrete storage and startup wiring change; business code and HTTP DTOs do not.
+The [extension guide](../dbt/backends.md#read-the-duckdb-implementation) walks through mapping,
+SQL parameters, errors, concurrency and cleanup using the actual implementation.
+The [hands-on](../dbt/tutorial.md#8-connect-the-task-api-and-verify-persistence) verifies the behavior.
 
 ### Clean Architecture and DDD
 
