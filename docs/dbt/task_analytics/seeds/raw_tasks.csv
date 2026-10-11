@@ -1,0 +1,7 @@
+id,title,description,status
+00000000-0000-0000-0000-000000000001,  Plan ingestion  ,  Define the input columns  ,todo
+00000000-0000-0000-0000-000000000002,Write staging SQL,,todo
+00000000-0000-0000-0000-000000000003,Build task mart,Join tasks to their status,in_progress
+00000000-0000-0000-0000-000000000004,Add data tests,Check keys and domain rules,in_progress
+00000000-0000-0000-0000-000000000005,Install dbt,Use the existing uv group,done
+00000000-0000-0000-0000-000000000006,Connect DuckDB,Use a local database file,done

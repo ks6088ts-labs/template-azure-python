@@ -1,0 +1,8 @@
+task_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DBT_PROJECT_DIR') }}/task_analytics.duckdb"
+      schema: main
+      threads: 1

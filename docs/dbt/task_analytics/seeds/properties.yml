@@ -1,0 +1,53 @@
+version: 2
+
+seeds:
+  - name: raw_tasks
+    description: "Learning input: one current Task per UUID, not an API export or history."
+    config:
+      column_types:
+        id: varchar
+        title: varchar
+        description: varchar
+        status: varchar
+    columns:
+      - name: id
+        description: "Task.id serialized as a UUID string."
+        data_tests: [not_null, unique]
+      - name: title
+        description: "Task.title before whitespace normalization."
+        data_tests: [not_null]
+      - name: description
+        description: "Task.description; an empty CSV field represents the default empty text."
+      - name: status
+        description: "TaskStatus value, preserved without case conversion."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["todo", "in_progress", "done"]
+  - name: task_statuses
+    description: "Small reference dataset for the three TaskStatus values."
+    config:
+      column_types:
+        status: varchar
+        status_label: varchar
+        status_order: integer
+        is_completed: boolean
+    columns:
+      - name: status
+        description: "Stable status key."
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: ["todo", "in_progress", "done"]
+      - name: status_label
+        description: "Display label, not a new field in the application domain."
+        data_tests: [not_null]
+      - name: status_order
+        description: "Presentation order from todo to done."
+        data_tests: [not_null, unique]
+      - name: is_completed
+        description: "True only for done."
+        data_tests: [not_null]

@@ -29,6 +29,7 @@ Cosmos 永続化と管理 CLI は [Cosmos DB](cosmosdb.md) を参照してくだ
 | やりたいこと | 読むガイド |
 | --- | --- |
 | 開発環境を整え、API・テスト・Docker を動かす | [ローカル開発](scripts.md) |
+| Task・dbt・ローカル DuckDB でデータエンジニアリングを学ぶ | [Data engineering 入門](dbt/index.md) |
 | AI モデルやエージェントを試す | [Microsoft Foundry](foundry.md) |
 | データを保存・取得する | [Azure Cosmos DB](cosmosdb.md) |
 | イベントやメッセージを送受信する | [メッセージング](messaging.md) |

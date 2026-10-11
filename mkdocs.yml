@@ -7,6 +7,9 @@ nav:
   - Getting started: index.md
   - Local development: scripts.md
   - Architecture: architecture/index.md
+  - Data engineering:
+      - dbt and DuckDB: dbt/index.md
+      - Task analytics hands-on: dbt/tutorial.md
   - LLM evaluation: evaluation.md
   - Azure samples:
       - Microsoft Foundry: foundry.md
@@ -14,6 +17,12 @@ nav:
       - Messaging: messaging.md
       - Monitoring and logs: monitoring.md
   - Deployment: deployment.md
+exclude_docs: |
+  /dbt/task_analytics/target/
+  /dbt/task_analytics/logs/
+  /dbt/task_analytics/dbt_packages/
+  /dbt/task_analytics/*.duckdb
+  /dbt/task_analytics/*.duckdb.wal
 theme:
   name: material
   # https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/#automatic-light-dark-mode
@@ -66,6 +75,9 @@ plugins:
             Getting started: はじめに
             Local development: ローカル開発
             Architecture: アーキテクチャ
+            Data engineering: データエンジニアリング
+            dbt and DuckDB: dbt と DuckDB 入門
+            Task analytics hands-on: Task 分析ハンズオン
             LLM evaluation: LLM 評価
             Azure samples: Azure サンプル
             Messaging: メッセージング
