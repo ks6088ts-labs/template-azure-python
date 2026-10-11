@@ -1,0 +1,2835 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/monitoring/">
+      
+      
+        <link rel="prev" href="../messaging/">
+      
+      
+        <link rel="next" href="../deployment/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+          <link rel="alternate" href="../ja/monitoring/" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Monitoring and logs - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#monitoring-and-logs" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Monitoring and logs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../ja/monitoring/" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt and DuckDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task analytics hands-on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage and analytics extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure samples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure samples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cosmosdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and logs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and logs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-set-the-read-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Set the read targets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Set the read targets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-precedence-and-empty-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting precedence and empty values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-check-read-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Check read permissions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-the-data-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read the data you need
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Read the data you need">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-workspace-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus: workspace and metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-analytics-exported-activity-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Analytics: exported Activity Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-insights-requests-and-other-telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Insights: requests and other telemetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-watcher-location-and-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Watcher: location and settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activity-log-api-subscription-operation-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activity Log API: subscription operation history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filters-and-summary-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters and summary limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-instrument-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Instrument the API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Instrument the API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#opt-in-to-live-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opt in to Live Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-live-metrics-display-with-the-local-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify Live Metrics display with the local API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verify Live Metrics display with the local API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-prepare-the-destination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Prepare the destination
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-open-live-metrics-for-that-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Open Live Metrics for that resource
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-start-the-api-in-terminal-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Start the API in terminal 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-generate-requests-in-terminal-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Generate requests in terminal 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-check-changes-in-the-portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Check changes in the portal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-stop-and-restore-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Stop and restore settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-with-docker-compose-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify with Docker Compose instead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-disabled-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify disabled behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-fail-fast-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify fail-fast configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-api-telemetry-in-azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify API telemetry in Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-and-extension-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scale and extension boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-emit-and-find-telemetry-from-the-cli-optionally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Emit and find telemetry from the CLI, optionally
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Emit and find telemetry from the CLI, optionally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-the-connection-string-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set the connection string locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emit-a-sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Emit a sample
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-kql-in-azure-portal-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run KQL in Azure portal logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run KQL in Azure portal logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-open-the-destination-application-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Open the destination Application Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-show-the-query-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Show the query editor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-check-for-recent-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Check for recent requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-find-all-three-signals-for-this-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Find all three signals for this run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-from-the-log-analytics-workspace-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query from the Log Analytics workspace instead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-data-from-the-same-run-using-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find data from the same run using the CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-is-generated-and-where-it-goes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What is generated and where it goes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. What is generated and where it goes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings-that-choose-emission-and-query-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings that choose emission and query targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#three-signals-per-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three signals per loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-and-shutdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export and shutdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-conversion-and-differences-from-api-instrumentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query conversion and differences from API instrumentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-example-and-automated-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification example and automated tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-set-the-read-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Set the read targets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Set the read targets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-precedence-and-empty-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting precedence and empty values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-check-read-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Check read permissions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-the-data-you-need" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read the data you need
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Read the data you need">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-workspace-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus: workspace and metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-analytics-exported-activity-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Analytics: exported Activity Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-insights-requests-and-other-telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Insights: requests and other telemetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-watcher-location-and-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Watcher: location and settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activity-log-api-subscription-operation-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activity Log API: subscription operation history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filters-and-summary-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters and summary limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-instrument-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Instrument the API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Instrument the API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#opt-in-to-live-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opt in to Live Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-live-metrics-display-with-the-local-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify Live Metrics display with the local API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verify Live Metrics display with the local API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-prepare-the-destination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Prepare the destination
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-open-live-metrics-for-that-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Open Live Metrics for that resource
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-start-the-api-in-terminal-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Start the API in terminal 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-generate-requests-in-terminal-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Generate requests in terminal 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-check-changes-in-the-portal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Check changes in the portal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-stop-and-restore-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Stop and restore settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-with-docker-compose-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify with Docker Compose instead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-disabled-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify disabled behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-fail-fast-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify fail-fast configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-api-telemetry-in-azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify API telemetry in Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-and-extension-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scale and extension boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-emit-and-find-telemetry-from-the-cli-optionally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Emit and find telemetry from the CLI, optionally
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Emit and find telemetry from the CLI, optionally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-the-connection-string-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set the connection string locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emit-a-sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Emit a sample
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-kql-in-azure-portal-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run KQL in Azure portal logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run KQL in Azure portal logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-open-the-destination-application-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Open the destination Application Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-show-the-query-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Show the query editor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-check-for-recent-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Check for recent requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-find-all-three-signals-for-this-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Find all three signals for this run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-from-the-log-analytics-workspace-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query from the Log Analytics workspace instead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-data-from-the-same-run-using-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find data from the same run using the CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-is-generated-and-where-it-goes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What is generated and where it goes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. What is generated and where it goes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings-that-choose-emission-and-query-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings that choose emission and query targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#three-signals-per-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three signals per loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-and-shutdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export and shutdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-conversion-and-differences-from-api-instrumentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query conversion and differences from API instrumentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-example-and-automated-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification example and automated tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="monitoring-and-logs">Monitoring and logs</h1>
+<p>Read Azure monitoring data and logs from the CLI.
+The CLIs do not assign roles, change diagnostic settings, or deploy collectors.</p>
+<table>
+<thead>
+<tr>
+<th>Exercise</th>
+<th>Effect on Azure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Output retrieval and monitoring queries in sections 1-3</td>
+<td>Read-only; no resource or permission changes</td>
+</tr>
+<tr>
+<td>Disabled and missing-connection-string checks in section 4</td>
+<td>No Azure telemetry emission required</td>
+</tr>
+<tr>
+<td>"Verify API telemetry in Azure" in section 4</td>
+<td>Sends API telemetry</td>
+</tr>
+<tr>
+<td><code>emit-telemetry</code> in section 5</td>
+<td>Sends sample telemetry</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Both the Azure API check in section 4 and emission in section 5 may incur ingestion charges.</strong>
+Choose the destination and request count before proceeding. Skip emission if you only need to read data.</p>
+<h2 id="1-set-the-read-targets">1. Set the read targets</h2>
+<p>Complete the <a href="../scripts/">development and common Azure setup</a> and prepare the
+resources you need. All features in the
+<a href="https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_observability"><code>azure_observability</code> Terraform scenario</a>
+are off by default. Enable only the required features in that repository.</p>
+<table>
+<thead>
+<tr>
+<th>Data to read</th>
+<th>Required scenario features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Managed Prometheus</td>
+<td><code>features.azure_monitor</code></td>
+</tr>
+<tr>
+<td>Log Analytics <code>AzureActivity</code></td>
+<td><code>features.log_analytics</code> and <code>features.activity_log</code></td>
+</tr>
+<tr>
+<td>Application Insights</td>
+<td><code>features.application_insights</code> and <code>features.log_analytics</code></td>
+</tr>
+<tr>
+<td>Network Watcher</td>
+<td><code>features.network_watcher</code></td>
+</tr>
+<tr>
+<td>Subscription Activity Log API</td>
+<td>No feature flag; independent of workspaces</td>
+</tr>
+</tbody>
+</table>
+<p><code>features.activity_log</code> configures export; it does not enable the Activity Log API.
+Azure Monitor Workspace is for Prometheus and is separate from Log Analytics.</p>
+<p>Read nonsecret outputs from your Terraform checkout:</p>
+<div class="highlight"><pre><span></span><code>terraform<span class="w"> </span>-chdir<span class="o">=</span>infra/scenarios/azure_observability<span class="w"> </span>output
+terraform<span class="w"> </span>-chdir<span class="o">=</span>infra/scenarios/azure_observability<span class="w"> </span>output<span class="w"> </span>-raw<span class="w"> </span>azure_monitor_id
+</code></pre></div>
+<p><code>output</code> reads values stored in existing state; it does not create resources.
+If it reports <code>Required plugins are not installed</code> or <code>Module not installed</code>,
+follow the Terraform repository's setup instructions and run <code>terraform init</code>
+for the same scenario before retrying. <code>init</code> initializes providers, modules, and
+the backend. Do not run <code>terraform apply</code> or recreate resources merely to read outputs.
+If you already have correct IDs, you can continue Python CLI read checks without retrieving outputs.</p>
+<p>Set only the values you need in this Python repository's existing <code>.env</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th><code>.env</code> variable</th>
+<th>Value format</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>azure_monitor_id</code></td>
+<td><code>AZURE_MONITOR_ID</code></td>
+<td>Azure Monitor Workspace ARM ID</td>
+</tr>
+<tr>
+<td><code>log_analytics_workspace_id</code></td>
+<td><code>AZURE_LOG_ANALYTICS_WORKSPACE_ID</code></td>
+<td>Workspace GUID</td>
+</tr>
+<tr>
+<td><code>application_insights_id</code></td>
+<td><code>AZURE_APPLICATION_INSIGHTS_ID</code></td>
+<td>Application Insights ARM ID</td>
+</tr>
+<tr>
+<td><code>network_watcher_id</code></td>
+<td><code>AZURE_NETWORK_WATCHER_ID</code></td>
+<td>Watcher ARM ID</td>
+</tr>
+<tr>
+<td><code>az account show --query id --output tsv</code></td>
+<td><code>AZURE_SUBSCRIPTION_ID</code></td>
+<td>Subscription GUID</td>
+</tr>
+<tr>
+<td><code>resource_group_name</code> or the watcher's actual group</td>
+<td><code>AZURE_RESOURCE_GROUP</code></td>
+<td>Optional filter; empty for subscription-wide reads</td>
+</tr>
+</tbody>
+</table>
+<p>An ARM ID is a path starting with <code>/subscriptions/&lt;id&gt;/resourceGroups/&lt;group&gt;/providers/</code>.
+A GUID has the form <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>.
+<strong>For Log Analytics, use the GUID, not the <code>log_analytics_id</code> ARM ID.</strong>
+<code>activity_log_id</code> identifies an export setting, not a subscription.
+Do not configure <code>null</code> outputs for disabled features; skip those exercises.</p>
+<p>To override settings, Monitor / Application Insights / Watcher use <code>--resource-id</code>,
+Log Analytics uses <code>--workspace-id</code>, and Activity Log uses <code>--subscription-id</code>.</p>
+<h3 id="setting-precedence-and-empty-values">Setting precedence and empty values</h3>
+<p>Azure settings resolve in this order: <strong>CLI options, nonempty OS environment variables,
+<code>.env</code>, then defaults</strong>. Empty OS values are ignored. Setting <code>AZURE_RESOURCE_GROUP=''</code>
+therefore still uses a group configured in <code>.env</code>.</p>
+<p>For subscription-wide reads, empty <code>AZURE_RESOURCE_GROUP</code> in the existing <code>.env</code>
+and remove any exported value in the current terminal:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">unset</span><span class="w"> </span>AZURE_RESOURCE_GROUP
+</code></pre></div>
+<p>This command removes only the current shell's environment variable; it does not
+edit <code>.env</code>. Change only the necessary fields, not the entire settings file.
+Connection strings have the same fallback: passing an empty environment variable
+does not necessarily mean the connection string is unconfigured.</p>
+<h2 id="2-check-read-permissions">2. Check read permissions</h2>
+<p>Ask an administrator to grant these permissions to the actual calling identity:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Role</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Workspace / Watcher metadata</td>
+<td><code>Reader</code></td>
+<td>Target resource; listing needs group or subscription access</td>
+</tr>
+<tr>
+<td>PromQL queries</td>
+<td><code>Monitoring Data Reader</code></td>
+<td>Azure Monitor Workspace</td>
+</tr>
+<tr>
+<td>Log Analytics queries</td>
+<td><code>Log Analytics Reader</code></td>
+<td>Log Analytics workspace</td>
+</tr>
+<tr>
+<td>Application Insights queries</td>
+<td><code>Reader</code> or workspace query access</td>
+<td>Application Insights or its backing workspace</td>
+</tr>
+<tr>
+<td>Activity Log API</td>
+<td><code>Reader</code>, including Activity Log read access</td>
+<td>Subscription</td>
+</tr>
+</tbody>
+</table>
+<p>PromQL's <code>Monitoring Data Reader</code> is not <code>Monitoring Reader</code>.
+Application Insights can use component-level <code>Reader</code> when the workspace permits
+resource-based access. Otherwise, grant query access such as <code>Log Analytics Reader</code>
+on the backing workspace.</p>
+<p>See <a href="https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-api-promql">Prometheus API access</a>
+and <a href="https://learn.microsoft.com/azure/azure-monitor/logs/manage-access">Log Analytics access</a>.</p>
+<p><code>az account show</code> confirms the account and subscription, not data read permissions.
+A successful query below demonstrates access to that operation at that time.
+It does not prove that a particular named role has been assigned.</p>
+<h2 id="3-read-the-data-you-need">3. Read the data you need</h2>
+<p>Run the remaining commands from the root of this Python repository.
+Choose only available targets. Add <code>--help</code> to a command to see all options.</p>
+<p><code>uv run</code> uses the project's dependencies, <code>--locked</code> prevents lockfile updates,
+and <code>python -m</code> starts the selected module as a CLI.
+Log query JSON contains <code>tables</code>, each with <code>columns</code> (definitions) and <code>rows</code> (values).
+Values in each row follow the order of <code>columns</code>.
+<strong>Check both the exit code and the result.</strong> Empty results can be successful;
+partial results containing <code>error</code> must not be treated as complete success.</p>
+<h3 id="prometheus-workspace-and-metrics">Prometheus: workspace and metrics</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_azure_monitor<span class="w"> </span>show-workspace
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_azure_monitor<span class="w"> </span>query-prometheus<span class="w"> </span>--query<span class="w"> </span><span class="s1">'up'</span>
+</code></pre></div>
+<p><code>show-workspace</code> checks location and query endpoint; <code>query-prometheus</code> searches metrics.
+<code>up</code> represents the health of collection targets.
+The scenario does not deploy a collector. Without a separate collection setup,
+<code>status: success</code> with an empty <code>result</code> is normal.
+An empty result alone does not prove that a collector is unconfigured.</p>
+<h3 id="log-analytics-exported-activity-log">Log Analytics: exported Activity Log</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_log_analytics<span class="w"> </span>query-logs<span class="w"> </span>--hours<span class="w"> </span><span class="m">24</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_log_analytics<span class="w"> </span>summarize-activity<span class="w"> </span>--hours<span class="w"> </span><span class="m">24</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<p>These run fixed <code>AzureActivity</code> queries, not arbitrary KQL.
+<code>query-logs</code> returns recent operation history, newest first; <code>summarize-activity</code>
+returns counts grouped by operation and status.
+Configure <a href="https://learn.microsoft.com/azure/azure-monitor/platform/activity-log#export-activity-log">diagnostic export</a>
+to the selected workspace and allow ingestion time. Without it, the table may be
+missing or empty.</p>
+<h3 id="application-insights-requests-and-other-telemetry">Application Insights: requests and other telemetry</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>query-telemetry<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="w"> </span>AppRequests<span class="w"> </span>--hours<span class="w"> </span><span class="m">24</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<p>Reading does not need a connection string. <code>--table</code> accepts <code>AppRequests</code>,
+<code>AppTraces</code>, <code>AppMetrics</code>, and <code>AppDependencies</code>.
+A successful query returning zero rows before emission still passes the read check.
+Verify emission and ingestion separately in sections 4 and 5.</p>
+<h3 id="network-watcher-location-and-settings">Network Watcher: location and settings</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_network_watcher<span class="w"> </span>list-watchers
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_network_watcher<span class="w"> </span>show-watcher
+</code></pre></div>
+<p><code>list-watchers</code> returns a list; <code>show-watcher</code> returns one watcher's details.
+<code>provisioning_state: Succeeded</code> means provisioning succeeded, not that network traffic is healthy.
+The watcher may be in a different resource group from the scenario.
+Follow section 1 to clear both <code>.env</code> and OS group filters for subscription-wide discovery.
+Select an individual watcher with <code>show-watcher --resource-id "&lt;watcher-ARM-ID&gt;"</code>.
+These <a href="https://learn.microsoft.com/azure/network-watcher/network-watcher-overview">read-only operations</a>
+do not start packet captures or connectivity tests.</p>
+<h3 id="activity-log-api-subscription-operation-history">Activity Log API: subscription operation history</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_activity_log<span class="w"> </span>list-events<span class="w"> </span>--hours<span class="w"> </span><span class="m">24</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_activity_log<span class="w"> </span>summarize-events<span class="w"> </span>--hours<span class="w"> </span><span class="m">24</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<p>These work without workspace export. A quiet subscription can return no events.
+<code>list-events</code> returns operation history; <code>summarize-events</code> aggregates the retrieved sample.
+For zero results, also check the resource group filter. If Log Analytics <code>AzureActivity</code>
+is nonempty but this API returns no events, compare the subscription, time window,
+and filters. A <code>Failed</code> status in history describes an earlier operation,
+not a failure of the current query command.
+See the <a href="https://learn.microsoft.com/azure/azure-monitor/platform/activity-log">Activity Log overview</a>.</p>
+<h3 id="filters-and-summary-limits">Filters and summary limits</h3>
+<ul>
+<li>Log, telemetry, and Activity Log commands accept <code>--hours</code> from 1 to 168
+  (default 24) and <code>--limit</code> from 1 to 1,000 (default 100).</li>
+<li><code>list-watchers</code>, <code>list-events</code>, and <code>summarize-events</code> accept
+  <code>--resource-group "&lt;group&gt;"</code> or <code>AZURE_RESOURCE_GROUP</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What <code>--limit</code> limits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query-logs</code>, <code>query-telemetry</code></td>
+<td>Returned rows</td>
+</tr>
+<tr>
+<td>Log Analytics <code>summarize-activity</code></td>
+<td>Groups returned after aggregating all matching rows in the time window</td>
+</tr>
+<tr>
+<td>Activity Log <code>summarize-events</code></td>
+<td>Events retrieved and counted; not the total for the time window</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-instrument-the-api">4. Instrument the API</h2>
+<p>The API uses the Azure Monitor OpenTelemetry Distro for FastAPI requests, standard
+metrics, correlated package logs, and instrumented HTTP/Azure SDK dependencies.
+Application code reads no environment variables directly. Values flow from <code>.env</code>
+or the hosting environment through Pydantic settings into the process-level
+telemetry initializer.</p>
+<p>The following defaults keep local development Azure-independent:</p>
+<div class="highlight"><pre><span></span><code>PROJECT_NAME=template-azure-python
+TELEMETRY_ENABLED=false
+TELEMETRY_TRACES_PER_SECOND=5
+TELEMETRY_LIVE_METRICS_ENABLED=false
+APPLICATIONINSIGHTS_CONNECTION_STRING=
+</code></pre></div>
+<p><code>PROJECT_NAME</code> becomes the OpenTelemetry <code>service.name</code> and Application Insights
+cloud role name. <code>TELEMETRY_TRACES_PER_SECOND</code> is a positive, per-process limit.
+Five replicas with the default can therefore sample up to about 25 traces per
+second in total. Size it against the number of workers/replicas and the ingestion
+budget. Live Metrics is separately controlled because it adds a continuous channel.</p>
+<h3 id="opt-in-to-live-metrics">Opt in to Live Metrics</h3>
+<p><code>TELEMETRY_LIVE_METRICS_ENABLED</code> is shared by the API and CLI <code>emit-telemetry</code>.
+It defaults to <code>false</code>, leaving only normal ingestion enabled.
+Set it to <code>true</code> in <code>.env</code> or the hosting environment to enable the SDK's Live Metrics feature.
+The API also requires <code>TELEMETRY_ENABLED=true</code> and a connection string.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="nv">TELEMETRY_LIVE_METRICS_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps
+</code></pre></div>
+<p>To opt in for one CLI emission, with the connection string already configured privately:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">TELEMETRY_LIVE_METRICS_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>emit-telemetry<span class="w"> </span>--count<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+<p>The CLI is an explicit emission command and sends even when <code>TELEMETRY_ENABLED=false</code>.
+That setting controls API initialization, not whether the CLI may emit.
+The CLI exits after its bounded run, so Live Metrics may not connect or display in time.
+A long-running API is better suited to checking Azure portal <strong>Live Metrics</strong>.</p>
+<p>Live Metrics adds separate HTTPS communication through the connection string's
+<code>LiveEndpoint</code>. It does not replace ingestion into <code>AppRequests</code>, <code>AppTraces</code>, or <code>AppMetrics</code>.
+Neither <code>flushed: true</code> nor ordinary query results guarantee Live Metrics display.
+The SDK also handles live aggregates and samples, so Live Metrics need not have
+the same counts or fields as stored telemetry.</p>
+<p>To disable it again, set the flag to <code>false</code> and start a new process.
+Settings are cached in a running process; editing the file alone does not switch it.
+Explicit API initialization failures stop startup; the CLI reports detected SDK
+warnings or export failures. Check portal display separately.</p>
+<h3 id="verify-live-metrics-display-with-the-local-api">Verify Live Metrics display with the local API</h3>
+<p>The simplest check is to call the local API while watching Azure portal graphs.
+<strong>The API runs locally, but Live Metrics display requires an Azure connection.</strong>
+Normal telemetry is also emitted and may incur ingestion charges.
+Run these Bash-compatible commands from the repository root.</p>
+<h4 id="1-prepare-the-destination">1. Prepare the destination</h4>
+<p>Set <code>PROJECT_NAME=template-azure-python</code> in the existing <code>.env</code>, and privately
+configure <code>APPLICATIONINSIGHTS_CONNECTION_STRING</code> for the target Application Insights.
+Obtain the connection string from that resource's Azure portal <strong>Overview</strong>.
+Do not overwrite the existing file or paste the secret into shell arguments or shared logs.
+Exported OS values for these settings take precedence over <code>.env</code>.</p>
+<h4 id="2-open-live-metrics-for-that-resource">2. Open Live Metrics for that resource</h4>
+<p>Open <strong>Live Metrics</strong> in the same Application Insights resource and keep it open
+during verification. Browser sign-in and resource access are required separately
+from Azure CLI login.</p>
+<p>The SDK pings the live endpoint and publishes live data when the subscription
+response becomes <code>true</code>. Without an open view, continued pings with
+<code>subscribed: false</code> are different from connection failure.
+Normal API startup logs do not necessarily show this response.</p>
+<h4 id="3-start-the-api-in-terminal-1">3. Start the API in terminal 1</h4>
+<p>Stop any other server using port 8000, then run:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="nv">TELEMETRY_LIVE_METRICS_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps
+</code></pre></div>
+<p>These flags apply only to this process and do not edit <code>.env</code>. Keep the server running.</p>
+<h4 id="4-generate-requests-in-terminal-2">4. Generate requests in terminal 2</h4>
+<p>First check a normal response:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>http://127.0.0.1:8000/tasks
+</code></pre></div>
+<p>Expect a Task array (initially <code>[]</code> with default InMemory). Then send up to 30 requests one second apart:
+at most 31 including the initial check. Stop the loop if <code>curl</code> fails.</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">30</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span>--output<span class="w"> </span>/dev/null<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--write-out<span class="w"> </span><span class="s1">'HTTP %{http_code}\n'</span><span class="w"> </span>http://127.0.0.1:8000/tasks<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">break</span>
+<span class="w">  </span>sleep<span class="w"> </span><span class="m">1</span>
+<span class="k">done</span>
+</code></pre></div>
+<h4 id="5-check-changes-in-the-portal">5. Check changes in the portal</h4>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Expected state</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Connected server/instance</td>
+<td>The local process appears connected</td>
+</tr>
+<tr>
+<td>Role name</td>
+<td><code>template-azure-python</code>, or the effective OS override of <code>PROJECT_NAME</code></td>
+</tr>
+<tr>
+<td>Request count/rate</td>
+<td>Increases while sending</td>
+</tr>
+<tr>
+<td>Request duration</td>
+<td>Values are displayed</td>
+</tr>
+<tr>
+<td>Failed requests</td>
+<td>With no other traffic, successful <code>/tasks</code> calls do not increase failures</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Both HTTP 200 responses and changing live graphs are required to verify display.</strong>
+Connection and rendering can take time. Wait for a connection, then observe graphs
+during and immediately after the batch. If the first batch finished before connection,
+you may send the same batch once more after connecting.
+If nothing appears, mark display unverified and investigate the target resource,
+both flags, network restrictions, and SDK warnings. Do not send or wait indefinitely.</p>
+<h4 id="6-stop-and-restore-settings">6. Stop and restore settings</h4>
+<p>Press <code>Ctrl+C</code> in terminal 1 and wait for server shutdown.
+Closing the portal view alone does not stop the API.
+Restore flags changed in <code>.env</code> and remove only connection strings added for this exercise.
+Stopping locally or removing settings does not stop charges for Azure resources themselves.</p>
+<h4 id="verify-with-docker-compose-instead">Verify with Docker Compose instead</h4>
+<p><code>compose.yml</code> passes <code>.env</code> values into the container environment.
+With the connection string configured privately, set these in the existing <code>.env</code>.
+Prefixing a host command with flags alone does not guarantee they reach the container.</p>
+<div class="highlight"><pre><span></span><code>TELEMETRY_ENABLED=true
+TELEMETRY_LIVE_METRICS_ENABLED=true
+</code></pre></div>
+<p>Stop the local API, then start the container:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build
+</code></pre></div>
+<p>Use the same request and portal checks. The current <code>compose.yml</code> overrides
+<code>PROJECT_NAME=hello</code>, so <strong>the portal role name is <code>hello</code></strong>.
+Its current port mapping exposes all host interfaces; restrict it locally when needed.
+See <a href="../scripts/#use-compose">local development's Compose instructions</a>.
+Stop with <code>Ctrl+C</code>; use <code>docker compose down</code> to clean up resources created by this Compose project.
+Check their purpose first if existing containers serve another task.</p>
+<h3 id="verify-disabled-behavior">Verify disabled behavior</h3>
+<p>Leave <code>TELEMETRY_ENABLED=false</code>, then run:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps
+</code></pre></div>
+<p>The server command keeps running. Check responses from a second terminal:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>http://127.0.0.1:8000/tasks
+curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--output<span class="w"> </span>/dev/null<span class="w"> </span>--write-out<span class="w"> </span><span class="s1">'%{http_code}\n'</span><span class="w"> </span>http://127.0.0.1:8000/docs
+</code></pre></div>
+<p>The expected response is a Task array. With InMemory and telemetry disabled, no connection string is required,
+and no Azure Monitor provider is installed.
+Confirm HTTP <code>200</code> for <code>/docs</code>. Stop the server with <code>Ctrl+C</code> in its terminal.
+The next check uses the same port, so do not run both servers simultaneously.</p>
+<h3 id="verify-fail-fast-configuration">Verify fail-fast configuration</h3>
+<p>Check that <code>APPLICATIONINSIGHTS_CONNECTION_STRING</code> is empty or absent in <code>.env</code>,
+remove the OS environment value, then start with telemetry enabled.
+If you need to preserve an existing connection string, use the automated test below
+to check the missing-setting contract instead of deleting it.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">unset</span><span class="w"> </span>APPLICATIONINSIGHTS_CONNECTION_STRING
+<span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps
+</code></pre></div>
+<p>Startup must fail with a sanitized message stating that the connection string is
+not configured. Expect a nonzero exit code and this message:</p>
+<div class="highlight"><pre><span></span><code>API telemetry is enabled but APPLICATIONINSIGHTS_CONNECTION_STRING is not configured.
+</code></pre></div>
+<p>Failure alone is insufficient to pass this check.
+<code>Azure Monitor telemetry initialization failed.</code> is a different initialization error.
+An empty OS connection string combined with an existing <code>.env</code> value can make
+Settings and the SDK interpret configuration differently, resulting in initialization
+failure rather than a missing-setting error. Resolve the configuration sources
+and verify the expected message.
+If the API starts with a genuinely missing setting, the configuration contract is broken. Do not
+paste the secret into the command line to perform this check.</p>
+<h3 id="verify-api-telemetry-in-azure">Verify API telemetry in Azure</h3>
+<p><strong>This exercise sends data to Azure and may incur ingestion charges.</strong>
+Privately set <code>APPLICATIONINSIGHTS_CONNECTION_STRING</code> in the Git-ignored <code>.env</code>,
+and confirm that its destination matches the query target in <code>AZURE_APPLICATION_INSIGHTS_ID</code>.
+Use the same Application Insights resource's Azure portal overview and resource ID;
+do not expose the connection string in shared screens or logs to compare them.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps
+</code></pre></div>
+<p>Generate requests from a second terminal:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>http://127.0.0.1:8000/tasks
+curl<span class="w"> </span>--fail<span class="w"> </span>http://127.0.0.1:8000/docs
+</code></pre></div>
+<p>Allow for ingestion delay, then query the same Application Insights resource:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>query-telemetry<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="w"> </span>AppRequests<span class="w"> </span>--hours<span class="w"> </span><span class="m">1</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<p>Use the emission time and <code>url</code> to find this exercise's <code>GET /tasks</code> and <code>GET /docs</code>.
+Confirm <code>resultCode</code> is <code>200</code>, <code>success</code> indicates success, and <code>cloud_RoleName</code>
+matches <code>PROJECT_NAME</code>. Initialization also sets OpenTelemetry <code>service.name</code>
+to <code>PROJECT_NAME</code>. HTTP 200 verifies the API response, not Azure ingestion.
+Sampling means a small
+number of requests may not appear; send a bounded batch, wait, and query again
+rather than disabling sampling in production.
+For example, cap the exercise at ten requests total, including the initial two.
+Space additional requests apart and wait tens of seconds before querying again.
+This wait does not guarantee ingestion. Also cap query attempts; if data remains
+missing, mark it unverified and investigate destinations, sampling, and SDK warnings.
+Finish with <code>Ctrl+C</code> and allow the server's shutdown emission to complete.</p>
+<p>When an API route makes an instrumented HTTP or Azure SDK call, query
+<code>AppDependencies</code> and confirm its operation/trace ID links to the parent request.
+When code logs through a logger under <code>template_azure_python</code>, query <code>AppTraces</code>
+and confirm the same correlation. Query <code>AppMetrics</code> for generated standard or
+custom metrics. The root endpoint intentionally does not create fake dependencies,
+per-request informational logs, or demo metrics merely to populate these tables.
+Empty <code>AppTraces</code> or <code>AppDependencies</code> therefore need not indicate a problem for
+the root endpoint. A route without external calls cannot demonstrate dependency correlation.</p>
+<h3 id="scale-and-extension-boundaries">Scale and extension boundaries</h3>
+<ul>
+<li>The Distro owns batch processing, retries, exporter lifetime, and supported
+  FastAPI/Azure SDK instrumentation. The application initializes it once per
+  process, never per request.</li>
+<li>Keep resource and metric attributes stable and low-cardinality. Do not attach
+  request IDs, user IDs, payloads, tokens, or other sensitive/unbounded values.</li>
+<li>Rate limiting bounds each process, not the whole deployment. Re-evaluate it when
+  worker or replica counts change, and monitor ingestion cost and sampling effects.</li>
+<li>Telemetry initialization fails startup only when explicitly enabled. This avoids
+  a healthy-looking but unobserved production process while preserving local use.</li>
+<li>Azure Monitor is the only implemented backend. A future OTLP exporter belongs
+  behind the initialization boundary; routers and domain code should continue to
+  use OpenTelemetry APIs rather than exporter-specific APIs.</li>
+</ul>
+<h2 id="5-emit-and-find-telemetry-from-the-cli-optionally">5. Emit and find telemetry from the CLI, optionally</h2>
+<p><strong>Like the Azure API check in section 4, this step sends data and may incur ingestion charges.</strong></p>
+<p>For a minimal local OpenTelemetry check, follow <strong>configure the connection string,
+emit one sample, then query portal logs</strong>. No API server or Live Metrics is needed.
+This checks stored requests, logs, and metrics rather than live graphs.</p>
+<h3 id="set-the-connection-string-locally">Set the connection string locally</h3>
+<p>The scenario does not output the connection string. Copy it privately from
+Application Insights' Azure portal <strong>Overview</strong> into the Git-ignored <code>.env</code> as
+<code>APPLICATIONINSIGHTS_CONNECTION_STRING</code>, or set it using local secret management.</p>
+<p>Keep the template value empty. Never paste it into source, shell arguments or
+history, logs, screenshots, or shared output. There is no connection-string CLI
+option. See <a href="https://learn.microsoft.com/azure/azure-monitor/app/connection-strings">connection strings</a>
+and <a href="https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-enable?tabs=python">Python OpenTelemetry</a>.</p>
+<p>The internal adapter obtains the value from the central settings package as a
+<code>SecretStr</code>, excluded from settings dumps. SDK-only environment controls are
+temporary and restored after emission. See <a href="../architecture/">architecture</a>.</p>
+<h3 id="emit-a-sample">Emit a sample</h3>
+<p>Explicitly disable Live Metrics for this process when checking only stored data.
+Run once from the repository root:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">TELEMETRY_LIVE_METRICS_ENABLED</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>emit-telemetry<span class="w"> </span>--count<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+<p><code>--count</code> accepts 1 to 100 (default 10). The command emits server spans,
+correlated logs, and metric increments, then prints a unique <code>run_id</code>.
+It does not create dependency spans. Flush failures and observed SDK warnings
+are reported. <strong><code>flushed: true</code> means local provider flushing completed, not that
+Azure accepted or ingested the data.</strong></p>
+<p>Example output follows. Record the actual <code>run_id</code> and emission time.
+Use the UUID from your execution, not the placeholder:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"run_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;run-UUID&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"count"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"flushed"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"ingestion_guaranteed"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="run-kql-in-azure-portal-logs">Run KQL in Azure portal logs</h3>
+<p>KQL is the query language used to search and aggregate Azure logs.
+Paste these queries into the portal query editor, not a local shell.</p>
+<h4 id="1-open-the-destination-application-insights">1. Open the destination Application Insights</h4>
+<ol>
+<li>Sign in to <a href="https://portal.azure.com/">Azure portal</a> in your browser.</li>
+<li>Search for <strong>Application Insights</strong> in the top search bar and select the service.</li>
+<li>Select the same resource from which you obtained the emission connection string.</li>
+<li>Open <strong>Monitoring → Logs</strong> in its left menu. Search the resource menu for "Logs" if needed.</li>
+</ol>
+<p>Browser sign-in and log read permissions are required.
+Local <code>az login</code> does not sign your browser in.
+Portal-only verification does not require the CLI query setting <code>AZURE_APPLICATION_INSIGHTS_ID</code>.</p>
+<h4 id="2-show-the-query-editor">2. Show the query editor</h4>
+<p>Close the example-query dialog if it appears.
+Switch from <strong>Simple mode</strong> to <strong>KQL mode</strong> if necessary.
+Labels may vary with portal language and UI updates.
+Set the time range to <strong>Last hour</strong> and ensure it includes the emission time.</p>
+<p><strong>Use Logs, not Live Metrics.</strong> Replace the editor contents with one query at a time
+and select <strong>Run</strong>. Results appear in the results pane below.</p>
+<h4 id="3-check-for-recent-requests">3. Check for recent requests</h4>
+<div class="highlight"><pre><span></span><code><span class="n">requests</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="n">desc</span>
+<span class="p">|</span><span class="w"> </span><span class="k">take</span><span class="w"> </span><span class="mi">20</span>
+</code></pre></div>
+<p>This includes other emissions to the same resource. Rows alone do not verify your run;
+filter by <code>run_id</code> next. Zero rows need not indicate an error.</p>
+<h4 id="4-find-all-three-signals-for-this-run">4. Find all three signals for this run</h4>
+<p>Replace <code>&lt;run-UUID&gt;</code> in each query with the emitted <code>run_id</code>.</p>
+<p>Requests:</p>
+<div class="highlight"><pre><span></span><code><span class="n">requests</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">customDimensions</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">project</span><span class="w"> </span><span class="n">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">operation_Id</span><span class="p">,</span><span class="w"> </span><span class="n">customDimensions</span>
+<span class="p">|</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="n">desc</span>
+</code></pre></div>
+<p>Logs:</p>
+<div class="highlight"><pre><span></span><code><span class="n">traces</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">customDimensions</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">project</span><span class="w"> </span><span class="n">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="n">operation_Id</span><span class="p">,</span><span class="w"> </span><span class="n">customDimensions</span>
+<span class="p">|</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="n">desc</span>
+</code></pre></div>
+<p>Metrics:</p>
+<div class="highlight"><pre><span></span><code><span class="n">customMetrics</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">customDimensions</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"quickstart.events"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">summarize</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">valueSum</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Look for <code>quickstart.request</code>, <code>Quickstart telemetry</code>, matching <code>operation_Id</code>
+values, and a metric <code>total</code> of ten, matching the emitted count.</strong>
+Sampling and other factors can make request/log row counts differ from ten.
+If results are empty or the total is incomplete, allow ingestion time and query
+the same UUID again. Aggregation also returns zero when no rows match;
+zero does not establish successful emission.
+To widen the time range, review both the portal time selection and KQL <code>ago(1h)</code>.
+Check destination, UUID, time range, and permissions before resending.</p>
+<h4 id="query-from-the-log-analytics-workspace-instead">Query from the Log Analytics workspace instead</h4>
+<p>The queries above use the Application Insights resource format.
+The linked <strong>Log Analytics workspace → Logs</strong> uses different table and column names.
+If <code>requests</code> cannot be resolved, check which resource's Logs view you opened.</p>
+<table>
+<thead>
+<tr>
+<th>Application Insights</th>
+<th>Log Analytics workspace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>requests</code> / <code>traces</code> / <code>customMetrics</code></td>
+<td><code>AppRequests</code> / <code>AppTraces</code> / <code>AppMetrics</code></td>
+</tr>
+<tr>
+<td><code>timestamp</code> / <code>customDimensions</code></td>
+<td><code>TimeGenerated</code> / <code>Properties</code></td>
+</tr>
+<tr>
+<td><code>name</code> / <code>message</code></td>
+<td><code>Name</code> / <code>Message</code></td>
+</tr>
+<tr>
+<td><code>operation_Id</code> / <code>valueSum</code></td>
+<td><code>OperationId</code> / <code>Sum</code></td>
+</tr>
+</tbody>
+</table>
+<p>Run these workspace queries individually:</p>
+<div class="highlight"><pre><span></span><code><span class="n">AppRequests</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">Properties</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">project</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="p">,</span><span class="w"> </span><span class="n">Name</span><span class="p">,</span><span class="w"> </span><span class="n">OperationId</span><span class="p">,</span><span class="w"> </span><span class="n">Properties</span>
+<span class="p">|</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="w"> </span><span class="n">desc</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="n">AppTraces</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">Properties</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">project</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="p">,</span><span class="w"> </span><span class="n">Message</span><span class="p">,</span><span class="w"> </span><span class="n">OperationId</span><span class="p">,</span><span class="w"> </span><span class="n">Properties</span>
+<span class="p">|</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="w"> </span><span class="n">desc</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="n">AppMetrics</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">TimeGenerated</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">Properties</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">Name</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"quickstart.events"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">summarize</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">Sum</span><span class="p">)</span>
+</code></pre></div>
+<p>A workspace can contain data from other resources, so filter by this run's UUID.</p>
+<h3 id="find-data-from-the-same-run-using-the-cli">Find data from the same run using the CLI</h3>
+<p>To use the CLI instead of portal, configure the same destination's ARM ID through
+<code>AZURE_APPLICATION_INSIGHTS_ID</code> or <code>--resource-id</code>, and prepare Azure authentication
+and read permissions.</p>
+<p>Allow ingestion time, then check recent requests and each signal using the printed UUID:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>query-telemetry<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="w"> </span>AppRequests<span class="w"> </span>--hours<span class="w"> </span><span class="m">1</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+<span class="nv">RUN_ID</span><span class="o">=</span><span class="s2">"&lt;run_id-UUID-printed-by-emit-telemetry&gt;"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>query-telemetry<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="w"> </span>AppRequests<span class="w"> </span>--run-id<span class="w"> </span><span class="s2">"</span><span class="nv">$RUN_ID</span><span class="s2">"</span><span class="w"> </span>--hours<span class="w"> </span><span class="m">1</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>query-telemetry<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="w"> </span>AppTraces<span class="w"> </span>--run-id<span class="w"> </span><span class="s2">"</span><span class="nv">$RUN_ID</span><span class="s2">"</span><span class="w"> </span>--hours<span class="w"> </span><span class="m">1</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_application_insights<span class="w"> </span>query-telemetry<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="w"> </span>AppMetrics<span class="w"> </span>--run-id<span class="w"> </span><span class="s2">"</span><span class="nv">$RUN_ID</span><span class="s2">"</span><span class="w"> </span>--hours<span class="w"> </span><span class="m">1</span><span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+</code></pre></div>
+<p><code>--run-id</code> is optional, but must be a UUID when supplied.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Field or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time</td>
+<td><code>timestamp</code></td>
+</tr>
+<tr>
+<td>Run ID</td>
+<td><code>customDimensions.run_id</code></td>
+</tr>
+<tr>
+<td>Request/log correlation</td>
+<td>Matching <code>operation_Id</code> values in <code>AppRequests</code> and <code>AppTraces</code></td>
+</tr>
+<tr>
+<td><code>quickstart.events</code> metric</td>
+<td>Compare the run's sum of <code>valueSum</code> with <code>--count</code></td>
+</tr>
+</tbody>
+</table>
+<p>The CLI maps table aliases to the resource API's <code>requests</code>, <code>traces</code>,
+<code>customMetrics</code>, and <code>dependencies</code>. JSON columns retain that API's format.
+Metrics are aggregated, so compare values rather than row counts.
+Match correlation by ID, not row order.
+If <code>customDimensions</code> is returned as a JSON string, parse it to check <code>run_id</code>.
+SDK-based verification code may receive <code>timestamp</code> as a datetime object;
+the CLI serializes dates and times as strings in JSON.</p>
+<p>Scenario sampling defaults to 25%. Client-side sampling is separate; the emitter
+uses <code>always_on</code>. Span and log row counts may not equal <code>--count</code>, and signals
+may arrive at different times. See <a href="https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-sampling">sampling</a>
+and <a href="https://learn.microsoft.com/azure/azure-monitor/logs/data-ingestion-time">ingestion latency</a>.
+If data is missing, wait and query the same <code>run_id</code> again rather than resending without limits.</p>
+<p>Stop the server and remove connection strings added solely for the exercise.
+Do not delete pre-existing work or development settings without checking their purpose.
+<strong>Deleting local settings does not stop Azure charges.</strong></p>
+<h2 id="6-what-is-generated-and-where-it-goes">6. What is generated and where it goes</h2>
+<p><code>emit-telemetry</code> generates local data and sends it to Azure.
+<code>query-telemetry</code> retrieves stored data from Azure: it is the reverse direction.</p>
+<pre class="mermaid"><code>flowchart TD
+    CLI["Local CLI: emit-telemetry"] --&gt; OTel["OpenTelemetry: span / log / counter"]
+    OTel --&gt; Exporter["Azure Monitor exporter"]
+    Exporter --&gt;|"HTTPS: IngestionEndpoint"| AI["Application Insights"]
+    AI --&gt; Workspace["Linked Log Analytics workspace"]
+    Workspace --&gt; Tables["AppRequests / AppTraces / AppMetrics"]
+    Query["Local CLI: query-telemetry"] --&gt;|"Azure-authenticated query"| API["Logs query API"]
+    API --&gt; Tables
+    API --&gt;|"JSON results"| Query
+    OTel -. "Only when opted in" .-&gt; Live["LiveEndpoint: Live Metrics"]</code></pre>
+<p>This storage description applies to the workspace-based Application Insights
+verified in this exercise. Data is not sent to Azure Monitor Workspace
+(used for Prometheus) or Network Watcher.</p>
+<h3 id="settings-that-choose-emission-and-query-targets">Settings that choose emission and query targets</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APPLICATIONINSIGHTS_CONNECTION_STRING</code></td>
+<td>Export destination: <code>InstrumentationKey</code> identifies Application Insights; <code>IngestionEndpoint</code> selects the HTTPS ingestion endpoint</td>
+</tr>
+<tr>
+<td><code>LiveEndpoint</code> in the connection string</td>
+<td>Live monitoring endpoint when Live Metrics is enabled</td>
+</tr>
+<tr>
+<td><code>AZURE_APPLICATION_INSIGHTS_ID</code> / <code>--resource-id</code></td>
+<td>Application Insights ARM ID targeted by queries; does not change emission destination</td>
+</tr>
+</tbody>
+</table>
+<p>Emission passes the connection string to the SDK without constructing <code>DefaultAzureCredential</code>.
+Queries do not use that string: they use <code>DefaultAzureCredential</code> and
+<code>LogsQueryClient.query_resource</code>. If destinations differ, successful emission
+will not make data appear at the query target.</p>
+<h3 id="three-signals-per-loop">Three signals per loop</h3>
+<p>Each run receives a UUID <code>run_id</code>; each loop receives <code>sequence</code> from one to <code>--count</code>.
+For <code>count=10</code>, the code performs the following ten times:</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Generated data</th>
+<th>Exporter format</th>
+<th>Stored table</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Span</td>
+<td><code>quickstart.request</code>, <code>SpanKind.SERVER</code>, start/end time, duration, trace/span IDs, run attributes</td>
+<td><code>RequestData</code></td>
+<td><code>AppRequests</code></td>
+</tr>
+<tr>
+<td>Log</td>
+<td>INFO <code>Quickstart telemetry</code>, time, current span correlation IDs, run attributes</td>
+<td><code>MessageData</code></td>
+<td><code>AppTraces</code></td>
+</tr>
+<tr>
+<td>Counter</td>
+<td>Add one to <code>quickstart.events</code>, with run attributes</td>
+<td><code>MetricData</code></td>
+<td><code>AppMetrics</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The CLI does not make an HTTP request to the API.</strong>
+The exporter converts its manually created SERVER span into request telemetry.
+Finding <code>quickstart.request</code> in <code>AppRequests</code> does not demonstrate a successful
+real <code>GET /tasks</code>. No dependency span is generated either.</p>
+<p>Logging inside the span provides matching <code>operation_Id</code> values.
+<code>run_id</code> groups the entire run; <code>operation_Id</code> correlates individual operations.
+Check metrics using the run ID and values, not a requirement for matching operation IDs.
+Because <code>sequence</code> is also a metric attribute, each sequence has a distinct series
+in this sample. This attribute design is for an exercise bounded at 100;
+do not attach run UUIDs or unbounded sequence values to production metrics.</p>
+<h3 id="export-and-shutdown">Export and shutdown</h3>
+<p>OpenTelemetry providers collect data; Azure Monitor exporters convert and batch it.
+The installed SDK's normal route is <code>POST &lt;IngestionEndpoint&gt;/v2.1/track</code>.
+One loop does not necessarily produce one HTTP POST.
+Exporters add time, IDs, SDK/resource information, and other metadata beyond
+explicit attributes. The code does not upload entire source or settings files,
+but sensitive values placed in log bodies or attributes can be transmitted.
+The sample explicitly generates only a fixed message, UUID, and sequence number.</p>
+<p>The CLI disables normal HTTP/FastAPI/Azure SDK auto-instrumentation and performance counters.
+Offline storage is disabled, so failed exports are not retained in exporter-local files.
+Statsbeat, SDKStats, and Control Plane features are disabled during emission;
+their environment controls are restored afterward.
+Live Metrics is separately enabled only when the shared flag is <code>true</code>.</p>
+<p>Finally, trace, log, and metric providers are force-flushed and shut down.
+Standard output fields <code>run_id</code>, <code>count</code>, and <code>flushed</code> describe local execution,
+not Azure query results. <code>flushed</code> indicates no detected failures;
+query the same run ID to verify storage in Azure.</p>
+<h3 id="query-conversion-and-differences-from-api-instrumentation">Query conversion and differences from API instrumentation</h3>
+<p><code>query-telemetry</code> maps table aliases to resource API names:</p>
+<table>
+<thead>
+<tr>
+<th>CLI <code>--table</code></th>
+<th>Query name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AppRequests</code></td>
+<td><code>requests</code></td>
+</tr>
+<tr>
+<td><code>AppTraces</code></td>
+<td><code>traces</code></td>
+</tr>
+<tr>
+<td><code>AppMetrics</code></td>
+<td><code>customMetrics</code></td>
+</tr>
+<tr>
+<td><code>AppDependencies</code></td>
+<td><code>dependencies</code></td>
+</tr>
+</tbody>
+</table>
+<p>For a one-hour window, run ID, and 100-row limit, it builds the following KQL.
+The CLI prints results as JSON to local standard output.</p>
+<div class="highlight"><pre><span></span><code><span class="n">requests</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">&gt;=</span><span class="w"> </span><span class="n">ago</span><span class="p">(</span><span class="mi">1</span><span class="n">h</span><span class="p">)</span>
+<span class="p">|</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">tostring</span><span class="p">(</span><span class="n">customDimensions</span><span class="p">[</span><span class="s">"run_id"</span><span class="p">])</span><span class="w"> </span><span class="p">==</span><span class="w"> </span><span class="s">"&lt;run-UUID&gt;"</span>
+<span class="p">|</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="n">desc</span>
+<span class="p">|</span><span class="w"> </span><span class="k">take</span><span class="w"> </span><span class="mi">100</span>
+</code></pre></div>
+<p>API instrumentation instead collects real inbound requests such as <code>GET /tasks</code>,
+actual logs from the selected logger, and instrumented outbound HTTP/Azure SDK calls.
+The API explicitly sets <code>service.name</code> to <code>PROJECT_NAME</code>; the CLI sample does not.
+Both can use the same connection string, but distinguish their data sources and meaning.</p>
+<h2 id="verification-example-and-automated-tests">Verification example and automated tests</h2>
+<p>The following results were observed on October 5, 2026. Counts are examples for
+that environment, time window, and sampling configuration, not fixed acceptance criteria.
+Secrets, subscription IDs, and run UUIDs are intentionally omitted.</p>
+<p>These are historical results from before root endpoint removal. Current startup/instrumentation checks use <code>/tasks</code>.
+This record does not verify external SDK dependency correlation for the Cosmos-backed API.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Observation and interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nine Azure read commands</td>
+<td>All succeeded; Prometheus <code>up</code> succeeded with zero results</td>
+</tr>
+<tr>
+<td>Log Analytics</td>
+<td>61 rows in 24 hours; 32 operation/status groups</td>
+</tr>
+<tr>
+<td>Activity Log API</td>
+<td>Zero events with the group filter, 61 after clearing it; check filters even for successful empty results</td>
+</tr>
+<tr>
+<td>Network Watcher</td>
+<td>One watcher with provisioning state <code>Succeeded</code></td>
+</tr>
+<tr>
+<td>Disabled and fail-fast behavior</td>
+<td><code>/</code> and <code>/docs</code> returned 200; missing-setting startup failed in a temporary directory that did not load existing settings</td>
+</tr>
+<tr>
+<td>API emission</td>
+<td>All ten requests returned 200; three Azure rows included both routes and the expected cloud role</td>
+</tr>
+<tr>
+<td>CLI emission</td>
+<td>One <code>count=10</code> run; three request and three log rows had matching operation IDs; metric <code>valueSum</code> totaled ten</td>
+</tr>
+<tr>
+<td>Limits of verification</td>
+<td>Terraform outputs remained unverified due to missing plugins/modules; routes without external calls did not verify dependency correlation</td>
+</tr>
+</tbody>
+</table>
+<p>All 241 related automated tests passed. Separately from live queries, these cover
+input boundaries, setting precedence, secret redaction, environment restoration,
+instrumentation, one-time initialization, and error handling.
+After <a href="../scripts/">development setup</a>, run:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>pytest<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/test_cli_azure_monitor.py<span class="w"> </span>tests/test_cli_log_analytics.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/test_cli_application_insights.py<span class="w"> </span>tests/test_cli_network_watcher.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/test_cli_activity_log.py<span class="w"> </span>tests/test_settings.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/test_telemetry.py<span class="w"> </span>tests/test_api.py<span class="w"> </span>-q<span class="w"> </span>--no-cov
+</code></pre></div>
+<p>To check only the missing-setting contract without changing a connection string:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>pytest<span class="w"> </span>tests/test_telemetry.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-k<span class="w"> </span>enabled_telemetry_requires_connection_string<span class="w"> </span>-q<span class="w"> </span>--no-cov
+</code></pre></div>
+<p>This test passes settings explicitly and does not send to Azure.
+It is separate from an actual server startup check.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Missing option</code></td>
+<td>Add the IDs from the mapping to <code>.env</code> or pass CLI options; <code>az login</code> does not set them</td>
+</tr>
+<tr>
+<td>Variables missing from an old <code>.env</code></td>
+<td>Add them to the existing file; template updates are not applied automatically</td>
+</tr>
+<tr>
+<td>Only some groups appear, or Activity Log returns zero events</td>
+<td>Check <code>AZURE_RESOURCE_GROUP</code> in both <code>.env</code> and the OS; an empty OS value does not clear the <code>.env</code> filter</td>
+</tr>
+<tr>
+<td>An empty connection string does not produce the missing-setting error</td>
+<td>Check for an existing <code>.env</code> value; distinguish missing-setting errors from SDK initialization errors</td>
+</tr>
+<tr>
+<td>Terraform output retrieval fails</td>
+<td>Follow setup instructions and run <code>terraform init</code> for missing plugins/modules; do not run <code>apply</code> merely to read outputs</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Check identity, tenant, role scope, propagation time, and network restrictions</td>
+</tr>
+<tr>
+<td>Missing <code>AzureActivity</code></td>
+<td>Check diagnostic export to the chosen workspace and ingestion</td>
+</tr>
+<tr>
+<td>Application Insights table error</td>
+<td>Update the CLI; resource and workspace APIs use different schemas</td>
+</tr>
+<tr>
+<td>Emitted data not found</td>
+<td>Query the same <code>run_id</code>; check destination, query target, sampling, SDK warnings, and network access</td>
+</tr>
+</tbody>
+</table>
+<p>CLI options and temporary environment variables do not persist to later terminals.
+After configuration, run the commands in a normal terminal again.
+In the <a href="https://learn.microsoft.com/azure/azure-monitor/app/data-model-complete">Application Insights schema</a>,
+do not confuse resource API <code>timestamp</code> / <code>customDimensions</code> with workspace
+<code>TimeGenerated</code> / <code>Properties</code>.</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

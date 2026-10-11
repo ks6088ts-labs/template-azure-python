@@ -1,0 +1,17 @@
+name: task_analytics
+version: "1.0.0"
+config-version: 2
+require-dbt-version: [">=2.0.8", "<3.0.0"]
+profile: task_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  task_analytics:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

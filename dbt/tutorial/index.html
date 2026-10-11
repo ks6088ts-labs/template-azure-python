@@ -1,0 +1,2620 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/dbt/tutorial/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../backends/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+          <link rel="alternate" href="../../ja/dbt/tutorial/" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Task analytics hands-on - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#build-task-analytics-from-scratch" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Task analytics hands-on
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../../ja/dbt/tutorial/" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt and DuckDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task analytics hands-on
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task analytics hands-on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-create-the-workspace-and-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create the workspace and connection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Create the workspace and connection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-load-task-csv-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Load Task CSV seeds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Load Task CSV seeds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-normalize-input-in-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Normalize input in staging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Normalize input in staging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-build-dimensions-facts-and-a-reporting-mart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Build dimensions, facts, and a reporting mart
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Build dimensions, facts, and a reporting mart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-test-data-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Test data quality
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Test data quality">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exercise-break-investigate-recover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise: break, investigate, recover
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-update-status-and-verify-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Update status and verify reproducibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Update status and verify reproducibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-explore-local-docs-and-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Explore local Docs and lineage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Explore local Docs and lineage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification-and-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification and exercises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-vs-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: VS Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-connect-the-task-api-and-verify-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Connect the Task API and verify persistence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Connect the Task API and verify persistence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview-the-execution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview the execution flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-prepare-and-start-in-terminal-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action: prepare and start in terminal A
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-verify-and-mutate-in-terminal-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action: verify and mutate in terminal B
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification-restart-a-then-read-in-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification: restart A, then read in B
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification-stop-a-and-inspect-persisted-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification: stop A and inspect persisted analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-and-verification-rebuild-and-recover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action and verification: rebuild and recover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-troubleshooting-recap-and-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Troubleshooting, recap, and cleanup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Troubleshooting, recap, and cleanup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#further-learning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Further learning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage and analytics extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure samples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure samples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cosmosdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and logs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-create-the-workspace-and-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create the workspace and connection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Create the workspace and connection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-load-task-csv-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Load Task CSV seeds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Load Task CSV seeds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-normalize-input-in-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Normalize input in staging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Normalize input in staging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-build-dimensions-facts-and-a-reporting-mart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Build dimensions, facts, and a reporting mart
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Build dimensions, facts, and a reporting mart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-test-data-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Test data quality
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Test data quality">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exercise-break-investigate-recover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise: break, investigate, recover
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-update-status-and-verify-reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Update status and verify reproducibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Update status and verify reproducibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-explore-local-docs-and-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Explore local Docs and lineage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Explore local Docs and lineage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification-and-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification and exercises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-vs-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: VS Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-connect-the-task-api-and-verify-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Connect the Task API and verify persistence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Connect the Task API and verify persistence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview-the-execution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview the execution flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-prepare-and-start-in-terminal-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action: prepare and start in terminal A
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-verify-and-mutate-in-terminal-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action: verify and mutate in terminal B
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification-restart-a-then-read-in-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification: restart A, then read in B
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verification-stop-a-and-inspect-persisted-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification: stop A and inspect persisted analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-and-verification-rebuild-and-recover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action and verification: rebuild and recover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-troubleshooting-recap-and-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Troubleshooting, recap, and cleanup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Troubleshooting, recap, and cleanup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#further-learning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Further learning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="build-task-analytics-from-scratch">Build Task analytics from scratch</h1>
+<p>Assemble the same project as the <a href="../">introduction and quick run</a> in your own working directory.
+Each section follows <strong>purpose → action → verification</strong>. Verify rows, values, and failure behavior,
+not just a successful command.</p>
+<h2 id="1-create-the-workspace-and-connection">1. Create the workspace and connection</h2>
+<h3 id="purpose">Purpose</h3>
+<p>Distinguish project configuration from database connection configuration.
+The official quickstart's <code>dbt init</code> generates a sample such as Jaffle Shop.
+Here you create a minimal Task project by hand to understand its parts.</p>
+<h3 id="action">Action</h3>
+<p>These are macOS / Linux commands. Run everything in the same terminal, from the repository root.
+If <code>artifacts/dbt/task_analytics</code> already exists, choose a different name.
+If <code>mkdir</code> reports that the directory exists, stop rather than continuing and overwriting files.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">DBT_TASK_EXAMPLE_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/docs/dbt/task_analytics"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DBT_PROJECT_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/artifacts/dbt/task_analytics"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DBT_PROFILES_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DBT_SEND_ANONYMOUS_USAGE_STATS</span><span class="o">=</span><span class="nb">false</span>
+
+mkdir<span class="w"> </span>-p<span class="w"> </span>artifacts/dbt
+mkdir<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">"</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/models/staging"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/models/marts"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/seeds"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/tests"</span>
+</code></pre></div>
+<p>In a new terminal, rerun only the four <code>export</code> lines from the repository root.
+For PowerShell variables, see the <a href="../">introduction</a> and substitute the working project path.</p>
+<p>Use your editor to create <code>$DBT_PROJECT_DIR/dbt_project.yml</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">task_analytics</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">"1.0.0"</span>
+<span class="nt">config-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">require-dbt-version</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"&gt;=2.0.8"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"&lt;3.0.0"</span><span class="p p-Indicator">]</span>
+<span class="nt">profile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">task_analytics</span>
+
+<span class="nt">model-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"models"</span><span class="p p-Indicator">]</span>
+<span class="nt">seed-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"seeds"</span><span class="p p-Indicator">]</span>
+<span class="nt">test-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"tests"</span><span class="p p-Indicator">]</span>
+<span class="nt">clean-targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"target"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"dbt_packages"</span><span class="p p-Indicator">]</span>
+
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">task_analytics</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">staging</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">view</span>
+<span class="w">    </span><span class="nt">marts</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table</span>
+</code></pre></div>
+<ul>
+<li><code>name</code> identifies the project; <code>profile</code> is the key used to find connection settings.</li>
+<li><code>model-paths</code>, <code>seed-paths</code>, and <code>test-paths</code> distinguish file responsibilities.</li>
+<li><strong>Materialization</strong> defines how a model is stored in the database.
+  Staging uses views and marts use tables.</li>
+</ul>
+<p>Create <code>$DBT_PROJECT_DIR/profiles.yml</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">task_analytics</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dev</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">duckdb</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">env_var('DBT_PROJECT_DIR')</span><span class="nv"> </span><span class="s">}}/task_analytics.duckdb"</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<p><code>target: dev</code> selects <code>outputs.dev</code>; <code>schema: main</code> is the namespace for database objects.
+<code>threads: 1</code> keeps the exercise simple; it is not a performance-tuning recommendation.
+<code>env_var()</code> reads an environment variable. An absolute database path prevents accidental creation
+of different databases when the working directory changes. A missing variable is an error.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>--version
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>debug
+</code></pre></div>
+<h3 id="verification">Verification</h3>
+<p>Expect version 2.x and a successful connection. Check that the database path is inside your workspace.
+Before you add models, dbt may warn about unused model configuration.
+These commands do not alter <code>~/.dbt/profiles.yml</code> or the application's database.</p>
+<h2 id="2-load-task-csv-seeds">2. Load Task CSV seeds</h2>
+<h3 id="purpose_1">Purpose</h3>
+<p>Separate loading input into the database from transforming it.
+The CSV represents current Tasks, not a history of status changes.</p>
+<h3 id="action_1">Action</h3>
+<p>Create <code>$DBT_PROJECT_DIR/seeds/raw_tasks.csv</code>, preserving the surrounding spaces
+in the first title / description and the second row's empty description.</p>
+<div class="highlight"><pre><span></span><code>id,title,description,status
+00000000-0000-0000-0000-000000000001,  Plan ingestion  ,  Define the input columns  ,todo
+00000000-0000-0000-0000-000000000002,Write staging SQL,,todo
+00000000-0000-0000-0000-000000000003,Build task mart,Join tasks to their status,in_progress
+00000000-0000-0000-0000-000000000004,Add data tests,Check keys and domain rules,in_progress
+00000000-0000-0000-0000-000000000005,Install dbt,Use the existing uv group,done
+00000000-0000-0000-0000-000000000006,Connect DuckDB,Use a local database file,done
+</code></pre></div>
+<p>Create <code>$DBT_PROJECT_DIR/seeds/task_statuses.csv</code>.</p>
+<div class="highlight"><pre><span></span><code>status,status_label,status_order,is_completed
+todo,To do,1,false
+in_progress,In progress,2,false
+done,Done,3,true
+</code></pre></div>
+<p>Do not rely only on type inference: UUIDs should remain strings, ordering keys integers,
+and completion flags booleans. Read and copy
+<a href="../task_analytics/seeds/properties.yml">seeds/properties.yml</a>, which defines types, descriptions,
+and seed tests. At this point you have two configuration files, two CSV files, and one seed YAML.</p>
+<div class="highlight"><pre><span></span><code>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/seeds/properties.yml"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/seeds/properties.yml"</span>
+
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>seed
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select count(*) as task_count from {{ ref('raw_tasks') }}"</span>
+</code></pre></div>
+<h3 id="verification_1">Verification</h3>
+<p><code>raw_tasks</code> has six rows and <code>task_statuses</code> has three rows. The query returns <code>6</code>.
+<code>seed</code> loads data; it does not automatically execute data tests.</p>
+<p><code>ref('raw_tasks')</code> resolves the seed's database relation and declares a dependency.
+It avoids hard-coding database and schema names into SQL.
+Externally loaded production tables are normally referenced using <code>source('name', 'table_name')</code>.
+Do not register this seed as an imaginary external source.</p>
+<h2 id="3-normalize-input-in-staging">3. Normalize input in staging</h2>
+<h3 id="purpose_2">Purpose</h3>
+<p><strong>Staging</strong> standardizes column names, types, and ordinary surrounding spaces while preserving
+the input correspondence. The grain remains <strong>one row per current Task</strong>.
+Do not aggregate or filter out invalid input.</p>
+<h3 id="action_2">Action</h3>
+<p>Create <code>$DBT_PROJECT_DIR/models/staging/stg_tasks.sql</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span>
+<span class="w">    </span><span class="k">cast</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nb">varchar</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">task_id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">trim</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">task_title</span><span class="p">,</span>
+<span class="w">    </span><span class="k">trim</span><span class="p">(</span><span class="k">coalesce</span><span class="p">(</span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">task_description</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'raw_tasks'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+<p>Empty CSV cells become NULL, so only description is mapped to the domain default <code>''</code>.
+Do not invent a title or status for missing or invalid values.
+See the <a href="../">scope discussion</a> for the difference between SQL <code>trim()</code> and Python <code>strip()</code>.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>run<span class="w"> </span>--select<span class="w"> </span>stg_tasks
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select task_id, task_title, length(task_description) as description_length from {{ ref('stg_tasks') }} order by task_id"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--limit<span class="w"> </span><span class="m">6</span>
+</code></pre></div>
+<h3 id="verification_2">Verification</h3>
+<p>There are still six rows. The title for ID ending in <code>001</code> is <code>Plan ingestion</code>;
+the description length for ID ending in <code>002</code> is <code>0</code>.
+A view stores a SQL definition and reads its input when queried; it is not an independent data copy.</p>
+<h2 id="4-build-dimensions-facts-and-a-reporting-mart">4. Build dimensions, facts, and a reporting mart</h2>
+<h3 id="purpose_3">Purpose</h3>
+<p>A <strong>dimension</strong> describes status reference information; a <strong>fact</strong> represents the Tasks being analyzed.
+A fact need not contain only events or numeric measurements: this one represents current state.
+A <strong>mart</strong> is a set of purpose-oriented analytical models, not necessarily only aggregate tables.</p>
+<h3 id="action_3">Action</h3>
+<p>Create <code>$DBT_PROJECT_DIR/models/marts/dim_task_status.sql</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span>
+<span class="w">    </span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status_label</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status_order</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_completed</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'task_statuses'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+<p>Create <code>$DBT_PROJECT_DIR/models/marts/fct_tasks.sql</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span>
+<span class="w">    </span><span class="n">tasks</span><span class="p">.</span><span class="n">task_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tasks</span><span class="p">.</span><span class="n">task_title</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tasks</span><span class="p">.</span><span class="n">task_description</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tasks</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">is_completed</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'stg_tasks'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">tasks</span>
+<span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'dim_task_status'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">statuses</span>
+<span class="w">    </span><span class="k">on</span><span class="w"> </span><span class="n">tasks</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">statuses</span><span class="p">.</span><span class="n">status</span>
+</code></pre></div>
+<p>The <code>left join</code> keeps Tasks with invalid statuses instead of dropping them.
+If no dimension row matches, <code>is_completed</code> is NULL and a later test detects it.
+A duplicate status key in the dimension multiplies fact rows, so uniqueness matters too.</p>
+<p>Create <code>$DBT_PROJECT_DIR/models/marts/task_status_summary.sql</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">status_label</span><span class="p">,</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">status_order</span><span class="p">,</span>
+<span class="w">    </span><span class="k">count</span><span class="p">(</span><span class="n">tasks</span><span class="p">.</span><span class="n">task_id</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">task_count</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'dim_task_status'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">statuses</span>
+<span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'fct_tasks'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">tasks</span>
+<span class="w">    </span><span class="k">on</span><span class="w"> </span><span class="n">statuses</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tasks</span><span class="p">.</span><span class="n">status</span>
+<span class="k">group</span><span class="w"> </span><span class="k">by</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">status_label</span><span class="p">,</span>
+<span class="w">    </span><span class="n">statuses</span><span class="p">.</span><span class="n">status_order</span>
+</code></pre></div>
+<p>The aggregate grain is <strong>one row per status</strong>. Starting from the dimension preserves zero-count statuses.
+<code>count(*)</code> would count the join's unmatched row even when there is no Task;
+<code>count(tasks.task_id)</code> counts only the non-NULL Task keys.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>run
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select status, task_count from {{ ref('task_status_summary') }} order by status_order"</span>
+</code></pre></div>
+<h3 id="verification_3">Verification</h3>
+<p>Expect <code>todo=2</code>, <code>in_progress=2</code>, <code>done=2</code>. The fact has six rows; dimension and summary each have three.
+SQL tables have no guaranteed row order, so reports must specify <code>order by</code>.
+dbt builds the four models according to the <code>ref()</code> DAG, not filename order.
+A table stores results and stays stale until rebuilt after input changes.</p>
+<p><code>dbt show --select task_status_summary</code> <strong>reruns the model SQL as a preview</strong>.
+Use the <code>show --inline</code> query above with <code>ref()</code> to inspect the persisted table instead.
+This distinction matters when investigating updates or failures.</p>
+<h2 id="5-test-data-quality">5. Test data quality</h2>
+<h3 id="purpose_4">Purpose</h3>
+<p>Executable SQL does not guarantee correct data. Encode constraints and detect broken input
+rather than silently removing it.</p>
+<h3 id="action_4">Action</h3>
+<p>Read and copy <a href="../task_analytics/models/properties.yml">models/properties.yml</a>.
+<strong>The YAML below is an explanatory excerpt; do not register it in a second YAML file.</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fct_tasks</span>
+<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">task_id</span>
+<span class="w">        </span><span class="nt">data_tests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">not_null</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">unique</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status</span>
+<span class="w">        </span><span class="nt">data_tests</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not_null</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">relationships</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ref('dim_task_status')</span>
+<span class="w">                </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Generic test</th>
+<th>Assertion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>not_null</code></td>
+<td>A required value is not NULL</td>
+</tr>
+<tr>
+<td><code>unique</code></td>
+<td>The key identifying the grain is not duplicated</td>
+</tr>
+<tr>
+<td><code>accepted_values</code></td>
+<td>Status contains only allowed values</td>
+</tr>
+<tr>
+<td><code>relationships</code></td>
+<td>Status has a corresponding dimension row</td>
+</tr>
+</tbody>
+</table>
+<p><code>accepted_values</code> and <code>relationships</code> do not replace NULL validation; combine them with <code>not_null</code>.
+In v2, test inputs belong under <code>arguments:</code>.</p>
+<p>A <strong>singular test</strong> expresses multi-column rules as SQL.
+Here is <a href="../task_analytics/tests/assert_task_domain_rules.sql">assert_task_domain_rules.sql</a>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">select</span><span class="w"> </span><span class="n">task_id</span>
+<span class="k">from</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">'stg_tasks'</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">where</span>
+<span class="w">    </span><span class="k">not</span><span class="w"> </span><span class="n">regexp_full_match</span><span class="p">(</span>
+<span class="w">        </span><span class="n">task_id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="k">or</span><span class="w"> </span><span class="k">length</span><span class="p">(</span><span class="n">task_title</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="k">or</span><span class="w"> </span><span class="k">length</span><span class="p">(</span><span class="n">task_title</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">200</span>
+<span class="w">    </span><span class="k">or</span><span class="w"> </span><span class="k">length</span><span class="p">(</span><span class="n">task_description</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">2000</span>
+</code></pre></div>
+<p>Return <strong>violating rows</strong>: zero rows means success; one or more means failure.
+Use generic tests for NULLs rather than relying on these comparisons alone.
+SQL length measures characters, not a 200-byte limit.</p>
+<p>Copy the three singular tests and read what they check:</p>
+<ul>
+<li>UUID representation and title / description lengths:
+  <a href="../task_analytics/tests/assert_task_domain_rules.sql">assert_task_domain_rules.sql</a></li>
+<li>Three dimension statuses, ordering, and completion flags:
+  <a href="../task_analytics/tests/assert_status_dimension.sql">assert_status_dimension.sql</a></li>
+<li>Per-status and overall count consistency:
+  <a href="../task_analytics/tests/assert_task_summary_consistent.sql">assert_task_summary_consistent.sql</a></li>
+</ul>
+<div class="highlight"><pre><span></span><code>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/models/properties.yml"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/models/properties.yml"</span>
+cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/tests/assert_task_domain_rules.sql"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/tests/"</span>
+cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/tests/assert_status_dimension.sql"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/tests/"</span>
+cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/tests/assert_task_summary_consistent.sql"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/tests/"</span>
+
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span><span class="nb">test</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+</code></pre></div>
+<h3 id="verification_4">Verification</h3>
+<p><code>test</code> checks already-built data: expect 42 successful tests.
+<code>build</code> combines seeds, models, and tests in dependency order, skipping related downstream
+builds if upstream tests fail. <code>run</code> alone does not provide that quality gate.</p>
+<h3 id="exercise-break-investigate-recover">Exercise: break, investigate, recover</h3>
+<p>In your <strong>working</strong> <code>seeds/raw_tasks.csv</code>, change only the status of ID ending in <code>001</code> to <code>blocked</code>.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+</code></pre></div>
+<p>Expect <code>accepted_values_raw_tasks_status...</code> to fail and a nonzero exit code.
+Failure is the exercise's goal; do not silently turn the value into <code>todo</code>.
+Inspect <code>target/run_results.json</code> and the failed test SQL.
+<code>build</code> does not roll back the whole project atomically: the seed can change while downstream
+tables retain earlier results. Do not present a stale mart as a healthy, up-to-date result.</p>
+<p>Restore the input and rerun:</p>
+<div class="highlight"><pre><span></span><code>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/seeds/raw_tasks.csv"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/seeds/raw_tasks.csv"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+</code></pre></div>
+<p>Next, duplicate one row with the same ID and verify that <code>unique_raw_tasks_id</code> fails.
+Then try a space-only title and verify that <code>assert_task_domain_rules</code> fails.
+<strong>Restore and successfully rebuild before and after each exercise; finish with the original six rows.</strong></p>
+<h2 id="6-update-status-and-verify-reproducibility">6. Update status and verify reproducibility</h2>
+<h3 id="purpose_5">Purpose</h3>
+<p>Distinguish replacing current state from retaining history.
+Verify that full rebuilds do not accumulate duplicate rows.</p>
+<h3 id="action_5">Action</h3>
+<p>Change only the working CSV row ending in <code>001</code> from <code>todo</code> to <code>done</code>.
+Leave every other column and row unchanged.</p>
+<div class="highlight"><pre><span></span><code>00000000-0000-0000-0000-000000000001,  Plan ingestion  ,  Define the input columns  ,done
+</code></pre></div>
+<p>First run <strong>only transformations</strong>:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>run
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select status, task_count from {{ ref('task_status_summary') }} order by status_order"</span>
+</code></pre></div>
+<p>Counts are still <code>2 / 2 / 2</code>: <code>run</code> does not execute <code>seed</code> to load the modified CSV.
+Now build including the input:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select status, task_count from {{ ref('task_status_summary') }} order by status_order"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select count(*) as total_tasks, sum(case when is_completed then 1 else 0 end) as completed_tasks, round(100.0 * sum(case when is_completed then 1 else 0 end) / nullif(count(*), 0), 2) as completion_rate_pct from {{ ref('fct_tasks') }}"</span>
+</code></pre></div>
+<h3 id="verification_5">Verification</h3>
+<p>Expect <code>todo=1</code>, <code>in_progress=2</code>, <code>done=3</code>, total six, and 50% completion.
+Repeat <code>build</code> and the queries: results should not change. This is the example's rerun reproducibility.</p>
+<p>This project rebuilds tables / views; it does not use incremental materialization.
+An ordinary CSV content change does not need <code>--full-refresh</code>.
+For seed column type changes requiring table recreation, use <code>dbt seed --full-refresh</code>.
+For an incremental model, <code>--full-refresh</code> means recomputing all rows, a different use case.</p>
+<p><strong>Extra exercise:</strong> restore the original CSV, change both <code>todo</code> Tasks to <code>done</code>, and build.
+Expect <code>todo=0</code>, <code>in_progress=2</code>, <code>done=4</code>. Explain why the zero-count status remains using
+the join and <code>count(tasks.task_id)</code>. Restore the original CSV and build afterwards.</p>
+<h2 id="7-explore-local-docs-and-lineage">7. Explore local Docs and lineage</h2>
+<h3 id="purpose_6">Purpose</h3>
+<p>Make model meanings and data provenance discoverable by other people.
+<strong>dbt Docs</strong> describes the analytics project; the repository's <strong>MkDocs</strong> publishes this tutorial.
+They are different sites.</p>
+<h3 id="action_6">Action</h3>
+<p>Generate column information and lineage through v2 static analysis, then export the Docs site:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build<span class="w"> </span>--static-analysis<span class="w"> </span>strict<span class="w"> </span>--generate-info-schema
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w"> </span>--no-compile
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w"> </span>--target-path<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/target"</span><span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8580</span><span class="w"> </span>--no-open
+</code></pre></div>
+<p>Open <a href="http://127.0.0.1:8580">http://127.0.0.1:8580</a>. <code>--no-compile</code> exports the index just generated, avoiding an additional
+compile replacing the static-analysis results. Missing index data causes an error.
+For ordinary site generation, <code>dbt docs generate</code> also works on its own.
+v2 <code>docs serve</code> defaults to <code>target/</code> in the current directory, so this repository-root
+workflow explicitly sets <code>--target-path</code> to the project's generated artifacts.</p>
+<p><code>--write-catalog</code> writes catalog metadata; it does not create the browsable site.
+See the <a href="https://docs.getdbt.com/reference/commands/cmd-docs?version=2.0">official command reference</a>
+for v2 Docs and static-analysis details.</p>
+<h3 id="verification-and-exercises">Verification and exercises</h3>
+<ol>
+<li>Find the <code>stg_tasks</code> model description and the description of <code>task_title</code>.</li>
+<li>Inspect <code>fct_tasks</code>' primary key and the status relationship test.</li>
+<li>Trace <code>task_status_summary</code> to its two upstream models, then to the seeds.</li>
+<li>Use column information to identify the Task key counted by <code>task_count</code> and the source of status.</li>
+<li>Edit a working model description, rebuild, and regenerate to refresh its display.</li>
+</ol>
+<p>Stop the server with <code>Ctrl+C</code> in its terminal.
+Docs are generated under <code>target/</code>, which can also contain compiled SQL and test-failure data.
+When using real data, do not publish all of <code>target/</code> indiscriminately.</p>
+<h3 id="optional-vs-code">Optional: VS Code</h3>
+<p>Following the quickstart, install dbt Labs' <a href="https://marketplace.visualstudio.com/items?itemName=dbtLabsInc.dbt">official extension</a>.
+Add the <strong>dbt project folder itself</strong> to the VS Code workspace.
+Opening only the repository root may prevent the LSP from discovering the nested project.</p>
+<p>Provide the same absolute <code>DBT_PROJECT_DIR</code> / <code>DBT_PROFILES_DIR</code> in VS Code's launch environment
+and point the extension's dbt executable setting at the repository's <code>.venv/bin/dbt</code>
+(<code>.venv/Scripts/dbt.exe</code> on Windows).
+An <code>export</code> in the integrated terminal alone does not update an already-running VS Code process.
+Confirm the profile and database path in the extension's connection setup, then open a model
+and inspect Lineage / Query Results.
+The extension and account features are optional; the CLI and local Docs are sufficient for this tutorial.</p>
+<p><a id="api-persistence-exercise"></a></p>
+<h2 id="8-connect-the-task-api-and-verify-persistence">8. Connect the Task API and verify persistence</h2>
+<h3 id="purpose_7">Purpose</h3>
+<p>Use the <strong>same</strong> Repository contract with dbt-built Tasks, verify real persistence, and observe the
+boundary between operational CRUD and rebuildable analytics. See the <a href="../backends/">implementation guide</a>
+for column mapping, errors, connection lifetime, and future Cosmos / warehouse extensions.</p>
+<p>This exercise deliberately edits a dbt-managed fact. CSV, raw data, and summary tables do not synchronize.
+API changes persist across API restarts but are <strong>overwritten by dbt build</strong>.
+Use only your working project, not the completed example or important data.</p>
+<h3 id="preview-the-execution-flow">Preview the execution flow</h3>
+<table>
+<thead>
+<tr>
+<th>Terminal</th>
+<th>Role</th>
+<th>Retained settings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>Run/stop dbt and the API; never run both concurrently</td>
+<td>Section 1 DBT variables and DUCKDB_PATH</td>
+</tr>
+<tr>
+<td>B</td>
+<td>curl and response-JSON checks; never open the DB file</td>
+<td>TASK_API_URL, TASK_HTTP_DIR, generated TASK_ID</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Fact rows</th>
+<th>Done rows</th>
+<th>Persisted summary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Initial build</td>
+<td>6</td>
+<td>2</td>
+<td>2 / 2 / 2</td>
+</tr>
+<tr>
+<td>POST</td>
+<td>7</td>
+<td>2</td>
+<td>Unchanged</td>
+</tr>
+<tr>
+<td>PUT existing 001</td>
+<td>7</td>
+<td>3</td>
+<td>Unchanged</td>
+</tr>
+<tr>
+<td>API restart</td>
+<td>7</td>
+<td>3</td>
+<td>Unchanged</td>
+</tr>
+<tr>
+<td>DELETE exercise UUID</td>
+<td>6</td>
+<td>3</td>
+<td>Still 2 / 2 / 2; test detects inconsistency</td>
+</tr>
+<tr>
+<td>dbt rebuild</td>
+<td>6</td>
+<td>2</td>
+<td>Restored 2 / 2 / 2</td>
+</tr>
+</tbody>
+</table>
+<p>Follow this order. Restart persistence does not imply synchronization with dbt.</p>
+<h3 id="action-prepare-and-start-in-terminal-a">Action: prepare and start in terminal A</h3>
+<p>Stop dbt Docs and editor / Python database connections from the previous section.
+Use the repository root and the same absolute DBT_PROJECT_DIR / DBT_PROFILES_DIR from section 1.
+If resuming in a new terminal, repeat those exports first. Restore the initial CSV even if the preceding
+exercise already did so; the verification below expects the original six rows.</p>
+<div class="highlight"><pre><span></span><code>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/seeds/raw_tasks.csv"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/seeds/raw_tasks.csv"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+<span class="nb">export</span><span class="w"> </span><span class="nv">DUCKDB_PATH</span><span class="o">=</span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/task_analytics.duckdb"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>duckdb
+</code></pre></div>
+<p>Keep A running. No Azure account, sign-in, dbt platform account, jq, or database server is needed.
+Python's duckdb driver is a normal application dependency, separate from dbt's built-in driver.
+If port 8000 is occupied, use <code>--port</code> and change the URL in B accordingly.</p>
+<h3 id="action-verify-and-mutate-in-terminal-b">Action: verify and mutate in terminal B</h3>
+<p>Open B at the <strong>repository root</strong>. Exports in A are not inherited by B.
+B calls HTTP only; do not open the DuckDB file with another process while A runs.
+Each <code>assert</code> / <code>test</code> below must succeed; a nonzero exit means investigate before continuing.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">TASK_API_URL</span><span class="o">=</span>http://127.0.0.1:8000
+<span class="nv">TASK_HTTP_DIR</span><span class="o">=</span><span class="k">$(</span>mktemp<span class="w"> </span>-d<span class="k">)</span>
+curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks"</span><span class="w"> </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">import json</span>
+<span class="s1">import sys</span>
+
+<span class="s1">rows = json.load(sys.stdin)</span>
+<span class="s1">by_id = {task["id"]: task for task in rows}</span>
+<span class="s1">assert len(rows) == 6</span>
+<span class="s1">assert all(set(task) == {"id", "title", "description", "status"} for task in rows)</span>
+<span class="s1">assert by_id["00000000-0000-0000-0000-000000000001"]["title"] == "Plan ingestion"</span>
+<span class="s1">assert by_id["00000000-0000-0000-0000-000000000002"]["description"] == ""</span>
+<span class="s1">print("Initial 6 Tasks, normalized fields")</span>
+<span class="s1">'</span><span class="w"> </span>&lt;<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+
+<span class="nb">test</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>curl<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"title":"API exercise","description":"Temporary"}'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/created.json"</span><span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{http_code}'</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">201</span>
+<span class="nv">TASK_ID</span><span class="o">=</span><span class="k">$(</span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">import json</span>
+<span class="s1">import sys</span>
+
+<span class="s1">created = json.load(sys.stdin)</span>
+<span class="s1">assert created["status"] == "todo"</span>
+<span class="s1">print(created["id"])</span>
+<span class="s1">'</span><span class="w"> </span>&lt;<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/created.json"</span><span class="k">)</span>
+curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks/</span><span class="nv">$TASK_ID</span><span class="s2">"</span>
+
+<span class="nb">test</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>curl<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks/00000000-0000-0000-0000-000000000001"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"title":"Plan ingestion","description":"Define the input columns","status":"done"}'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{http_code}'</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span>
+</code></pre></div>
+<p>PUT replaces the whole Task; supply title / description / status, not an imaginary PATCH.
+The generated TASK_ID is taken from the real POST response, not a fixed sample ID.</p>
+<h3 id="verification-restart-a-then-read-in-b">Verification: restart A, then read in B</h3>
+<p>In A press Ctrl+C, wait for shutdown, then restart with the same path:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>duckdb
+</code></pre></div>
+<p>In B, verify seven Tasks and three done Tasks, including the newly created UUID:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks"</span><span class="w"> </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">import json</span>
+<span class="s1">import sys</span>
+
+<span class="s1">rows = json.load(sys.stdin)</span>
+<span class="s1">assert len(rows) == 7</span>
+<span class="s1">assert sum(task["status"] == "done" for task in rows) == 3</span>
+<span class="s1">assert any(task["id"] == sys.argv[1] for task in rows)</span>
+<span class="s1">print("Restart retained 7 Tasks, 3 done")</span>
+<span class="s1">'</span><span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_ID</span><span class="s2">"</span><span class="w"> </span>&lt;<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+
+<span class="nb">test</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>curl<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks/</span><span class="nv">$TASK_ID</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{http_code}'</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">204</span>
+<span class="nb">test</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>curl<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks/</span><span class="nv">$TASK_ID</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/missing.json"</span><span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{http_code}'</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">404</span>
+<span class="nb">test</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>curl<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"title":" "}'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/invalid.json"</span><span class="w"> </span>-w<span class="w"> </span><span class="s1">'%{http_code}'</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">422</span>
+curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks"</span><span class="w"> </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">import json</span>
+<span class="s1">import sys</span>
+
+<span class="s1">rows = json.load(sys.stdin)</span>
+<span class="s1">assert len(rows) == 6</span>
+<span class="s1">assert sum(task["status"] == "done" for task in rows) == 3</span>
+<span class="s1">print("Deleted exercise Task; 6 Tasks, 3 done")</span>
+<span class="s1">'</span><span class="w"> </span>&lt;<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+</code></pre></div>
+<h3 id="verification-stop-a-and-inspect-persisted-analytics">Verification: stop A and inspect persisted analytics</h3>
+<p>Stop A with Ctrl+C and wait for shutdown <strong>before</strong> any SQL / dbt command.
+In A, using the same project exports:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select task_id, status, is_completed from {{ ref('fct_tasks') }} where task_id = '00000000-0000-0000-0000-000000000001'"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select status, count(*) as task_count from {{ ref('raw_tasks') }} group by status order by status"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select status, task_count from {{ ref('task_status_summary') }} order by status_order"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span><span class="nb">test</span>
+</code></pre></div>
+<p>Expect the fact's ID ending in 001 to be <strong>done / true</strong>, while raw and persisted summary still have
+two Tasks per status. <code>assert_task_summary_consistent</code> must <strong>fail with a nonzero exit code</strong>:
+fact counts are now todo=1 / in_progress=2 / done=3 but the summary remains 2 / 2 / 2.
+This is the intended failure, not a reason to delete the test.
+If another failure occurs, investigate it separately.
+Use <code>show --inline</code> + <code>ref()</code> to inspect persisted tables; <code>show --select</code> would preview model SQL.</p>
+<h3 id="action-and-verification-rebuild-and-recover">Action and verification: rebuild and recover</h3>
+<p>Still with the API stopped, in A:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select count(*) as total_tasks, sum(case when is_completed then 1 else 0 end) as completed_tasks from {{ ref('fct_tasks') }}"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>duckdb
+</code></pre></div>
+<p>Expect 42 successful data tests and total_tasks=6 / completed_tasks=2.
+Rebuild reads the unchanged CSV and <strong>discards the API's status change</strong>.
+In B:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_API_URL</span><span class="s2">/tasks"</span><span class="w"> </span>-o<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">import json</span>
+<span class="s1">import sys</span>
+
+<span class="s1">rows = json.load(sys.stdin)</span>
+<span class="s1">by_id = {task["id"]: task for task in rows}</span>
+<span class="s1">assert len(rows) == 6</span>
+<span class="s1">assert sum(task["status"] == "done" for task in rows) == 2</span>
+<span class="s1">assert by_id["00000000-0000-0000-0000-000000000001"]["status"] == "todo"</span>
+<span class="s1">assert sys.argv[1] not in by_id</span>
+<span class="s1">print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")</span>
+<span class="s1">'</span><span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_ID</span><span class="s2">"</span><span class="w"> </span>&lt;<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span>
+</code></pre></div>
+<p>For operational Cosmos data and separately rebuilt analytics, see the <a href="../backends/">extension guide</a>.</p>
+<h3 id="cleanup">Cleanup</h3>
+<p>Stop A again. In B remove only the four temporary HTTP response files you created:</p>
+<div class="highlight"><pre><span></span><code>rm<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/created.json"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/tasks.json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/missing.json"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">/invalid.json"</span>
+rmdir<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_HTTP_DIR</span><span class="s2">"</span>
+<span class="nb">unset</span><span class="w"> </span>TASK_ID<span class="w"> </span>TASK_HTTP_DIR<span class="w"> </span>TASK_API_URL
+</code></pre></div>
+<p>In A, unset DUCKDB_PATH / TELEMETRY_ENABLED if set only for the exercise, restoring previous values
+if applicable. Do not remove the database until the API and other connections have stopped.</p>
+<h2 id="9-troubleshooting-recap-and-cleanup">9. Troubleshooting, recap, and cleanup</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dbt</code> runs v1 or another tool</td>
+<td>Use this guide's <code>uv run --locked --no-dev --group dbt dbt --version</code>, not bare <code>dbt</code></td>
+</tr>
+<tr>
+<td>Missing profile / environment variable</td>
+<td>Reset exports from the repository root; match <code>profile: task_analytics</code> to the YAML's top-level key</td>
+</tr>
+<tr>
+<td>Missing table</td>
+<td>Check whether seed / build ran on the same database path, including in other terminals</td>
+</tr>
+<tr>
+<td>CSV changes have no effect</td>
+<td><code>run</code> does not Load; use <code>build</code> or <code>seed</code> → <code>run</code> → <code>test</code></td>
+</tr>
+<tr>
+<td>DuckDB file-lock error</td>
+<td>Close other dbt / Python / DuckDB connections; do not write the same file concurrently from multiple processes</td>
+</tr>
+<tr>
+<td>API reports DUCKDB_PATH missing / invalid</td>
+<td>Export the existing absolute file path in the launcher terminal; do not point at a directory</td>
+</tr>
+<tr>
+<td>API startup reports missing table / columns</td>
+<td>Use the same DBT_PROJECT_DIR, run build, and verify main.fct_tasks is a physical table with the sample columns</td>
+</tr>
+<tr>
+<td>API and dbt show different Tasks</td>
+<td>Compare DUCKDB_PATH with the dbt profile path; terminal exports are independent</td>
+</tr>
+<tr>
+<td>Summary test fails after API CRUD</td>
+<td>Expected if fact changed without rebuilding reports; stop the API and follow the recovery exercise</td>
+</tr>
+<tr>
+<td>API writes disappear after dbt build</td>
+<td>Expected: dbt recreates the fact from its upstream input, not from API changes</td>
+</tr>
+<tr>
+<td>Functions cannot see the file</td>
+<td>Pass DUCKDB_PATH to the launcher / host and check its filesystem path; no automatic file mounting is supplied</td>
+</tr>
+<tr>
+<td>Missing column lineage</td>
+<td>Build with strict static analysis and <code>--generate-info-schema</code>, then use <code>docs generate --no-compile</code></td>
+</tr>
+<tr>
+<td>Docs reports <code>no data to serve</code></td>
+<td>Set <code>--target-path "$DBT_PROJECT_DIR/target"</code> to the intended project's artifacts</td>
+</tr>
+<tr>
+<td>Docs port is occupied</td>
+<td>Stop your server or choose <code>--port 8581</code> and use the matching URL</td>
+</tr>
+<tr>
+<td>Seed type change fails</td>
+<td>Use <code>seed --full-refresh</code> for this learning dataset, then <code>build</code></td>
+</tr>
+</tbody>
+</table>
+<p>You have completed the basics if you can explain:</p>
+<ul>
+<li>Why six Tasks produce three summary rows.</li>
+<li>The different roles of <code>ref()</code>, <code>seed</code>, <code>source()</code>, and SQL models.</li>
+<li>How <code>run</code>, <code>test</code>, and <code>build</code> differ.</li>
+<li>How a join without <code>unique</code> / <code>relationships</code> checks can produce misleading counts.</li>
+<li>Why current completion rate cannot establish this week's processing time or productivity.</li>
+</ul>
+<p>Restore the initial working input and rebuild:</p>
+<div class="highlight"><pre><span></span><code>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_TASK_EXAMPLE_DIR</span><span class="s2">/seeds/raw_tasks.csv"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/seeds/raw_tasks.csv"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+</code></pre></div>
+<p>To remove generated artifacts, stop the server and close database connections first.
+Using your editor / file manager, delete only <code>task_analytics.duckdb</code>, any <code>task_analytics.duckdb.wal</code>,
+<code>target/</code>, and <code>logs/</code> <strong>inside the working directory you created</strong>.
+Retain SQL / CSV and <code>build</code> can regenerate the database.
+<code>dbt clean</code> removes configured clean targets, not the database file itself.
+Do not delete the repository, global profiles, or application data.</p>
+<p>Unset this shell's variables when finished. If any were set before the tutorial, restore their previous values instead.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">unset</span><span class="w"> </span>DBT_PROJECT_DIR<span class="w"> </span>DBT_PROFILES_DIR<span class="w"> </span>DBT_SEND_ANONYMOUS_USAGE_STATS<span class="w"> </span>DBT_TASK_EXAMPLE_DIR
+</code></pre></div>
+<h3 id="further-learning">Further learning</h3>
+<table>
+<thead>
+<tr>
+<th>Next goal</th>
+<th>Additional design needed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Analyze Tasks from the existing API</td>
+<td>Export from the running app process, validate UUID / status, and define extraction time</td>
+</tr>
+<tr>
+<td>Use an external raw table</td>
+<td>Separate Load plus <code>sources:</code> / <code>source()</code> references and lineage</td>
+</tr>
+<tr>
+<td>Incremental processing at scale</td>
+<td>Change detection, stable unique key, late arrivals, deletion, and replay policy</td>
+</tr>
+<tr>
+<td>Status history and daily trends</td>
+<td>Observation / change timestamps, snapshot / event / CDC choice, and history grain</td>
+</tr>
+<tr>
+<td>Duration and overdue work</td>
+<td>Start / completion / due timestamps, metric denominator, time window, and timezone</td>
+</tr>
+<tr>
+<td>Regular execution</td>
+<td>Orchestration of ingestion and dbt, failure notification, permissions, CI / scheduling</td>
+</tr>
+</tbody>
+</table>
+<p>Do not invent these values or behaviors from Task's current four fields.</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

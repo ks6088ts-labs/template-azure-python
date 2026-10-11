@@ -1,0 +1,1962 @@
+
+<!doctype html>
+<html lang="ja" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/ja/architecture/">
+      
+      
+        <link rel="prev" href="../scripts/">
+      
+      
+        <link rel="next" href="../dbt/">
+      
+      
+        
+          <link rel="alternate" href="../../architecture/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>アーキテクチャ - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          コンテンツにスキップ
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="ヘッダー">
+    <a href="../" title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              アーキテクチャ
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="言語切り替え">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../architecture/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="リポジトリへ" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="ナビゲーション" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../" title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="リポジトリへ" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    はじめに
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ローカル開発
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    アーキテクチャ
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    アーキテクチャ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        プロジェクト概要
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        構成と起動経路
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="構成と起動経路">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-api-clean-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task API - Clean Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task API の組み立てと保存先
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-cli-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure 操作 CLI - 独立した技術経路
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        主な場所と責務
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        設計原則
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="設計原則">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repository の共通インタフェースと実装の分離
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        保存先を追加した際のコンポーネント接続
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-architecture-ddd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clean Architecture と DDD の位置付け
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        維持する契約
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="維持する契約">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP と repository
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        設定と認証
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI・リソース寿命・テレメトリ
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        変更時の規則
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="変更時の規則">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP の業務機能を追加する
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure CLI の技術操作を追加する
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        検証と自動ガード
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        意図的な制限と非目標
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出典・参考資料
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    データエンジニアリング
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    データエンジニアリング
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt と DuckDB 入門
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task 分析ハンズオン
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    保存先と分析基盤の拡張
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM 評価
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure サンプル
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure サンプル
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cosmosdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    メッセージング
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    監視とログ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    デプロイ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        プロジェクト概要
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        構成と起動経路
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="構成と起動経路">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#task-api-clean-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task API - Clean Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task API の組み立てと保存先
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-cli-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure 操作 CLI - 独立した技術経路
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        主な場所と責務
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        設計原則
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="設計原則">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repository の共通インタフェースと実装の分離
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        保存先を追加した際のコンポーネント接続
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-architecture-ddd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clean Architecture と DDD の位置付け
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        維持する契約
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="維持する契約">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP と repository
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        設定と認証
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI・リソース寿命・テレメトリ
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        変更時の規則
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="変更時の規則">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP の業務機能を追加する
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Azure CLI の技術操作を追加する
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        検証と自動ガード
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        意図的な制限と非目標
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出典・参考資料
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="_1">アーキテクチャ</h1>
+<h2 id="_2">プロジェクト概要</h2>
+<p>Python 3.10+ / FastAPI / Typer と Azure SDK を使う開発テンプレートです。
+<strong>HTTP の Task CRUD 参照実装</strong>と、<strong>Azure サービスを操作する独立した CLI サンプル</strong>を提供します。
+同じ FastAPI アプリを Uvicorn・Azure Functions・Azure Container Apps で動かします。
+完成した業務システムや本番向けの永続化・認証基盤ではありません。</p>
+<table>
+<thead>
+<tr>
+<th>最初に知りたいこと</th>
+<th>読む場所</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>起動と開発環境</td>
+<td><a href="../scripts/">ローカル開発</a>。InMemory・テレメトリ無効なら Azure リソース・サインインは不要</td>
+</tr>
+<tr>
+<td>HTTP の全体像</td>
+<td><code>api.py</code> → <code>presentation/http</code> → <code>application/task.py</code> → <code>domain/task.py</code></td>
+</tr>
+<tr>
+<td>保存先の選択と寿命</td>
+<td><a href="#task-storage">Task API の組み立てと保存先</a></td>
+</tr>
+<tr>
+<td>DuckDB を動かす・実装を読む</td>
+<td><a href="../dbt/tutorial/#api-persistence-exercise">API 連携演習</a>、<a href="../dbt/backends/#duckdb-implementation">実装・拡張ガイド</a></td>
+</tr>
+<tr>
+<td>Azure 操作の全体像</td>
+<td><code>scripts/cli_&lt;service&gt;.py</code> → <code>internals/azure/&lt;service&gt;.py</code> → <code>settings</code></td>
+</tr>
+<tr>
+<td>Foundry Agent の品質検証</td>
+<td><a href="../evaluation/">LLM 評価</a>。<code>tests/evaluations/</code> を実行時コードから分離し、明示有効化する。CI は offline の基盤検証だけ実行</td>
+</tr>
+<tr>
+<td>公開と運用</td>
+<td><a href="../deployment/">デプロイ</a>、<a href="../monitoring/">監視とログ</a></td>
+</tr>
+</tbody>
+</table>
+<p>以下のソースパスとコマンドはリポジトリルート基準です。
+パッケージ内のパスは <code>template_azure_python/</code> 配下を指します。
+<code>install-deps-dev</code> は既存の pre-commit hook を置き換えます。
+実行前に <a href="../scripts/">ローカル開発</a>のセットアップ説明を確認してください。</p>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>install-deps-dev
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps
+</code></pre></div>
+<p>既定の InMemory なら <code>http://127.0.0.1:8000/tasks</code> が初期状態で <code>[]</code> を返し、
+<code>/docs</code> から API を操作できます。
+旧モックの <code>GET /</code> は削除され、404 を返します。</p>
+<h2 id="_3">構成と起動経路</h2>
+<h3 id="task-api-clean-architecture">Task API - Clean Architecture</h3>
+<p>この図は<strong>主要なコード依存</strong>です。実線はコード・driver の利用、破線は Protocol への適合を示します。
+リクエストの時系列やデータ移送の図ではありません。</p>
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+<pre class="mermaid"><code>flowchart TD
+    subgraph ApiEntrypoints["起動ポイント"]
+        entry["Uvicorn / Functions / Container Apps"]
+    end
+    subgraph ApiOuter["インターフェースアダプター"]
+        api["api.py"]
+        http["Task HTTP router"]
+        repos["InMemory / Cosmos / DuckDB"]
+    end
+    subgraph ApiCore["Clean Architecture コア"]
+        subgraph ApiApplication["Application 層"]
+            usecases["Task CRUD use cases"]
+            port["TaskRepository Protocol"]
+        end
+        subgraph ApiDomain["Domain 層"]
+            domain["Task domain"]
+        end
+    end
+    subgraph ApiExternal["保存先のライブラリ"]
+        drivers["保存先 driver"]
+    end
+
+    entry --&gt;|"アプリを利用"| api
+    api --&gt;|"参照"| http
+    api --&gt;|"参照"| usecases
+    api --&gt;|"参照"| repos
+    http --&gt;|"依存"| usecases
+    usecases --&gt;|"依存"| domain
+    usecases --&gt;|"依存"| port
+    port --&gt;|"型に依存"| domain
+    repos -.-&gt;|"適合"| port
+    repos --&gt;|"依存"| domain
+    repos --&gt;|"必要な driver を利用"| drivers
+
+    classDef entry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
+    classDef adapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef application fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
+    classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
+    classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
+    class entry entry
+    class api,http,repos adapter
+    class usecases,port application
+    class domain domain
+    class drivers external
+    style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
+    style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
+    style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px</code></pre>
+<p>青は起動ポイント、紫はインターフェースアダプター、黄は Application 層、
+緑は Domain 層、グレーは保存先のライブラリです。
+3つの Repository は図ではまとめていますが、実装は別々です。
+業務コードは具象 Repository を import せず、Application 層の port に依存します。
+設定・テレメトリの責務は後述の表、生成・注入の流れは <a href="#repository-wiring">コンポーネント接続</a>を参照してください。</p>
+<p><a id="task-storage"></a></p>
+<h3 id="task-api">Task API の組み立てと保存先</h3>
+<p><code>create_app()</code> が use case と具象 Repository を接続し、HTTP router に provider を渡します。
+provider はリクエスト時に use case を生成する関数です。Cosmos / DuckDB の接続の生成・解放は lifespan が担当します。
+起動 CLI は backend を factory に渡します。直接 Uvicorn の入口は <code>template_azure_python.api:app</code> で、
+Functions も同じ app をラップします。Functions の HTTP trigger は匿名で、<code>host.json</code> により <code>/api</code> を付けません。</p>
+<table>
+<thead>
+<tr>
+<th>backend</th>
+<th>保存先・必要な準備</th>
+<th>寿命と制限</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>in-memory</code>（既定）</td>
+<td>アプリ内の辞書。Azure・DB の準備は不要</td>
+<td>アプリごとに独立し、再起動で消える</td>
+</tr>
+<tr>
+<td><code>cosmosdb</code></td>
+<td>設定した既存の Task 専用 <code>/id</code> コンテナー</td>
+<td>lifespan が非同期 client・資格情報を初期化・解放。API はリソースを作成しない</td>
+</tr>
+<tr>
+<td><code>duckdb</code></td>
+<td><code>DUCKDB_PATH</code> で指定する、dbt build 済みの既存 <code>main.fct_tasks</code></td>
+<td>lifespan が接続を検証・解放。同期 driver はスレッドへ退避し、Repository 内で排他</td>
+</tr>
+</tbody>
+</table>
+<p>DuckDB は<strong>1ファイルにつき1つの書き込みアプリ／Repository インスタンス</strong>を前提とします。
+同じプロセス内でも複数の writer を作らず、dbt を実行する前に API を停止します。
+API は raw・集計表と同期せず、dbt 再構築は fact への API 更新を上書きします。
+保存先を替えても Task の自動移行はしません。詳細は <a href="../dbt/backends/">実装・拡張ガイド</a>を参照してください。</p>
+<h3 id="azure-cli-">Azure 操作 CLI - 独立した技術経路</h3>
+<p>この図の実線は<strong>実行時の呼び出し・結果出力</strong>です。上のコード依存図とは目的が異なります。</p>
+<pre class="mermaid"><code>flowchart TD
+    cli["サービス別 CLI"]
+    operations["SDK データ操作"]
+    admin["Task 管理 adapter"]
+    sdk["Azure SDK"]
+    az["Azure CLI"]
+    arm["Azure Resource Manager"]
+
+    cli --&gt;|"データ操作を実行"| operations
+    cli --&gt;|"リソース管理を実行"| admin
+    operations --&gt;|"呼び出し"| sdk
+    admin --&gt;|"実行"| az
+    az --&gt;|"リソース管理"| arm
+
+    classDef cliEntry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
+    classDef cliAdapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
+    classDef cliExternalNode fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
+    class cli cliEntry
+    class operations,admin cliAdapter
+    class sdk,az,arm cliExternalNode</code></pre>
+<p>この経路は Task API のコアから意図的に分離しています。技術的な Azure 操作を例示しつつ、
+Domain やユースケースを SDK・Typer・コントロールプレーンのツールへ依存させません。
+図は主要な呼び出しに絞っています。引数・結果表示・設定の責務は以下の表とサービス別ガイドを参照してください。</p>
+<h3 id="_4">主な場所と責務</h3>
+<table>
+<thead>
+<tr>
+<th>場所</th>
+<th>責務</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api.py</code></td>
+<td>アプリ生成、use case / adapter の組み立て、router 登録、任意のテレメトリ初期化</td>
+</tr>
+<tr>
+<td><code>domain/</code></td>
+<td>Task、ID・status の型、値の正規化と不変条件</td>
+</tr>
+<tr>
+<td><code>application/</code>、<code>application/ports/</code></td>
+<td>command、CRUD use case、repository の非同期 Protocol、application error</td>
+</tr>
+<tr>
+<td><code>infrastructure/repositories/</code></td>
+<td>InMemory / Cosmos / DuckDB の port 実装、保存形式変換、driver error 変換、resource factory</td>
+</tr>
+<tr>
+<td><code>presentation/http/</code></td>
+<td>HTTP DTO、routing、応答・エラー変換</td>
+</tr>
+<tr>
+<td><code>scripts/</code></td>
+<td>起動コマンド、CLI 引数、表示、削除確認、終了コード</td>
+</tr>
+<tr>
+<td><code>internals/azure/</code></td>
+<td>サービス別 SDK 操作と Task 管理用 az adapter、結果変換、入力検証、リソース寿命</td>
+</tr>
+<tr>
+<td><code>settings/</code>、<code>telemetry.py</code></td>
+<td>設定の公開窓口とキャッシュ、プロセス単位の Azure Monitor 初期化</td>
+</tr>
+<tr>
+<td><code>tests/</code>、<code>pyproject.toml</code>、<code>Makefile</code></td>
+<td>回帰・構造テスト、依存と型の検査設定、開発・CI コマンド</td>
+</tr>
+<tr>
+<td><code>docs/</code>、<code>mkdocs.yml</code></td>
+<td>日英の利用・設計ガイドとサイト構成</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_5">設計原則</h2>
+<p>「採用する規則」「採用理由」「実装・確認箇所」をセットで扱います。
+層の名前を揃えるだけで設計が成立したとは判断しません。</p>
+<table>
+<thead>
+<tr>
+<th>規則</th>
+<th>理由</th>
+<th>実装・確認箇所</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task の依存は内側へ向ける</td>
+<td>HTTP・保存技術を変えても業務側を変更しない</td>
+<td><code>domain</code> ← <code>application</code> ← <code>presentation</code> / <code>infrastructure</code>。import-linter</td>
+</tr>
+<tr>
+<td>内側に I/O の port を置く</td>
+<td>use case が具象 SDK・repository を import しない</td>
+<td><code>TaskRepository</code> Protocol と repository contract test</td>
+</tr>
+<tr>
+<td>組み立ては明示する</td>
+<td>依存とアプリごとの状態分離を追える</td>
+<td><code>create_app()</code>。router 自動探索・独自 DI コンテナーは導入しない</td>
+</tr>
+<tr>
+<td>Task の domain は標準ライブラリで書く</td>
+<td>業務モデルを HTTP/JSON・外部ライブラリから独立させる</td>
+<td>frozen dataclass、enum、domain test。Pydantic は HTTP DTO と設定層で使う</td>
+</tr>
+<tr>
+<td>HTTP の検証と業務の不変条件を分ける</td>
+<td>HTTP 以外から呼んでも業務側の条件を守る</td>
+<td>HTTP DTO は形式・必須項目、domain は正規化・値の条件、use case は処理の調整</td>
+</tr>
+<tr>
+<td>SDK と CLI 表示を分ける</td>
+<td>SDK 操作を Typer や表示処理から独立させる</td>
+<td><code>internals/azure</code> は通常の値を返すか callback に渡す。SDK import は scripts に置かない</td>
+</tr>
+<tr>
+<td>設定を一か所で解決する</td>
+<td>優先順位と必須設定の判断を統一する</td>
+<td>公開 <code>settings</code> パッケージ。環境変数・dotenv への直接アクセスを分散させない</td>
+</tr>
+<tr>
+<td>資格情報と client の寿命を所有する</td>
+<td>成功・初期化失敗・キャンセル時のリークを避ける</td>
+<td>API lifespan、非同期 resource factory、生成直後の解放登録、解放テスト</td>
+</tr>
+<tr>
+<td>API の保存先 driver 接点は infrastructure に置く</td>
+<td>保存技術を HTTP・業務側に漏らさない</td>
+<td>Cosmos / DuckDB adapter。API / presentation の直接 Azure / DuckDB import を禁止</td>
+</tr>
+<tr>
+<td>保存先の選択は composition root と settings で解決する</td>
+<td>既定の Azure 非依存と起動形態間の一貫性を保つ</td>
+<td><code>create_app()</code>、<code>--repository</code>、<code>TASK_REPOSITORY</code>。router 内で具象保存先を選択しない</td>
+</tr>
+<tr>
+<td>SDK 例外を application の失敗契約に変換する</td>
+<td>未検出・重複と基盤障害を区別し、SDK 情報を露出しない</td>
+<td><code>TaskRepositoryError</code>、HTTP 503、安全な種別・status のログ</td>
+</tr>
+<tr>
+<td>リソース管理を API のデータ操作から分離する</td>
+<td>Entra ID の database / container 管理は管理プレーンが必要</td>
+<td>Task 管理 CLI → az → ARM。API に管理権限を付けない</td>
+</tr>
+<tr>
+<td>失敗を成功に見せない</td>
+<td>利用者と自動処理が失敗・部分結果を区別できる</td>
+<td>HTTP error model、<code>InputError</code> / <code>OperationError</code>、CLI 終了コード</td>
+</tr>
+<tr>
+<td>テレメトリは明示的な opt-in</td>
+<td>ローカルの Azure 非依存を保ち、初期化失敗を隠さない</td>
+<td>API は既定無効、有効時は fail-fast。provider はプロセスごとに一度だけ初期化</td>
+</tr>
+<tr>
+<td>必要になるまで抽象化しない</td>
+<td>テンプレートに未使用の仕組みを増やさない</td>
+<td>単純な CRUD と薄い CLI を維持。汎用 service 基底クラス・exporter registry は追加しない</td>
+</tr>
+</tbody>
+</table>
+<h3 id="repository">Repository の共通インタフェースと実装の分離</h3>
+<p><strong>共通化するのは保存操作の契約であり、保存技術ごとの実装ではありません。</strong>
+<code>application/ports/task_repository.py</code> の <code>TaskRepository</code> Protocol が、
+InMemory・Cosmos・DuckDB に共通する非同期 <code>add/get/list/update/delete</code> のインタフェースです。
+use case はこの port に依存し、具象 repository の選択・注入は <code>api.py</code> が行います。</p>
+<p>Python の Protocol は<strong>構造的型付け</strong>です。必要なメソッドと互換性のあるシグネチャを備えていれば、
+明示的に継承しなくても port に適合します。
+<code>InMemoryTaskRepository</code>、<code>CosmosdbTaskRepository</code>、<code>DuckdbTaskRepository</code> はこの方式を使っています。
+クラス宣言で実装関係を明示したい場合は、既存 Protocol を明示的に継承する整理も可能ですが、
+そのためだけに別の ABC や汎用 repository 基底クラスを追加する必要はありません。</p>
+<p>適合の確認は次の二つに分けます。</p>
+<ul>
+<li><strong>型検査</strong>: <code>TaskRepository</code> 型として注入するとき、メソッド・引数・戻り値の型の互換性を検査する。</li>
+<li><strong>共通契約テスト</strong>: <code>tests/test_task_repositories.py</code> の <code>test_repository_contract</code> を3実装に適用し、
+  CRUD、未検出、重複、更新が新規作成にならないこと等の振る舞いを検査する。
+  同じメソッド名だけでは、これらの意味まで保証されません。</li>
+</ul>
+<p>未検出・重複・保存先障害などの契約は、以下の「維持する契約」に合わせます。
+dict と lock による保存、Cosmos の document 変換・partition・SDK error 変換は各 adapter に残します。
+保存処理を無理に共通基底クラスへまとめると、保存先別の条件分岐や責務の混在を招くためです。
+SDK 呼び出しの検証や接続解放のテストも、共通 CRUD 契約とは区別します。</p>
+<p>client・資格情報の初期化と解放は、Cosmos の resource factory と API lifespan が所有します。
+DuckDB の factory も接続を所有します。port にライフサイクル用のメソッドは追加しません。
+これを CRUD port の必須メソッドにせず、InMemory や use case に Cosmos 固有の寿命管理を要求しません。</p>
+<p><a id="repository-wiring"></a></p>
+<h3 id="_6">保存先を追加した際のコンポーネント接続</h3>
+<p>この図は<strong>実行時の生成・注入・呼び出し</strong>を示します。コードの import 方向ではありません。
+DuckDB を例に、起動時に作った同じ Repository をリクエストごとの use case に渡します。</p>
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+<pre class="mermaid"><code>flowchart TD
+    cSettings["ProjectSettings"]
+    subgraph cStartup["1. lifespan の開始と終了"]
+        cRoot["api.py lifespan"]
+        cFactory["open_duckdb_task_repository"]
+        cRepo["DuckdbTaskRepository"]
+    end
+    subgraph cRequest["2. HTTP リクエストごとの処理"]
+        cRouter["Task HTTP router"]
+        cProvider["api.py use-case provider"]
+        cUsecases["Task CRUD use case"]
+    end
+    cSettings --&gt;|"backend と path"| cRoot
+    cRoot --&gt;|"開始と解放"| cFactory
+    cFactory --&gt;|"adapter を提供"| cRepo
+    cRepo --&gt;|"同じインスタンス"| cProvider
+    cRouter --&gt;|"Depends で解決"| cProvider
+    cProvider --&gt;|"Repository を注入して生成"| cUsecases
+    cUsecases --&gt;|"CRUD を呼び出す"| cRepo</code></pre>
+<p><code>repository_dependency()</code> は lifespan が保持する adapter を返します。
+provider がそれを use case のコンストラクターに渡し、use case は Protocol 型として利用します。
+shutdown 時は factory の context を終了して接続を解放します。
+既存のインスタンスを <code>create_app(repository=...)</code> で渡す場合は、呼び出し側が接続の寿命を管理します。
+<code>repository</code> と <code>repository_backend</code> の同時指定は拒否します。
+これは明示的な組み立てであり、新しい DI framework や adapter registry ではありません。
+変更するのは設定・具象保存先・起動時の接続だけで、業務コードと HTTP DTO は維持します。
+<a href="../dbt/backends/">拡張ガイド</a>で実際のコードに沿って、
+列変換・SQL パラメーター・エラー・排他・解放を説明します。
+<a href="../dbt/tutorial/">ハンズオン</a>で動作を確認できます。</p>
+<h3 id="clean-architecture-ddd">Clean Architecture と DDD の位置付け</h3>
+<p>Clean Architecture は<strong>技術と業務ルールの分離・ソース依存の向き</strong>を扱います。
+DDD は<strong>業務の共通言語・モデル・整合性境界</strong>を扱い、層分けとは別の判断です。
+Task は縦スライスの参照例であり、業務分析済みの Bounded Context や完成した DDD モデルではありません。</p>
+<p><code>TaskId</code> の <code>NewType</code> は静的な型区別で、実行時の業務検証を備えた Value Object ではありません。
+frozen dataclass は直接の属性変更を防ぎますが、業務操作のルールを自動生成しません。
+Pydantic を内側で使わないことと Entity の不変性はこのテンプレートの判断であり、
+Clean Architecture / DDD 一般の必須条件ではありません。
+Aggregate、Domain Event、Unit of Work、複数 Context は業務上の必要性が生じたときに検討します。</p>
+<h2 id="_7">維持する契約</h2>
+<h3 id="http-repository">HTTP と repository</h3>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>契約</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /tasks</code></td>
+<td>201。UUID を生成し、status は <code>todo</code></td>
+</tr>
+<tr>
+<td><code>GET /tasks</code>、<code>GET /tasks/{task_id}</code></td>
+<td>200。Task の配列、または 1 件</td>
+</tr>
+<tr>
+<td><code>PUT /tasks/{task_id}</code></td>
+<td>200。title と status は必須。description 省略時は空文字に置換する。部分更新ではない</td>
+</tr>
+<tr>
+<td><code>DELETE /tasks/{task_id}</code></td>
+<td>204、応答 body なし</td>
+</tr>
+<tr>
+<td>エラー</td>
+<td>入力・domain 検証は 422、未検出は 404、重複は 409、保存先障害は 503。body は <code>{"detail": "メッセージ"}</code>。OpenAPI と一致させる</td>
+</tr>
+</tbody>
+</table>
+<p>HTTP DTO は未知の入力フィールドを拒否します。
+title は空白だけを禁止し最大 200 文字、description は最大 2,000 文字です。
+HTTP は元の入力長を検証し、domain は前後の空白を除去してから値を検証します。
+status は <code>todo</code> / <code>in_progress</code> / <code>done</code>。現行 PUT はこれらの間の任意の変更を許可します。
+HTTP 検証の例外ハンドラーはアプリ全体に登録されるため、今後の router も応答形式を合わせてください。</p>
+<p><code>TaskRepository</code> は <code>add/get/list/update/delete</code> の非同期契約です。
+<code>get</code> の未検出は <code>None</code>、<code>update/delete</code> の未検出は <code>False</code>、
+<code>add</code> の重複は <code>TaskAlreadyExistsError</code>。use case が未検出を application error に変換します。
+<code>list</code> は Task の tuple を返し、順序・HTTP ページングは保証しません。
+インメモリ adapter の lock は操作単位であり、将来の adapter のトランザクション・競合制御を保証しません。
+Cosmos adapter は UUID 文字列を <code>id</code> と partition key にし、status は文字列で保存します。
+未検出はコンテナーの存在も確認し、消失した保存先を Task の 404 に見せません。
+一覧は cross-partition query の全ページを読み切り、途中の失敗や不正 document は 503 とします。
+全件取得の RU・メモリーコストと、更新が後勝ちである制限があります。
+DuckDB の起動検証はファイル・実テーブル・列型・ID の一意性です。
+各行の UUID・status・文字列・完了フラグは読み取り時に検証し、不正行は 503 とします。
+lock は同じ Repository 内の操作単位であり、use case の get → update 全体の transaction ではありません。</p>
+<h3 id="_8">設定と認証</h3>
+<ul>
+<li>優先順位は <strong>明示 CLI 引数 → OS 環境変数 → カレントディレクトリの <code>.env</code> → 既定値</strong>。
+  Azure 設定では空の OS 値を無視するため、<code>.env</code> に値があれば引き続き利用します。</li>
+<li><code>get_project_settings()</code> は名前・ログレベル・API テレメトリ設定・保存先・DuckDB パス、
+  <code>get_azure_settings()</code> はサービス別の階層化した設定を返します。
+  環境変数名は <code>.env.template</code> のフラットな名前を維持し、大文字・小文字を区別しません。
+  alias を持つフィールドに無関係な <code>NAME</code> や <code>RESOURCE_ID</code> を流用しません。</li>
+<li>getter は初回の値をキャッシュします。変更後は再起動し、テストではキャッシュをクリアします。
+  <code>.env</code> の親ディレクトリ探索や OS 環境への一括注入は行いません。</li>
+<li>保存先は <code>--repository</code> → <code>TASK_REPOSITORY</code> → <code>in-memory</code> で選択します。
+  Cosmos は <code>AZURE_COSMOS_DB_ENDPOINT</code>、<code>AZURE_COSMOS_DB_DATABASE</code>、
+  <code>AZURE_COSMOS_DB_TASK_CONTAINER</code> を使い、
+  商品 CLI の <code>AZURE_COSMOS_DB_CONTAINER</code> とは分離します。
+  DuckDB は選択時だけ <code>DUCKDB_PATH</code> が必須です。空値は有効なファイルパスとして扱いません。
+  Functions CLI は選択を子プロセス環境に渡し、親環境は変更しません。</li>
+<li>必須 endpoint / ID とサービス固有の入力は操作時に検証します。
+  無関係な Azure 設定の不足で、API 起動や他サービスの <code>--help</code> を失敗させません。</li>
+<li>Azure 操作の認証は <code>DefaultAzureCredential</code>。<code>az login</code>、マネージド ID 等を使います。
+  SDK 自体の認証用変数は OS / ホスティング環境に設定し、dotenv の追加キーで代用しません。</li>
+<li>Task 管理 CLI だけは Azure CLI のサインインを使い、明示 subscription と管理プレーン RBAC を要求します。
+  account / resource group は既存リソースを指定し、API のデータプレーン RBAC とは別です。</li>
+<li>Application Insights の送信だけは接続文字列を SDK に渡します。クエリの認証とは別です。
+  接続文字列は <code>SecretStr</code> として dump から除外し、CLI 引数・ログ・ソースに出しません。</li>
+</ul>
+<h3 id="cli">CLI・リソース寿命・テレメトリ</h3>
+<ul>
+<li>入力エラーは終了コード 2、操作失敗は 1。診断は既存のサービス別 JSON / stderr 形式を維持します。
+  Logs の部分結果はテーブルと error を残し、終了コード 1 で完全成功と区別します。</li>
+<li>Event Hubs は全 partition 共通の idle timeout・件数上限・task のキャンセルを維持し、checkpoint は保存しません。
+  Service Bus は表示成功後に complete し、表示失敗時は acknowledge しません。
+  Queue Storage の受信は削除せず、キュー削除は確認または明示的な <code>--yes</code> が必要です。</li>
+<li>Cosmos CLI は商品データと <code>/category</code> partition の例です。クエリはパラメーター化し、
+  throughput 省略時は container 作成に値を渡しません。Task の永続化ではありません。</li>
+<li><code>cli_cosmosdb tasks create-container/show-container/delete-container</code> は Task 専用の管理操作です。
+  az の実行は <code>internals/azure</code> の薄い運用 adapter、確認と表示は scripts に置きます。
+  shell を使わず引数配列で実行し、非ゼロ終了・timeout・不正 JSON・部分完了を通知します。
+  コンテナー削除は確認または <code>--yes</code> が必須で、database は削除しません。移行は提供しません。</li>
+<li>Foundry は project URL を使い、2 ターンの表示順序を維持します。</li>
+<li>API の計装と CLI の <code>emit-telemetry</code> は別経路です。
+  CLI は <code>TELEMETRY_ENABLED=false</code> でも明示送信し、プロセス全体の provider・ログを扱うため API 内から呼びません。
+  SDK 制御用の環境変更は <code>telemetry_environment()</code> 内に限定し、失敗時も復元します。
+  provider の flush 完了は Azure の取り込みや Live Metrics の表示を保証しません。</li>
+</ul>
+<p>サービス別の手順・副作用は <a href="../foundry/">Foundry</a>、<a href="../cosmosdb/">Cosmos DB</a>、
+<a href="../messaging/">メッセージング</a>、<a href="../monitoring/">監視とログ</a>を参照してください。</p>
+<p><a id="extending-existing-services"></a></p>
+<h2 id="_9">変更時の規則</h2>
+<h3 id="http">HTTP の業務機能を追加する</h3>
+<ol>
+<li>共通用語、利用者の操作、成功・禁止シナリオ、必要な整合性境界を決める。
+   無関係な業務へ Task の class を流用せず、縦スライスの構成を参考にする。</li>
+<li><code>domain/&lt;feature&gt;.py</code> に業務操作と不変条件、<code>application/&lt;feature&gt;.py</code> に command と処理の調整を置く。
+   必要な I/O だけを <code>application/ports</code> の Protocol にする。</li>
+<li><code>infrastructure</code> に adapter、<code>presentation/http</code> に DTO・router・error mapping を置く。
+   <code>api.py</code> と関連する <code>__init__.py</code> の公開 export を更新して接続する。</li>
+<li>domain、use case、repository contract、API と OpenAPI をテストする。
+   新しい業務ルールを既存 PUT 等で迂回できないか確認し、契約変更は明示する。</li>
+</ol>
+<p>例えば「着手後だけ完了できる」は<strong>将来の業務ルール例</strong>で、現行仕様ではありません。
+Cosmos Task Repository は同期の商品 CLI とは独立し、
+非同期 I/O、document/domain 変換、partition、client の lifespan、SDK error の変換を扱います。
+同時更新の保護には version / ETag と条件付き保存が必要で、port / use case の契約拡張も検討します。</p>
+<h3 id="azure-cli">Azure CLI の技術操作を追加する</h3>
+<ol>
+<li><code>settings/azure</code> のモデルと、秘密値を含まない <code>.env.template</code> を更新する。
+   新しいモデルは <code>AzureSettings</code> と公開 export に組み込む。</li>
+<li><code>internals/azure</code> に操作を実装し、共通 helper を再利用する。
+   endpoint のサービス固有要件は残し、認証前の検証・結果変換・解放を確認する。</li>
+<li>薄い <code>scripts/cli_&lt;service&gt;.py</code> を追加し、<code>cli_errors</code> と既存の表示 helper を利用する。
+   引数優先順位・必須設定・失敗・終了コード・出力形状・キャンセルをテストする。</li>
+<li>直接関連する日英文書を同時に更新し、既存 CLI の有効な入力と出力契約を維持する。</li>
+</ol>
+<h2 id="_10">検証と自動ガード</h2>
+<table>
+<thead>
+<tr>
+<th>確認</th>
+<th>コマンド・対象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task の変更</td>
+<td><code>uv run --locked pytest tests/test_task_domain.py tests/test_task_application.py tests/test_task_repositories.py tests/test_api.py</code></td>
+</tr>
+<tr>
+<td>DuckDB 保存先の変更</td>
+<td>共通契約に加え、永続性・行変換・解放・起動経路を下のコマンドで確認</td>
+</tr>
+<tr>
+<td>Task コンテナー管理</td>
+<td><code>tests/test_cli_cosmosdb_tasks.py</code>、商品 CLI / Queue の回帰。az subprocess をモック</td>
+</tr>
+<tr>
+<td>設定・Azure 操作の変更</td>
+<td><code>tests/test_settings.py</code> と該当する <code>test_cli_&lt;service&gt;.py</code>、共通処理テスト</td>
+</tr>
+<tr>
+<td>書式・型・依存・workflow</td>
+<td><code>make format-check lint</code></td>
+</tr>
+<tr>
+<td>全回帰</td>
+<td><code>make test</code>。カバレッジはパッケージ・scripts・Functions の実行コードを対象にする</td>
+</tr>
+<tr>
+<td>CI と同じ依存準備からの確認</td>
+<td><code>make ci-test</code></td>
+</tr>
+<tr>
+<td>日英ドキュメント</td>
+<td><code>make ci-test-docs</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>pytest<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/test_duckdb_task_repository.py<span class="w"> </span>tests/test_task_repositories.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>tests/test_api.py<span class="w"> </span>tests/test_cli.py<span class="w"> </span>tests/test_settings.py
+</code></pre></div>
+<p>mypy strict の対象は <code>api.py</code> と Task の縦スライスです。ty / Pyrefly は設定されたプロジェクト範囲を検査します。
+import-linter は内向きの層順序、presentation / infrastructure の相互非依存、
+domain / application から FastAPI・Pydantic・Azure・DuckDB 等への禁止依存を検査します。
+構造テストは scripts の SDK import、settings 外の環境アクセス、Azure 操作の CLI 依存を検査します。</p>
+<p><strong>方針と自動保証は同一ではありません。</strong> domain の標準ライブラリ限定方針について、
+全外部ライブラリや未指定の内部パッケージへの import が自動禁止されるわけではありません。
+新しい依存・Context を導入したら <code>pyproject.toml</code> の検査対象と契約も見直します。
+型検査は実行時の業務ルール・トランザクション・Azure での動作を保証しません。
+Azure SDK 境界はモックし、DuckDB は一時ファイルと実 driver で検証します。
+write-once の OpenTelemetry provider の構築テストは別プロセスでオフライン実行します。</p>
+<h2 id="_11">意図的な制限と非目標</h2>
+<ul>
+<li>既定の InMemory は再起動で消え、worker / process / replica 間で共有されません。
+  Cosmos は永続化と共有が可能ですが、HTTP ページング、楽観的競合制御、業務上の状態遷移は未実装です。</li>
+<li>DuckDB は既存の dbt 生成表を使うローカル演習用です。1ファイルの複数 writer、
+  raw / 集計への同期、backend 間のデータ移行は提供しません。</li>
+<li>HTTP は認証なしの参照実装です。機密データを扱う本番環境にはアクセス制御と保存設計が必要です。</li>
+<li>Azure CLI は SDK の技術サンプルであり、Task API の業務 use case ではありません。
+  メッセージ削除やデータ上書き等の副作用があります。検証用リソースを使ってください。</li>
+<li>account 構築・汎用インフラ管理はこのリポジトリに含みません。
+  Task 用 database / container の準備は管理 CLI で行えます。外部 Terraform はサービス別ガイドを参照してください。</li>
+<li>HTTP 200、空の検索結果、ローカル flush の成功だけで Azure の取り込み・監視・本番適合性を保証しません。</li>
+</ul>
+<h2 id="_12">出典・参考資料</h2>
+<p>原則と、このテンプレートへの適用判断を区別して参照してください。</p>
+<ul>
+<li>Robert C. Martin, <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">The Clean Architecture</a>：依存ルールと責務。</li>
+<li>Eric Evans / Domain Language, <a href="https://www.domainlanguage.com/ddd/reference/">DDD Reference</a>：共通言語・モデル・境界。</li>
+<li>Microsoft, <a href="https://learn.microsoft.com/en-us/azure/architecture/microservices/model/domain-analysis">Domain analysis</a> / <a href="https://learn.microsoft.com/en-us/azure/architecture/microservices/model/tactical-domain-driven-design">Tactical DDD</a>：業務からモデルへの補足。マイクロサービス化は本テンプレートの必須条件ではありません。</li>
+<li>FastAPI, <a href="https://fastapi.tiangolo.com/tutorial/bigger-applications/">Bigger Applications</a> / <a href="https://fastapi.tiangolo.com/advanced/events/">Lifespan Events</a>：router の分離と共有リソースの寿命。</li>
+<li>Python, <a href="https://typing.python.org/en/latest/spec/protocol.html">Protocols</a>、Pydantic, <a href="https://docs.pydantic.dev/latest/concepts/pydantic_settings/">Settings</a>：型と設定の仕組み。</li>
+<li>Microsoft, <a href="https://learn.microsoft.com/en-us/azure/cosmos-db/database-transactions-optimistic-concurrency">Cosmos DB transactions and optimistic concurrency</a>：partition 内の transaction と ETag。</li>
+<li>Import-linter, <a href="https://github.com/seddonym/import-linter/blob/main/docs/contract_types/layers.md">Layers contract</a>：依存ガードの保証範囲。</li>
+</ul>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f", "clipboard.copy": "\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u3078\u30b3\u30d4\u30fc", "search.result.more.one": "\u3053\u306e\u30da\u30fc\u30b8\u5185\u306b\u3082\u30461\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.more.other": "\u3053\u306e\u30da\u30fc\u30b8\u5185\u306b\u3042\u3068#\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.none": "\u4f55\u3082\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f", "search.result.one": "1\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.other": "#\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.placeholder": "\u691c\u7d22\u30ad\u30fc\u30ef\u30fc\u30c9\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044", "search.result.term.missing": "\u691c\u7d22\u306b\u542b\u307e\u308c\u306a\u3044", "select.version": "\u30d0\u30fc\u30b8\u30e7\u30f3\u5207\u308a\u66ff\u3048"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
