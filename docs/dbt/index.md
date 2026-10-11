@@ -5,6 +5,18 @@ and documentation. No Azure resources, database server, or dbt platform account 
 
 Run the completed example below, then follow the [from-scratch hands-on](tutorial.md)
 to assemble the same project. The commands and example are verified with dbt **2.0.8**.
+Verification used macOS / Apple Silicon; first-party references were checked on **2026-10-11**.
+Official pages evolve, so distinguish general specifications from this example's measured results.
+Windows syntax is provided as assistance, but execution on Windows has not been verified.
+
+## Start with an analytical question
+
+The question is: "How many current Tasks are in each status, and what percentage are complete?"
+**OLTP (transaction processing)** creates or updates individual Tasks;
+**OLAP (analytical processing)** reads many Tasks to answer aggregate questions.
+This tutorial builds the analytical side, not a replacement DuckDB backend for the Task API.
+The [official dbt connection guide](https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup)
+supports the choice of DuckDB: local execution without a server or authentication, designed for OLAP.
 
 ## Learning objectives
 
@@ -30,6 +42,25 @@ CSV `seed` is a convenient Load mechanism for small learning and reference datas
 
 ETL means Extract → Transform → Load. ELT means Extract → Load → Transform in the database.
 This example starts with sample CSV treated as already extracted, so it does not implement Extract.
+This division follows the official descriptions of
+[dbt Sources](https://docs.getdbt.com/docs/build/sources) (declaring tables loaded by other tools)
+and the [seed command](https://docs.getdbt.com/reference/commands/seed)
+(loading small version-controlled CSV datasets).
+
+```mermaid
+flowchart LR
+    app["Task API / operational storage"] -.->|Export: not implemented| csv["Learning CSV"]
+    csv -->|dbt seed| raw[("Raw tables")]
+    subgraph warehouse["DuckDB: SQL execution and persistence"]
+        raw -->|SQL transformations| mart[("Analytical views / tables")]
+    end
+    mart -->|SELECT| report["Counts / completion rate"]
+    dbt["dbt: dependencies, SQL, tests, docs"] -.->|Controls execution| raw
+    dbt -.->|Controls execution| mart
+```
+
+Solid arrows show the implemented data path; the dashed API arrow marks an **unimplemented ingestion boundary**.
+The fixed CSV is not synchronized with the API. dbt coordinates work; DuckDB executes SQL and persists data.
 
 ## Domain and scope
 
@@ -47,6 +78,10 @@ The input uses fixed UUIDs and is learning data, not an export from the live API
 SQL `trim()` in this example removes ordinary surrounding spaces. It does not reproduce all
 tab / Unicode whitespace handling of Python's `str.strip()`. Reuse the existing Task
 normalization and validation when a real ingestion boundary needs exact domain behavior.
+`Task.__post_init__()` validates title / description at runtime.
+The `TaskId` / `TaskStatus` annotations alone do not automatically validate external input
+([Python's type annotation specification](https://docs.python.org/3/library/typing.html)).
+Real ingestion must explicitly parse UUIDs, convert to `TaskStatus`, and apply Task's text validation.
 
 Task has no timestamps or assignees. These models describe **current counts and completion rate**,
 not daily trends, duration, overdue work, or individual productivity.
@@ -62,6 +97,9 @@ not additions to the application domain.
 - Initial dependency downloads require network access; data processing is entirely local afterwards.
 - Use the existing `dbt` dependency group. v2 includes its DuckDB adapter, so do not additionally
   install `dbt-core`, `dbt-duckdb`, or Python's `duckdb` package.
+  This follows the [official v2 instructions](https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup#installing-dbt-duckdb),
+  not the v1 adapter installation workflow.
+  This tutorial avoids features needing an extension driver and direct CSV `read_csv()` calls.
 
 ```shell
 export DBT_PROJECT_DIR="$PWD/docs/dbt/task_analytics"
@@ -73,8 +111,10 @@ uv run --locked --no-dev --group dbt dbt debug
 uv run --locked --no-dev --group dbt dbt build
 ```
 
-In PowerShell, replace the first three lines with the following. The `uv run` commands are unchanged.
-Use your editor instead of the tutorial's shell-specific file creation commands.
+In PowerShell, replace the first three lines with the following. Single-line `uv run` commands are unchanged,
+but the later shell examples' trailing `\` is not a PowerShell continuation character.
+Remove those `\` characters and join multiline commands into one line before running them.
+Use your editor or equivalent PowerShell operations for file creation, copying, and unsetting variables.
 
 ```powershell
 $env:DBT_PROJECT_DIR = Join-Path (Get-Location) "docs/dbt/task_analytics"
@@ -86,6 +126,21 @@ Expect a successful connection from `debug`, then **2 seeds, 4 models, and 42 te
 The database lives at `docs/dbt/task_analytics/task_analytics.duckdb`.
 Set an absolute `DBT_PROJECT_DIR` and do not change directories mid-session.
 These variables affect only the current shell; no changes to `~/.dbt/profiles.yml` are needed.
+
+Understand the command using uv's official
+[locking / syncing](https://docs.astral.sh/uv/concepts/projects/sync/) and
+[dependency group](https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-groups) documentation:
+
+| Setting | Meaning |
+| --- | --- |
+| `uv run` | Synchronize the project environment, then execute the command |
+| `--locked` | Check lockfile consistency; error if an update is needed rather than automatically upgrading |
+| `--no-dev --group dbt` | Select dbt without the default dev group; normal application dependencies are also included |
+| `DBT_PROJECT_DIR` / `DBT_PROFILES_DIR` | Explicitly choose the project and profile instead of another project's configuration |
+| `DBT_SEND_ANONYMOUS_USAGE_STATS=false` | Disable dbt's anonymous usage statistics |
+
+`--no-dev` does not create a separate dbt-only virtual environment.
+The existing `.venv` is used. It does not guarantee strict offline operation or isolation from other project work.
 
 ### Inspect persisted results
 
@@ -107,7 +162,15 @@ uv run --locked --no-dev --group dbt dbt show --inline \
 
 Expect `total_tasks=6`, `completed_tasks=2`, and `completion_rate_pct=33.33`.
 The denominator is all current Tasks; the numerator is Tasks currently marked `done`.
-With no Tasks, the denominator is absent and the rate is `NULL` (undefined), not an invented 0%.
+`case` maps complete to 1 and incomplete to 0, `sum` counts completions, `100.0` converts to percent,
+and `round(..., 2)` rounds the display to two decimal places.
+`nullif(count(*), 0)` makes a zero denominator NULL, so the rate is undefined.
+
+[DuckDB aggregate semantics](https://duckdb.org/docs/current/sql/functions/aggregates#handling-null-values)
+specify that `count(*)` is zero on empty input, while `sum(...)` is NULL.
+Thus an empty input returns `total_tasks=0`, `completed_tasks=NULL`, and a `NULL` rate.
+Distinguish **0%** when Tasks exist but none are done from **undefined** when there are no Tasks.
+Use `coalesce(sum(...), 0)` if you want to display the completed count as zero, without inventing a defined rate.
 
 ### Dependencies
 
@@ -124,6 +187,19 @@ flowchart LR
 **Next:** the [from-scratch hands-on](tutorial.md) builds this DAG one step at a time,
 including failed tests, recovery, updates, and local Docs / lineage.
 Use a working copy for exercises rather than editing the completed example's CSV.
+This DAG represents data dependencies. All nodes are in the same DuckDB database;
+arrows do not imply network transfers or separate database servers.
+
+## Distinguish specifications, design choices, and expected results
+
+| Kind | Example | Evidence |
+| --- | --- | --- |
+| Tool specification | `ref()` declares dependencies; v2 includes the DuckDB adapter | Official references linked in context |
+| Tutorial design choice | Staging as views, marts as tables, a separate status dimension | Reasons explained in the hands-on |
+| Input-dependent measurement | Six Tasks, two per status, 42 data tests, 33.33% completion | Bundled CSV / SQL / YAML and execution results |
+
+Passing 42 tests does not prove that all business requirements are met.
+This tutorial separately verifies quality rules and expected results for a fixed input.
 
 ## References
 
