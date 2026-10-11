@@ -469,6 +469,8 @@ Confirm the profile and database path in the extension's connection setup, then 
 and inspect Lineage / Query Results.
 The extension and account features are optional; the CLI and local Docs are sufficient for this tutorial.
 
+<a id="api-persistence-exercise"></a>
+
 ## 8. Connect the Task API and verify persistence
 
 ### Purpose
@@ -480,6 +482,24 @@ for column mapping, errors, connection lifetime, and future Cosmos / warehouse e
 This exercise deliberately edits a dbt-managed fact. CSV, raw data, and summary tables do not synchronize.
 API changes persist across API restarts but are **overwritten by dbt build**.
 Use only your working project, not the completed example or important data.
+
+### Preview the execution flow
+
+| Terminal | Role | Retained settings |
+| --- | --- | --- |
+| A | Run/stop dbt and the API; never run both concurrently | Section 1 DBT variables and DUCKDB_PATH |
+| B | curl and response-JSON checks; never open the DB file | TASK_API_URL, TASK_HTTP_DIR, generated TASK_ID |
+
+| Stage | Fact rows | Done rows | Persisted summary |
+| --- | --- | --- | --- |
+| Initial build | 6 | 2 | 2 / 2 / 2 |
+| POST | 7 | 2 | Unchanged |
+| PUT existing 001 | 7 | 3 | Unchanged |
+| API restart | 7 | 3 | Unchanged |
+| DELETE exercise UUID | 6 | 3 | Still 2 / 2 / 2; test detects inconsistency |
+| dbt rebuild | 6 | 2 | Restored 2 / 2 / 2 |
+
+Follow this order. Restart persistence does not imply synchronization with dbt.
 
 ### Action: prepare and start in terminal A
 
@@ -510,12 +530,30 @@ Each `assert` / `test` below must succeed; a nonzero exit means investigate befo
 export TASK_API_URL=http://127.0.0.1:8000
 TASK_HTTP_DIR=$(mktemp -d)
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); by_id={t["id"]:t for t in rows}; assert len(rows)==6; assert all(set(t)=={"id","title","description","status"} for t in rows); assert by_id["00000000-0000-0000-0000-000000000001"]["title"]=="Plan ingestion"; assert by_id["00000000-0000-0000-0000-000000000002"]["description"]==""; print("Initial 6 Tasks, normalized fields")' < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+by_id = {task["id"]: task for task in rows}
+assert len(rows) == 6
+assert all(set(task) == {"id", "title", "description", "status"} for task in rows)
+assert by_id["00000000-0000-0000-0000-000000000001"]["title"] == "Plan ingestion"
+assert by_id["00000000-0000-0000-0000-000000000002"]["description"] == ""
+print("Initial 6 Tasks, normalized fields")
+' < "$TASK_HTTP_DIR/tasks.json"
 
 test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
   -H 'Content-Type: application/json' -d '{"title":"API exercise","description":"Temporary"}' \
   -o "$TASK_HTTP_DIR/created.json" -w '%{http_code}')" = 201
-TASK_ID=$(uv run --locked python -c 'import json,sys; t=json.load(sys.stdin); assert t["status"]=="todo"; print(t["id"])' < "$TASK_HTTP_DIR/created.json")
+TASK_ID=$(uv run --locked python -c '
+import json
+import sys
+
+created = json.load(sys.stdin)
+assert created["status"] == "todo"
+print(created["id"])
+' < "$TASK_HTTP_DIR/created.json")
 curl --fail --silent --show-error "$TASK_API_URL/tasks/$TASK_ID"
 
 test "$(curl --silent --show-error -X PUT \
@@ -540,7 +578,16 @@ In B, verify seven Tasks and three done Tasks, including the newly created UUID:
 
 ```shell
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==7; assert sum(t["status"]=="done" for t in rows)==3; assert any(t["id"]==sys.argv[1] for t in rows); print("Restart retained 7 Tasks, 3 done")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+assert len(rows) == 7
+assert sum(task["status"] == "done" for task in rows) == 3
+assert any(task["id"] == sys.argv[1] for task in rows)
+print("Restart retained 7 Tasks, 3 done")
+' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
 
 test "$(curl --silent --show-error -X DELETE "$TASK_API_URL/tasks/$TASK_ID" \
   -o /dev/null -w '%{http_code}')" = 204
@@ -550,7 +597,15 @@ test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
   -H 'Content-Type: application/json' -d '{"title":" "}' \
   -o "$TASK_HTTP_DIR/invalid.json" -w '%{http_code}')" = 422
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==3; print("Deleted exercise Task; 6 Tasks, 3 done")' < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+assert len(rows) == 6
+assert sum(task["status"] == "done" for task in rows) == 3
+print("Deleted exercise Task; 6 Tasks, 3 done")
+' < "$TASK_HTTP_DIR/tasks.json"
 ```
 
 ### Verification: stop A and inspect persisted analytics
@@ -592,19 +647,20 @@ In B:
 
 ```shell
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==2; assert next(t for t in rows if t["id"]=="00000000-0000-0000-0000-000000000001")["status"]=="todo"; assert all(t["id"]!=sys.argv[1] for t in rows); print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+by_id = {task["id"]: task for task in rows}
+assert len(rows) == 6
+assert sum(task["status"] == "done" for task in rows) == 2
+assert by_id["00000000-0000-0000-0000-000000000001"]["status"] == "todo"
+assert sys.argv[1] not in by_id
+print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")
+' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
 ```
 
-| Stage | Fact rows | Done rows | Persisted summary |
-| --- | --- | --- | --- |
-| Initial build | 6 | 2 | 2 / 2 / 2 |
-| POST | 7 | 2 | Unchanged |
-| PUT existing 001 | 7 | 3 | Unchanged |
-| API restart | 7 | 3 | Unchanged |
-| DELETE exercise UUID | 6 | 3 | Still 2 / 2 / 2; test detects inconsistency |
-| dbt rebuild | 6 | 2 | Restored 2 / 2 / 2 |
-
-Do not infer synchronization from restart persistence.
 For operational Cosmos data and separately rebuilt analytics, see the [extension guide](backends.md).
 
 ### Cleanup

@@ -4,6 +4,16 @@ Use the [hands-on](tutorial.md) for a runnable local exercise. This guide explai
 DuckDB addition stays small and what changes when operational storage or analytics grows.
 The Cosmos ingestion examples below are **future design examples**, not shipped commands.
 
+## Choose a reading path
+
+| Goal | State | Read |
+| --- | --- | --- |
+| Operate DuckDB Tasks through the API | Runnable | [API exercise](tutorial.md#api-persistence-exercise) |
+| Understand or add a Repository | Current implementation guide | [DuckDB implementation](#duckdb-implementation) |
+| Switch API storage to Cosmos | Runnable after preparation | [Cosmos switch](#cosmos-storage) |
+| Load Cosmos Tasks into analytics | Future design, not implemented | [Cosmos analytics](#cosmos-analytics) |
+| Run dbt on another platform | Future design, compatibility checks required | [Analytics target](#analytics-target) |
+
 ## Three independent extension points
 
 | Boundary | Current implementation | How to extend |
@@ -16,6 +26,8 @@ Changing `TASK_REPOSITORY` does not change dbt's profile, copy Tasks between bac
 Conversely, changing a dbt target does not make the Task API use that warehouse.
 dbt executes SQL on its supported platforms; its `sources:` metadata is not an extraction connector.
 
+<a id="duckdb-implementation"></a>
+
 ## Read the DuckDB implementation
 
 Start with the [architecture](../architecture/index.md) and these source files:
@@ -24,6 +36,7 @@ Start with the [architecture](../architecture/index.md) and these source files:
 | --- | --- |
 | [TaskRepository](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/application/ports/task_repository.py) | Async add / get / list / update / delete contract |
 | [Task and TaskStatus](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/domain/task.py) | UUID type, status values, text normalization and invariants |
+| [Task use cases](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/application/task.py) | CRUD through the port and application errors; unchanged when adding storage |
 | [DuckDB adapter](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/infrastructure/repositories/duckdb_task.py) | SQL, row decoding, concurrency, errors, connection factory |
 | [Project settings](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/settings/project.py) | Backend enum and optional file path |
 | [Composition root](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/api.py) | Select and inject the adapter; own its lifespan |
@@ -49,6 +62,7 @@ dbt's `unique` test is not a physical primary-key constraint. Startup rejects du
 including UUID strings that differ only in letter case; lookup preserves that UUID identity.
 Add checks existence and inserts inside the adapter's lock. This protects the single app's
 connection, not arbitrary external writers or multiple independent app instances.
+Use only one writing repository instance per file, including within a single process.
 
 ### Async port, synchronous driver
 
@@ -61,18 +75,23 @@ A mutation already executing may finish even if its caller is cancelled.
 adapter, and closes the connection on success, failure, or cancellation. `create_app` enters this
 factory through AsyncExitStack during startup. App construction / OpenAPI inspection does not open
 the file. The Protocol needs no close method, and use cases need no DuckDB dependency.
+Injecting an existing instance with `create_app(repository=...)` bypasses backend factory selection;
+the caller must close its connection. It cannot be combined with `repository_backend`.
 
-<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
-```mermaid
-flowchart LR
-    extSettings["Typed settings"] -->|"backend and path"| extRoot["create_app"]
-    extRoot -->|"enter and close"| extFactory["Repository factory"]
-    extFactory -->|"yields"| extAdapter["DuckDB adapter"]
-    extRoot -->|"inject"| extCases["Task use cases"]
-    extCases -->|"depend on"| extPort["TaskRepository Protocol"]
-    extAdapter -.->|"implements"| extPort
-    extAdapter -->|"parameterized SQL"| extFile[("Existing fct_tasks")]
-```
+The [architecture's component-wiring diagram](../architecture/index.md#repository-wiring)
+is the single reference for creation and injection. This page explains adapter-specific storage,
+SQL and error decisions instead.
+
+### Distinguish startup checks from row validation
+
+| Timing | Checks | Failure |
+| --- | --- | --- |
+| CLI / factory entry | Required DUCKDB_PATH and existing file | Explicit configuration error |
+| Startup after connection | Physical main.fct_tasks table, column types, NULL / duplicate IDs | Reject startup and release connection |
+| get / list decoding | UUID, status, text and is_completed consistency | Storage failure mapped to HTTP 503 |
+
+Successful startup does not establish the quality of every row. dbt tests provide the input quality
+gate; row decoding validates the API's read boundary.
 
 ### Changed versus preserved
 
@@ -95,6 +114,8 @@ flowchart LR
 Do not introduce an ORM, generic repository base class, factory registry, or new Domain fields
 merely to add a backend. Protocol uses structural typing: compatible methods are enough.
 
+<a id="cosmos-storage"></a>
+
 ## Switch the existing API to Cosmos DB
 
 This is already supported. Follow the [dedicated Task container preparation](../cosmosdb.md#task-api-persistence-and-container-management),
@@ -110,6 +131,8 @@ Verify POST → GET → restart → GET against that configured container using 
 DUCKDB_PATH is not required for Cosmos. The DuckDB Tasks remain in their file; no automatic data
 migration occurs. This switches operational CRUD only, not the dbt project or its input.
 
+<a id="cosmos-analytics"></a>
+
 ## Future: analyze Cosmos Tasks with dbt
 
 **Not implemented here.** Prefer separating the operational store from a rebuildable analytical mart.
@@ -118,13 +141,16 @@ writes and leaves reports stale until rebuild. It is not a production synchroniz
 
 <!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
+flowchart TD
     futureApi["Task API"] -->|"existing Cosmos Repository"| futureCosmos[("Task container")]
     futureCosmos -.->|"future export and Load"| futureRaw[("Analytical raw table")]
     futureRaw -.->|"future source definition"| futureStg["dbt staging"]
     futureStg -->|"SQL models"| futureMart[("Fact and reporting marts")]
     futureScheduler["Future orchestration"] -.->|"load then build and test"| futureStg
 ```
+
+This is a data-flow view. Dotted export, source-definition and orchestration paths are not implemented.
+A source definition describes an already-loaded table; it does not perform ingestion.
 
 ### Start with a complete snapshot
 
@@ -185,6 +211,8 @@ All-versions-and-deletes mode requires continuous backup and only exposes change
 retention window; confirm current account, SDK and service support before designing around it.
 Soft delete would change the current Task contract and is not part of this extension.
 
+<a id="analytics-target"></a>
+
 ## Future: run dbt on another analytics platform
 
 The [official supported-platform list](https://docs.getdbt.com/docs/supported-data-platforms)
@@ -213,7 +241,7 @@ installing Python's duckdb for the API does not enable dbt's external extension 
 | Capability | State |
 | --- | --- |
 | dbt seed / build / test and local Docs | Runnable hands-on |
-| Task CRUD against dbt-built fct_tasks | Runnable, single-process; stop API before dbt |
+| Task CRUD against dbt-built fct_tasks | One writer instance per file; stop API before dbt |
 | Restart persistence | Runnable; existing file is reused |
 | API writes → raw / reporting synchronization | Not implemented; manual rebuild overwrites fact writes |
 | Existing Cosmos Repository | Runnable after account / container / permissions preparation |

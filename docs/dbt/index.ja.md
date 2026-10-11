@@ -48,7 +48,7 @@ ETL は「抽出 → 変換 → 読み込み」、ELT は「抽出 → 読み込
 （小さな version-controlled CSV の Load）の公式説明に対応します。
 
 ```mermaid
-flowchart LR
+flowchart TD
     app["Task API / operational storage"] -.->|Export: not implemented| csv["Learning CSV"]
     csv -->|dbt seed| raw[("Raw tables")]
     subgraph warehouse["DuckDB: SQL execution and persistence"]
@@ -176,7 +176,7 @@ uv run --locked --no-dev --group dbt dbt show --inline \
 ### 依存関係
 
 ```mermaid
-flowchart LR
+flowchart TD
     raw["raw_tasks (CSV seed)"] --> staging["stg_tasks (view)"]
     statuses["task_statuses (CSV seed)"] --> dim["dim_task_status (table)"]
     staging --> fact["fct_tasks (table)"]
@@ -206,7 +206,15 @@ uv run --locked python -m scripts.template serve-container-apps --repository duc
 
 ```shell
 curl --fail --silent --show-error http://127.0.0.1:8000/tasks |
-  uv run --locked python -c 'import json,sys; tasks=json.load(sys.stdin); assert len(tasks)==6; assert all(set(t)=={"id","title","description","status"} for t in tasks); print("6 Tasks, unchanged API schema")'
+  uv run --locked python -c '
+import json
+import sys
+
+tasks = json.load(sys.stdin)
+assert len(tasks) == 6
+assert all(set(task) == {"id", "title", "description", "status"} for task in tasks)
+print("6 Tasks, unchanged API schema")
+'
 ```
 
 InMemory / Cosmos と同じ非同期 TaskRepository 契約と HTTP API を使います。
@@ -216,7 +224,7 @@ API の既定値は引き続き **in-memory**、**dbt 教材**の既定の接続
 
 <!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
+flowchart TD
     apiCrud["Task API"] -->|"同じ CRUD port"| duckRepo["DuckDB Repository"]
     duckRepo -->|"CRUD と完了フラグ"| duckFact[("main.fct_tasks")]
     duckBuild["dbt build"] -->|"raw から再構築"| duckFact
@@ -224,9 +232,10 @@ flowchart LR
 ```
 
 API 更新で is_completed は維持しますが、CSV・raw・保存済み集計表は更新しません。
-dbt 再構築で API 更新は上書きされます。同じ DB を開く dbt コマンドの前に API を停止し、
-複数 writer / API worker を使わないでください。
-[ハンズオン](tutorial.md)で CRUD・再起動後の永続性・古い集計・意図的なテスト失敗・再構築の復旧を検証します。
+この図は CRUD と再構築のデータフローであり、両方を同時実行する指示ではありません。
+dbt 再構築で API 更新は上書きされます。同じ DB を開く dbt コマンドの前に API を停止します。
+1ファイルに1つの書き込みアプリ／Repository インスタンスとし、複数 writer / API worker を使わないでください。
+[ハンズオン](tutorial.md#api-persistence-exercise)で CRUD・再起動後の永続性・古い集計・意図的なテスト失敗・再構築の復旧を検証します。
 [拡張ガイド](backends.md)では実装の読み方と、将来の Cosmos / 分析基盤との境界を説明します。
 
 ## 仕様・設計判断・期待値を区別する

@@ -465,6 +465,8 @@ CLI と同じ絶対パスの `DBT_PROJECT_DIR` / `DBT_PROFILES_DIR` を VS Code 
 拡張の接続設定でこの profile と DB パスを確認し、モデルを開いて Lineage / Query Results を確認します。
 拡張の利用・アカウント機能は任意で、CLI とローカル Docs だけでも教材を完了できます。
 
+<a id="api-persistence-exercise"></a>
+
 ## 8. Task API を接続し、永続性を確かめる
 
 ### 目的
@@ -476,6 +478,24 @@ CLI と同じ絶対パスの `DBT_PROJECT_DIR` / `DBT_PROFILES_DIR` を VS Code 
 この演習は意図的に dbt 管理 fact を編集します。CSV・raw・集計表は同期しません。
 API 再起動では変更が残りますが、**dbt build では上書きされます**。
 自分の作業 project だけを使い、完成サンプルや重要なデータは更新しないでください。
+
+### 実行前に流れを確認する
+
+| ターミナル | 役割 | 維持する設定 |
+| --- | --- | --- |
+| A | dbt と API の起動・停止。両方を同時には実行しない | 第1節の DBT 変数と DUCKDB_PATH |
+| B | curl と応答 JSON の検証。DB ファイルは開かない | TASK_API_URL、TASK_HTTP_DIR、生成した TASK_ID |
+
+| 段階 | Fact の件数 | done の件数 | 保存済み summary |
+| --- | --- | --- | --- |
+| 初期 build | 6 | 2 | 2 / 2 / 2 |
+| POST | 7 | 2 | 変更なし |
+| 既存001の PUT | 7 | 3 | 変更なし |
+| API 再起動 | 7 | 3 | 変更なし |
+| 演習 UUID の DELETE | 6 | 3 | 2 / 2 / 2 のまま。test が不整合を検知 |
+| dbt 再構築 | 6 | 2 | 2 / 2 / 2 に復旧 |
+
+この順序で進めます。再起動でデータが残ることと、dbt への自動同期は別です。
 
 ### 作業: ターミナル A で準備・起動
 
@@ -506,12 +526,30 @@ B は HTTP だけを使い、A の稼働中は別プロセスから DuckDB を�
 export TASK_API_URL=http://127.0.0.1:8000
 TASK_HTTP_DIR=$(mktemp -d)
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); by_id={t["id"]:t for t in rows}; assert len(rows)==6; assert all(set(t)=={"id","title","description","status"} for t in rows); assert by_id["00000000-0000-0000-0000-000000000001"]["title"]=="Plan ingestion"; assert by_id["00000000-0000-0000-0000-000000000002"]["description"]==""; print("Initial 6 Tasks, normalized fields")' < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+by_id = {task["id"]: task for task in rows}
+assert len(rows) == 6
+assert all(set(task) == {"id", "title", "description", "status"} for task in rows)
+assert by_id["00000000-0000-0000-0000-000000000001"]["title"] == "Plan ingestion"
+assert by_id["00000000-0000-0000-0000-000000000002"]["description"] == ""
+print("Initial 6 Tasks, normalized fields")
+' < "$TASK_HTTP_DIR/tasks.json"
 
 test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
   -H 'Content-Type: application/json' -d '{"title":"API exercise","description":"Temporary"}' \
   -o "$TASK_HTTP_DIR/created.json" -w '%{http_code}')" = 201
-TASK_ID=$(uv run --locked python -c 'import json,sys; t=json.load(sys.stdin); assert t["status"]=="todo"; print(t["id"])' < "$TASK_HTTP_DIR/created.json")
+TASK_ID=$(uv run --locked python -c '
+import json
+import sys
+
+created = json.load(sys.stdin)
+assert created["status"] == "todo"
+print(created["id"])
+' < "$TASK_HTTP_DIR/created.json")
 curl --fail --silent --show-error "$TASK_API_URL/tasks/$TASK_ID"
 
 test "$(curl --silent --show-error -X PUT \
@@ -536,7 +574,16 @@ B で、生成 UUID が残り、総数7件・done 3件であることを確認�
 
 ```shell
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==7; assert sum(t["status"]=="done" for t in rows)==3; assert any(t["id"]==sys.argv[1] for t in rows); print("Restart retained 7 Tasks, 3 done")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+assert len(rows) == 7
+assert sum(task["status"] == "done" for task in rows) == 3
+assert any(task["id"] == sys.argv[1] for task in rows)
+print("Restart retained 7 Tasks, 3 done")
+' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
 
 test "$(curl --silent --show-error -X DELETE "$TASK_API_URL/tasks/$TASK_ID" \
   -o /dev/null -w '%{http_code}')" = 204
@@ -546,7 +593,15 @@ test "$(curl --silent --show-error "$TASK_API_URL/tasks" \
   -H 'Content-Type: application/json' -d '{"title":" "}' \
   -o "$TASK_HTTP_DIR/invalid.json" -w '%{http_code}')" = 422
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==3; print("Deleted exercise Task; 6 Tasks, 3 done")' < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+assert len(rows) == 6
+assert sum(task["status"] == "done" for task in rows) == 3
+print("Deleted exercise Task; 6 Tasks, 3 done")
+' < "$TASK_HTTP_DIR/tasks.json"
 ```
 
 ### 確認: A を停止して保存済み分析結果を読む
@@ -587,19 +642,20 @@ B で確認します。
 
 ```shell
 curl --fail --silent --show-error "$TASK_API_URL/tasks" -o "$TASK_HTTP_DIR/tasks.json"
-uv run --locked python -c 'import json,sys; rows=json.load(sys.stdin); assert len(rows)==6; assert sum(t["status"]=="done" for t in rows)==2; assert next(t for t in rows if t["id"]=="00000000-0000-0000-0000-000000000001")["status"]=="todo"; assert all(t["id"]!=sys.argv[1] for t in rows); print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
+uv run --locked python -c '
+import json
+import sys
+
+rows = json.load(sys.stdin)
+by_id = {task["id"]: task for task in rows}
+assert len(rows) == 6
+assert sum(task["status"] == "done" for task in rows) == 2
+assert by_id["00000000-0000-0000-0000-000000000001"]["status"] == "todo"
+assert sys.argv[1] not in by_id
+print("Rebuild restored 6 Tasks, 2 done; API mutation overwritten")
+' "$TASK_ID" < "$TASK_HTTP_DIR/tasks.json"
 ```
 
-| 段階 | Fact の件数 | done の件数 | 保存済み summary |
-| --- | --- | --- | --- |
-| 初期 build | 6 | 2 | 2 / 2 / 2 |
-| POST | 7 | 2 | 変更なし |
-| 既存001の PUT | 7 | 3 | 変更なし |
-| API 再起動 | 7 | 3 | 変更なし |
-| 演習 UUID の DELETE | 6 | 3 | 2 / 2 / 2 のまま。test が不整合を検知 |
-| dbt 再構築 | 6 | 2 | 2 / 2 / 2 に復旧 |
-
-再起動でデータが残ることと、自動同期を混同しないでください。
 業務 Cosmos と別の分析基盤の設計は [拡張ガイド](backends.md)で説明します。
 
 ### 後片付け

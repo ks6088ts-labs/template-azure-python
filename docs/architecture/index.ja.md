@@ -11,127 +11,125 @@ Python 3.10+ / FastAPI / Typer と Azure SDK を使う開発テンプレート�
 | --- | --- |
 | 起動と開発環境 | [ローカル開発](../scripts.md)。InMemory・テレメトリ無効なら Azure リソース・サインインは不要 |
 | HTTP の全体像 | `api.py` → `presentation/http` → `application/task.py` → `domain/task.py` |
+| 保存先の選択と寿命 | [Task API の組み立てと保存先](#task-storage) |
+| DuckDB を動かす・実装を読む | [API 連携演習](../dbt/tutorial.md#api-persistence-exercise)、[実装・拡張ガイド](../dbt/backends.md#duckdb-implementation) |
 | Azure 操作の全体像 | `scripts/cli_<service>.py` → `internals/azure/<service>.py` → `settings` |
 | Foundry Agent の品質検証 | [LLM 評価](../evaluation.md)。`tests/evaluations/` を実行時コードから分離し、明示有効化する。CI は offline の基盤検証だけ実行 |
 | 公開と運用 | [デプロイ](../deployment.md)、[監視とログ](../monitoring.md) |
 
 以下のソースパスとコマンドはリポジトリルート基準です。
 パッケージ内のパスは `template_azure_python/` 配下を指します。
+`install-deps-dev` は既存の pre-commit hook を置き換えます。
+実行前に [ローカル開発](../scripts.md)のセットアップ説明を確認してください。
 
 ```shell
 make install-deps-dev
 uv run --locked python -m scripts.template serve-container-apps
 ```
 
-`http://127.0.0.1:8000/tasks` が初期状態で `[]` を返し、`/docs` から API を操作できます。
+既定の InMemory なら `http://127.0.0.1:8000/tasks` が初期状態で `[]` を返し、
+`/docs` から API を操作できます。
 旧モックの `GET /` は削除され、404 を返します。
-`install-deps-dev` は既存の pre-commit hook を置き換えます。詳細は開発ガイドを参照してください。
 
 ## 構成と起動経路
 
 ### Task API - Clean Architecture
 
+この図は**主要なコード依存**です。実線はコード・driver の利用、破線は Protocol への適合を示します。
+リクエストの時系列やデータ移送の図ではありません。
+
 <!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph ApiEntrypoints["起動ポイント"]
-        launcher["Uvicorn と Container Apps"]
-        functions["Azure Functions"]
+        entry["Uvicorn / Functions / Container Apps"]
     end
-
     subgraph ApiOuter["インターフェースアダプター"]
-        api["api.py コンポジションルート"]
-        http["FastAPI Task ルーター"]
-        memory["インメモリ Repository"]
-        cosmos["Cosmos DB Repository"]
-        duck["DuckDB Repository"]
-        telemetry["テレメトリ初期化"]
-        settings["型付き設定"]
+        api["api.py"]
+        http["Task HTTP router"]
+        repos["InMemory / Cosmos / DuckDB"]
     end
-
     subgraph ApiCore["Clean Architecture コア"]
         subgraph ApiApplication["Application 層"]
-            usecases["Task CRUD ユースケース"]
-            port["TaskRepository ポート"]
+            usecases["Task CRUD use cases"]
+            port["TaskRepository Protocol"]
         end
         subgraph ApiDomain["Domain 層"]
-            domain["Task モデルと不変条件"]
+            domain["Task domain"]
         end
     end
-
-    subgraph ApiExternal["外部システム"]
-        cosmossdk["Azure Cosmos DB SDK"]
-        data[("Task コンテナー")]
-        duckdriver["Python DuckDB driver"]
-        duckdata[("dbt 生成 fct_tasks")]
-        monitor["Azure Monitor"]
+    subgraph ApiExternal["保存先のライブラリ"]
+        drivers["保存先 driver"]
     end
 
-    launcher -->|"起動"| api
-    functions -->|"ラップ"| api
-    api -->|"登録"| http
-    http -->|"実行"| usecases
-    usecases -->|"不変条件を適用"| domain
+    entry -->|"アプリを利用"| api
+    api -->|"参照"| http
+    api -->|"参照"| usecases
+    api -->|"参照"| repos
+    http -->|"依存"| usecases
+    usecases -->|"依存"| domain
     usecases -->|"依存"| port
-    api -->|"注入"| memory
-    api -->|"注入と寿命管理"| cosmos
-    api -->|"注入と寿命管理"| duck
-    memory -.->|"実装"| port
-    cosmos -.->|"実装"| port
-    duck -.->|"実装"| port
-    cosmos -->|"非同期クライアントを使用"| cosmossdk
-    cosmossdk -->|"読み書き"| data
-    duck -->|"排他したスレッド処理"| duckdriver
-    duckdriver -->|"読み書き"| duckdata
-    api -->|"読み込み"| settings
-    api -->|"有効時に初期化"| telemetry
-    telemetry -->|"送信"| monitor
+    port -->|"型に依存"| domain
+    repos -.->|"適合"| port
+    repos -->|"依存"| domain
+    repos -->|"必要な driver を利用"| drivers
 
     classDef entry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
     classDef adapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
     classDef application fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:2px
     classDef domain fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:3px
     classDef external fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
-    class launcher,functions entry
-    class api,http,memory,cosmos,duck,telemetry,settings adapter
+    class entry entry
+    class api,http,repos adapter
     class usecases,port application
     class domain domain
-    class cosmossdk,data,duckdriver,duckdata,monitor external
+    class drivers external
     style ApiCore fill:#FAFAF9,stroke:#475569,stroke-width:2px
     style ApiApplication fill:#FFFBEB,stroke:#D97706,stroke-width:1px
     style ApiDomain fill:#F0FDF4,stroke:#16A34A,stroke-width:1px
 ```
 
 青は起動ポイント、紫はインターフェースアダプター、黄は Application 層、
-緑は Domain 層、グレーは外部システムです。依存はコア境界を内向きに越え、
-破線は Application 層が所有するポートの実装を示します。
+緑は Domain 層、グレーは保存先のライブラリです。
+3つの Repository は図ではまとめていますが、実装は別々です。
+業務コードは具象 Repository を import せず、Application 層の port に依存します。
+設定・テレメトリの責務は後述の表、生成・注入の流れは [コンポーネント接続](#repository-wiring)を参照してください。
+
+<a id="task-storage"></a>
+
+### Task API の組み立てと保存先
+
+`create_app()` が use case と具象 Repository を接続し、HTTP router に provider を渡します。
+provider はリクエスト時に use case を生成する関数です。Cosmos / DuckDB の接続の生成・解放は lifespan が担当します。
+起動 CLI は backend を factory に渡します。直接 Uvicorn の入口は `template_azure_python.api:app` で、
+Functions も同じ app をラップします。Functions の HTTP trigger は匿名で、`host.json` により `/api` を付けません。
+
+| backend | 保存先・必要な準備 | 寿命と制限 |
+| --- | --- | --- |
+| `in-memory`（既定） | アプリ内の辞書。Azure・DB の準備は不要 | アプリごとに独立し、再起動で消える |
+| `cosmosdb` | 設定した既存の Task 専用 `/id` コンテナー | lifespan が非同期 client・資格情報を初期化・解放。API はリソースを作成しない |
+| `duckdb` | `DUCKDB_PATH` で指定する、dbt build 済みの既存 `main.fct_tasks` | lifespan が接続を検証・解放。同期 driver はスレッドへ退避し、Repository 内で排他 |
+
+DuckDB は**1ファイルにつき1つの書き込みアプリ／Repository インスタンス**を前提とします。
+同じプロセス内でも複数の writer を作らず、dbt を実行する前に API を停止します。
+API は raw・集計表と同期せず、dbt 再構築は fact への API 更新を上書きします。
+保存先を替えても Task の自動移行はしません。詳細は [実装・拡張ガイド](../dbt/backends.md)を参照してください。
 
 ### Azure 操作 CLI - 独立した技術経路
 
+この図の実線は**実行時の呼び出し・結果出力**です。上のコード依存図とは目的が異なります。
+
 ```mermaid
-flowchart LR
-    subgraph CliPresentation["CLI プレゼンテーション"]
-        cli["サービス別 CLI コマンド"]
-        output["表示と終了コード"]
-    end
+flowchart TD
+    cli["サービス別 CLI"]
+    operations["SDK データ操作"]
+    admin["Task 管理 adapter"]
+    sdk["Azure SDK"]
+    az["Azure CLI"]
+    arm["Azure Resource Manager"]
 
-    subgraph CliOperations["技術操作"]
-        operations["Azure SDK 操作"]
-        admin["Task リソース管理アダプター"]
-        cliSettings["型付き設定"]
-    end
-
-    subgraph CliExternal["Azure ツールとサービス"]
-        sdk["Azure SDK と OpenTelemetry"]
-        az["Azure CLI"]
-        arm["Azure Resource Manager"]
-    end
-
-    cli -->|"結果を整形"| output
     cli -->|"データ操作を実行"| operations
     cli -->|"リソース管理を実行"| admin
-    operations -->|"読み込み"| cliSettings
-    admin -->|"読み込み"| cliSettings
     operations -->|"呼び出し"| sdk
     admin -->|"実行"| az
     az -->|"リソース管理"| arm
@@ -139,27 +137,16 @@ flowchart LR
     classDef cliEntry fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px
     classDef cliAdapter fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px
     classDef cliExternalNode fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:2px
-    class cli,output cliEntry
-    class operations,admin,cliSettings cliAdapter
+    class cli cliEntry
+    class operations,admin cliAdapter
     class sdk,az,arm cliExternalNode
 ```
 
 この経路は Task API のコアから意図的に分離しています。技術的な Azure 操作を例示しつつ、
 Domain やユースケースを SDK・Typer・コントロールプレーンのツールへ依存させません。
-`create_app()` は use case と具象 repository を明示的に接続します。
-InMemory はアプリごとに独立し、Cosmos は設定したコンテナーを共有します。
-use case の provider は composition root に置き、HTTP router は FastAPI の DI で受け取ります。
-起動 CLI は選択値を factory に渡し、直接 Uvicorn を使う入口は `template_azure_python.api:app` です。
-Functions は同じ app をラップします。
-Functions の HTTP トリガーは匿名で、`host.json` により `/api` プレフィックスを付けません。
-`TASK_REPOSITORY=cosmosdb` の場合、tasks API が非同期 Azure SDK を利用します。
-SDK と資格情報は lifespan 内で一度だけ初期化し、正常終了・失敗・キャンセル時に解放します。
-API は database / container を作成せず、起動時に存在と `/id` partition を検証します。
-`TASK_REPOSITORY=duckdb` の場合、lifespan で既存の `DUCKDB_PATH` を開き、
-dbt 生成テーブルを検証して、終了・失敗・キャンセル時に接続を閉じます。
-同期 Python driver の CRUD はイベントループ外のスレッドへ退避し、接続への操作を排他します。
-API は dbt を実行せず raw・集計表とは同期しません。dbt 再構築で API 更新が上書きされます。
-同じファイルの writer は単一プロセスに限定します。
+図は主要な呼び出しに絞っています。引数・結果表示・設定の責務は以下の表とサービス別ガイドを参照してください。
+
+### 主な場所と責務
 
 | 場所 | 責務 |
 | --- | --- |
@@ -189,7 +176,7 @@ API は dbt を実行せず raw・集計表とは同期しません。dbt 再構
 | SDK と CLI 表示を分ける | SDK 操作を Typer や表示処理から独立させる | `internals/azure` は通常の値を返すか callback に渡す。SDK import は scripts に置かない |
 | 設定を一か所で解決する | 優先順位と必須設定の判断を統一する | 公開 `settings` パッケージ。環境変数・dotenv への直接アクセスを分散させない |
 | 資格情報と client の寿命を所有する | 成功・初期化失敗・キャンセル時のリークを避ける | API lifespan、非同期 resource factory、生成直後の解放登録、解放テスト |
-| API の SDK 接点は infrastructure に置く | 保存技術を HTTP・業務側に漏らさない | Cosmos adapter。API / presentation の直接 Azure import を禁止 |
+| API の保存先 driver 接点は infrastructure に置く | 保存技術を HTTP・業務側に漏らさない | Cosmos / DuckDB adapter。API / presentation の直接 Azure / DuckDB import を禁止 |
 | 保存先の選択は composition root と settings で解決する | 既定の Azure 非依存と起動形態間の一貫性を保つ | `create_app()`、`--repository`、`TASK_REPOSITORY`。router 内で具象保存先を選択しない |
 | SDK 例外を application の失敗契約に変換する | 未検出・重複と基盤障害を区別し、SDK 情報を露出しない | `TaskRepositoryError`、HTTP 503、安全な種別・status のログ |
 | リソース管理を API のデータ操作から分離する | Entra ID の database / container 管理は管理プレーンが必要 | Task 管理 CLI → az → ARM。API に管理権限を付けない |
@@ -226,33 +213,41 @@ client・資格情報の初期化と解放は、Cosmos の resource factory と 
 DuckDB の factory も接続を所有します。port にライフサイクル用のメソッドは追加しません。
 これを CRUD port の必須メソッドにせず、InMemory や use case に Cosmos 固有の寿命管理を要求しません。
 
+<a id="repository-wiring"></a>
+
 ### 保存先を追加した際のコンポーネント接続
+
+この図は**実行時の生成・注入・呼び出し**を示します。コードの import 方向ではありません。
+DuckDB を例に、起動時に作った同じ Repository をリクエストごとの use case に渡します。
 
 <!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
-    subgraph cOuter["組み立てとアダプター"]
-        cSettings["ProjectSettings"]
-        cRoot["create_app lifespan"]
-        cFactory["DuckDB resource factory"]
+flowchart TD
+    cSettings["ProjectSettings"]
+    subgraph cStartup["1. lifespan の開始と終了"]
+        cRoot["api.py lifespan"]
+        cFactory["open_duckdb_task_repository"]
         cRepo["DuckdbTaskRepository"]
-        cRouter["Task HTTP router"]
     end
-    subgraph cCore["フレームワーク非依存のコア"]
-        cUsecases["Task CRUD use cases"]
-        cPort["TaskRepository Protocol"]
-        cTask["Task domain"]
+    subgraph cRequest["2. HTTP リクエストごとの処理"]
+        cRouter["Task HTTP router"]
+        cProvider["api.py use-case provider"]
+        cUsecases["Task CRUD use case"]
     end
     cSettings -->|"backend と path"| cRoot
     cRoot -->|"開始と解放"| cFactory
     cFactory -->|"adapter を提供"| cRepo
-    cRoot -->|"use case を提供"| cRouter
-    cRouter -->|"実行"| cUsecases
-    cUsecases -->|"依存"| cPort
-    cUsecases -->|"値を検証"| cTask
-    cRepo -.->|"実装"| cPort
+    cRepo -->|"同じインスタンス"| cProvider
+    cRouter -->|"Depends で解決"| cProvider
+    cProvider -->|"Repository を注入して生成"| cUsecases
+    cUsecases -->|"CRUD を呼び出す"| cRepo
 ```
 
+`repository_dependency()` は lifespan が保持する adapter を返します。
+provider がそれを use case のコンストラクターに渡し、use case は Protocol 型として利用します。
+shutdown 時は factory の context を終了して接続を解放します。
+既存のインスタンスを `create_app(repository=...)` で渡す場合は、呼び出し側が接続の寿命を管理します。
+`repository` と `repository_backend` の同時指定は拒否します。
 これは明示的な組み立てであり、新しい DI framework や adapter registry ではありません。
 変更するのは設定・具象保存先・起動時の接続だけで、業務コードと HTTP DTO は維持します。
 [拡張ガイド](../dbt/backends.md)で実際のコードに沿って、
@@ -292,25 +287,31 @@ HTTP 検証の例外ハンドラーはアプリ全体に登録されるため、
 `TaskRepository` は `add/get/list/update/delete` の非同期契約です。
 `get` の未検出は `None`、`update/delete` の未検出は `False`、
 `add` の重複は `TaskAlreadyExistsError`。use case が未検出を application error に変換します。
+`list` は Task の tuple を返し、順序・HTTP ページングは保証しません。
 インメモリ adapter の lock は操作単位であり、将来の adapter のトランザクション・競合制御を保証しません。
 Cosmos adapter は UUID 文字列を `id` と partition key にし、status は文字列で保存します。
 未検出はコンテナーの存在も確認し、消失した保存先を Task の 404 に見せません。
 一覧は cross-partition query の全ページを読み切り、途中の失敗や不正 document は 503 とします。
 全件取得の RU・メモリーコストと、更新が後勝ちである制限があります。
+DuckDB の起動検証はファイル・実テーブル・列型・ID の一意性です。
+各行の UUID・status・文字列・完了フラグは読み取り時に検証し、不正行は 503 とします。
+lock は同じ Repository 内の操作単位であり、use case の get → update 全体の transaction ではありません。
 
 ### 設定と認証
 
 - 優先順位は **明示 CLI 引数 → OS 環境変数 → カレントディレクトリの `.env` → 既定値**。
   Azure 設定では空の OS 値を無視するため、`.env` に値があれば引き続き利用します。
-- `get_project_settings()` は名前・ログレベル・API テレメトリ設定、
+- `get_project_settings()` は名前・ログレベル・API テレメトリ設定・保存先・DuckDB パス、
   `get_azure_settings()` はサービス別の階層化した設定を返します。
   環境変数名は `.env.template` のフラットな名前を維持し、大文字・小文字を区別しません。
   alias を持つフィールドに無関係な `NAME` や `RESOURCE_ID` を流用しません。
 - getter は初回の値をキャッシュします。変更後は再起動し、テストではキャッシュをクリアします。
   `.env` の親ディレクトリ探索や OS 環境への一括注入は行いません。
 - 保存先は `--repository` → `TASK_REPOSITORY` → `in-memory` で選択します。
-  Cosmos は `AZURE_COSMOS_DB_ENDPOINT` / `DATABASE` / `TASK_CONTAINER` を使い、
+  Cosmos は `AZURE_COSMOS_DB_ENDPOINT`、`AZURE_COSMOS_DB_DATABASE`、
+  `AZURE_COSMOS_DB_TASK_CONTAINER` を使い、
   商品 CLI の `AZURE_COSMOS_DB_CONTAINER` とは分離します。
+  DuckDB は選択時だけ `DUCKDB_PATH` が必須です。空値は有効なファイルパスとして扱いません。
   Functions CLI は選択を子プロセス環境に渡し、親環境は変更しません。
 - 必須 endpoint / ID とサービス固有の入力は操作時に検証します。
   無関係な Azure 設定の不足で、API 起動や他サービスの `--help` を失敗させません。
@@ -378,6 +379,7 @@ Cosmos Task Repository は同期の商品 CLI とは独立し、
 | 確認 | コマンド・対象 |
 | --- | --- |
 | Task の変更 | `uv run --locked pytest tests/test_task_domain.py tests/test_task_application.py tests/test_task_repositories.py tests/test_api.py` |
+| DuckDB 保存先の変更 | 共通契約に加え、永続性・行変換・解放・起動経路を下のコマンドで確認 |
 | Task コンテナー管理 | `tests/test_cli_cosmosdb_tasks.py`、商品 CLI / Queue の回帰。az subprocess をモック |
 | 設定・Azure 操作の変更 | `tests/test_settings.py` と該当する `test_cli_<service>.py`、共通処理テスト |
 | 書式・型・依存・workflow | `make format-check lint` |
@@ -385,21 +387,30 @@ Cosmos Task Repository は同期の商品 CLI とは独立し、
 | CI と同じ依存準備からの確認 | `make ci-test` |
 | 日英ドキュメント | `make ci-test-docs` |
 
+```shell
+uv run --locked pytest \
+  tests/test_duckdb_task_repository.py tests/test_task_repositories.py \
+  tests/test_api.py tests/test_cli.py tests/test_settings.py
+```
+
 mypy strict の対象は `api.py` と Task の縦スライスです。ty / Pyrefly は設定されたプロジェクト範囲を検査します。
 import-linter は内向きの層順序、presentation / infrastructure の相互非依存、
-domain / application から FastAPI・Pydantic・Azure 等への禁止依存を検査します。
+domain / application から FastAPI・Pydantic・Azure・DuckDB 等への禁止依存を検査します。
 構造テストは scripts の SDK import、settings 外の環境アクセス、Azure 操作の CLI 依存を検査します。
 
 **方針と自動保証は同一ではありません。** domain の標準ライブラリ限定方針について、
 全外部ライブラリや未指定の内部パッケージへの import が自動禁止されるわけではありません。
 新しい依存・Context を導入したら `pyproject.toml` の検査対象と契約も見直します。
 型検査は実行時の業務ルール・トランザクション・Azure での動作を保証しません。
-SDK 境界はモックし、write-once の OpenTelemetry provider の構築テストは別プロセスでオフライン実行します。
+Azure SDK 境界はモックし、DuckDB は一時ファイルと実 driver で検証します。
+write-once の OpenTelemetry provider の構築テストは別プロセスでオフライン実行します。
 
 ## 意図的な制限と非目標
 
 - 既定の InMemory は再起動で消え、worker / process / replica 間で共有されません。
-  Cosmos は永続化と共有が可能ですが、ページング、楽観的競合制御、業務上の状態遷移は未実装です。
+  Cosmos は永続化と共有が可能ですが、HTTP ページング、楽観的競合制御、業務上の状態遷移は未実装です。
+- DuckDB は既存の dbt 生成表を使うローカル演習用です。1ファイルの複数 writer、
+  raw / 集計への同期、backend 間のデータ移行は提供しません。
 - HTTP は認証なしの参照実装です。機密データを扱う本番環境にはアクセス制御と保存設計が必要です。
 - Azure CLI は SDK の技術サンプルであり、Task API の業務 use case ではありません。
   メッセージ削除やデータ上書き等の副作用があります。検証用リソースを使ってください。

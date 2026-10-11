@@ -48,7 +48,7 @@ and the [seed command](https://docs.getdbt.com/reference/commands/seed)
 (loading small version-controlled CSV datasets).
 
 ```mermaid
-flowchart LR
+flowchart TD
     app["Task API / operational storage"] -.->|Export: not implemented| csv["Learning CSV"]
     csv -->|dbt seed| raw[("Raw tables")]
     subgraph warehouse["DuckDB: SQL execution and persistence"]
@@ -177,7 +177,7 @@ Use `coalesce(sum(...), 0)` if you want to display the completed count as zero, 
 ### Dependencies
 
 ```mermaid
-flowchart LR
+flowchart TD
     raw["raw_tasks (CSV seed)"] --> staging["stg_tasks (view)"]
     statuses["task_statuses (CSV seed)"] --> dim["dim_task_status (table)"]
     staging --> fact["fct_tasks (table)"]
@@ -207,7 +207,15 @@ In another terminal, check:
 
 ```shell
 curl --fail --silent --show-error http://127.0.0.1:8000/tasks |
-  uv run --locked python -c 'import json,sys; tasks=json.load(sys.stdin); assert len(tasks)==6; assert all(set(t)=={"id","title","description","status"} for t in tasks); print("6 Tasks, unchanged API schema")'
+  uv run --locked python -c '
+import json
+import sys
+
+tasks = json.load(sys.stdin)
+assert len(tasks) == 6
+assert all(set(task) == {"id", "title", "description", "status"} for task in tasks)
+print("6 Tasks, unchanged API schema")
+'
 ```
 
 This uses the same async `TaskRepository` contract and HTTP API as InMemory / Cosmos.
@@ -217,7 +225,7 @@ The API default remains **in-memory**; `type: duckdb` is the **dbt example's** d
 
 <!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
+flowchart TD
     apiCrud["Task API"] -->|"same CRUD port"| duckRepo["DuckDB Repository"]
     duckRepo -->|"CRUD and completion flag"| duckFact[("main.fct_tasks")]
     duckBuild["dbt build"] -->|"rebuild from raw input"| duckFact
@@ -225,9 +233,10 @@ flowchart LR
 ```
 
 API writes maintain `is_completed` but do not update CSV, raw tables, or persisted summary tables.
-Rebuilding with dbt overwrites API changes. Stop the API before any dbt command opens the same file:
-do not run multiple writers or multiple API workers.
-The [hands-on](tutorial.md#8-connect-the-task-api-and-verify-persistence) verifies CRUD,
+This shows CRUD/rebuild data flow, not permission to run both paths concurrently.
+Rebuilding with dbt overwrites API changes. Stop the API before any dbt command opens the same file.
+Use one writing app/repository instance per file, not multiple writers or API workers.
+The [hands-on](tutorial.md#api-persistence-exercise) verifies CRUD,
 restart persistence, stale reports, an intentional test failure, and rebuild recovery.
 The [extension guide](backends.md) explains the implementation and future Cosmos / warehouse boundaries.
 

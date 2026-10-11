@@ -97,10 +97,11 @@ uv run --locked python -m scripts.template serve-container-apps --repository duc
 `serve-functions` も同じ `--repository duckdb` を使えます。起動するターミナルで
 `DUCKDB_PATH` を export してください。直接 Uvicorn を使う場合は `TASK_REPOSITORY=duckdb` も必要です。
 ファイル不存在や `main.fct_tasks` の不備は明示的なエラーになり、API は自動作成しません。
-これは**単一プロセスのローカル演習**用であり、分散永続化の選択肢ではありません。
+これは**1ファイルにつき1つの書き込みアプリ／Repository インスタンス**で使うローカル演習用です。
+同一プロセス内も含め、複数 writer の同時利用や分散永続化は対象外です。
 同じファイルに dbt を実行する前に API を停止してください。
 API の更新先は fct_tasks だけで、raw・集計表とは同期せず、dbt 再構築で上書きされます。
-確認方法と設計は [API 連携演習](dbt/tutorial.md)と
+確認方法と設計は [API 連携演習](dbt/tutorial.md#api-persistence-exercise)と
 [保存先と分析基盤の拡張ガイド](dbt/backends.md)を参照してください。
 
 ## 3. Functions で動かす場合

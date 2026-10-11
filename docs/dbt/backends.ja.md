@@ -4,6 +4,16 @@
 このページは DuckDB 追加を小さく保つ理由と、業務の保存先・分析基盤を拡張する際の変更点を説明します。
 後半の Cosmos 取り込み例は**将来設計の参考例**であり、実装済みコマンドではありません。
 
+## 目的から読む
+
+| やりたいこと | 状態 | 読む場所 |
+| --- | --- | --- |
+| DuckDB の Task を API で操作する | 実行可能 | [API 連携演習](tutorial.md#api-persistence-exercise) |
+| Repository の実装・追加方法を理解する | 現在の実装の解説 | [DuckDB 実装](#duckdb-implementation) |
+| API の保存先を Cosmos に替える | 準備後に実行可能 | [Cosmos への切替](#cosmos-storage) |
+| Cosmos の Task を分析へ取り込む | 将来設計・未実装 | [Cosmos の分析](#cosmos-analytics) |
+| dbt の実行先を他の基盤に替える | 将来設計・互換性確認が必要 | [分析基盤の変更](#analytics-target) |
+
 ## 独立した3つの拡張ポイント
 
 | 境界 | 現在の実装 | 拡張する方法 |
@@ -16,6 +26,8 @@ TASK_REPOSITORY を変えても dbt profile は変わらず、Task のコピー�
 逆に dbt target を変更しても API の保存先は変わりません。
 dbt は対応先で SQL を実行します。sources の metadata は抽出用 connector ではありません。
 
+<a id="duckdb-implementation"></a>
+
 ## DuckDB 実装を読み解く
 
 [アーキテクチャ](../architecture/index.md)と、次の実装を順に読んでください。
@@ -24,6 +36,7 @@ dbt は対応先で SQL を実行します。sources の metadata は抽出用 c
 | --- | --- |
 | [TaskRepository](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/application/ports/task_repository.py) | 非同期 add / get / list / update / delete の契約 |
 | [Task と TaskStatus](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/domain/task.py) | UUID の型、status、文字列の正規化と不変条件 |
+| [Task use cases](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/application/task.py) | port を利用する CRUD と application error。保存先を追加しても変更しない |
 | [DuckDB adapter](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/infrastructure/repositories/duckdb_task.py) | SQL、行の変換、排他、エラー、接続 factory |
 | [Project settings](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/settings/project.py) | backend enum と任意のファイルパス |
 | [Composition root](https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/api.py) | adapter の選択・注入と lifespan |
@@ -49,6 +62,7 @@ dbt の unique test は物理的な PK 制約ではありません。起動時�
 UUID の英字の大小だけが異なる重複も拒否し、検索でも同じ UUID の同一性を維持します。
 add の存在確認と挿入を lock 内で行います。これは単一アプリの接続の保護であり、
 任意の外部 writer・独立した複数アプリの競合制御ではありません。
+同じファイルに書き込む Repository は、同一プロセス内も含め1インスタンスに限定してください。
 
 ### 非同期 port と同期 driver
 
@@ -62,18 +76,22 @@ adapter を提供し、正常・失敗・キャンセル時に接続を閉じま
 create_app は startup 時に AsyncExitStack で factory に入ります。
 アプリ生成・OpenAPI 参照だけではファイルを開きません。
 Protocol に close を追加せず、use case も DuckDB に依存しません。
+既存インスタンスを `create_app(repository=...)` に注入する場合は、factory で選択する経路とは異なり、
+呼び出し側が接続を解放します。`repository_backend` との同時指定はできません。
 
-<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
-```mermaid
-flowchart LR
-    extSettings["型付き設定"] -->|"backend と path"| extRoot["create_app"]
-    extRoot -->|"開始と解放"| extFactory["Repository factory"]
-    extFactory -->|"adapter を提供"| extAdapter["DuckDB adapter"]
-    extRoot -->|"注入"| extCases["Task use cases"]
-    extCases -->|"依存"| extPort["TaskRepository Protocol"]
-    extAdapter -.->|"実装"| extPort
-    extAdapter -->|"パラメーター SQL"| extFile[("既存 fct_tasks")]
-```
+生成・注入の図は [アーキテクチャのコンポーネント接続](../architecture/index.md#repository-wiring)に集約しています。
+このページでは保存形式・SQL・エラーなどの adapter 固有の判断を扱います。
+
+### 起動時の検証と行の検証を分ける
+
+| タイミング | 検証するもの | 失敗時 |
+| --- | --- | --- |
+| CLI / factory の開始 | DUCKDB_PATH の必須性と既存ファイル | 明示的な設定エラー |
+| DB 接続後の startup | main.fct_tasks の実テーブル・列型、NULL / 重複 ID | 起動を拒否し、接続を解放 |
+| get / list の行変換 | UUID・status・文字列・is_completed の整合性 | 保存先障害として HTTP 503 |
+
+起動成功だけで全行の品質を保証するわけではありません。品質の入口は dbt test、
+API の読み取り境界は行変換による検証です。
 
 ### 変更するもの・維持するもの
 
@@ -96,6 +114,8 @@ flowchart LR
 保存先追加だけを理由に ORM・汎用 repository 基底クラス・factory registry・Domain 項目を増やしません。
 Protocol は構造的型付けであり、互換性のあるメソッドがあれば適合します。
 
+<a id="cosmos-storage"></a>
+
 ## 既存 API の保存先を Cosmos DB に切り替える
 
 これは実装済みです。[Task 専用コンテナーの準備](../cosmosdb.md)に従い、
@@ -111,6 +131,8 @@ uv run --locked python -m scripts.template serve-container-apps --repository cos
 Cosmos では DUCKDB_PATH は不要です。DuckDB の Task は元のファイルに残り、自動移行はしません。
 切り替わるのは業務 CRUD の保存先だけであり、dbt project・入力ではありません。
 
+<a id="cosmos-analytics"></a>
+
 ## 将来: Cosmos の Task を dbt で分析する
 
 **今回は未実装です。** 業務の保存先と再構築可能な分析 mart を分離します。
@@ -119,13 +141,16 @@ dbt 管理 fact の直接 CRUD はローカル演習には便利ですが、再�
 
 <!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
 ```mermaid
-flowchart LR
+flowchart TD
     futureApi["Task API"] -->|"既存 Cosmos Repository"| futureCosmos[("Task コンテナー")]
     futureCosmos -.->|"将来の export と Load"| futureRaw[("分析用 raw table")]
     futureRaw -.->|"将来の source 定義"| futureStg["dbt staging"]
     futureStg -->|"SQL model"| futureMart[("Fact と集計 mart")]
     futureScheduler["将来の orchestration"] -.->|"Load 後に build と test"| futureStg
 ```
+
+この図はデータの流れです。破線の export・source 定義・orchestration は今回未実装です。
+source 定義は投入済み表を参照する metadata で、取り込み処理を代行しません。
 
 ### 最初は全件 snapshot から
 
@@ -185,6 +210,8 @@ all-versions-and-deletes mode は continuous backup が必要で、保持期間�
 採用前に現在の account・SDK・service の対応状況を確認してください。
 soft delete は現行 Task 契約を変えるため、今回の拡張では導入しません。
 
+<a id="analytics-target"></a>
+
 ## 将来: dbt を他の分析基盤で実行する
 
 [公式の対応先一覧](https://docs.getdbt.com/docs/supported-data-platforms)は、
@@ -212,7 +239,7 @@ API 用に Python duckdb を入れても、dbt の外部 extension driver が有
 | 機能 | 状態 |
 | --- | --- |
 | dbt seed / build / test・ローカル Docs | ハンズオンで実行可能 |
-| dbt 生成 fct_tasks の Task CRUD | 単一プロセスで実行可能。dbt の前に API を停止 |
+| dbt 生成 fct_tasks の Task CRUD | 1ファイルに1つの writer インスタンス。dbt の前に API を停止 |
 | 再起動後の永続性 | 既存ファイルを再利用して確認可能 |
 | API 更新から raw / 集計への同期 | 未実装。手動再構築は fact 更新を上書き |
 | 既存 Cosmos Repository | account・container・権限の準備後に実行可能 |

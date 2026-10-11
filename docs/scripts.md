@@ -96,10 +96,11 @@ uv run --locked python -m scripts.template serve-container-apps --repository duc
 The same `--repository duckdb` option works with `serve-functions`; export `DUCKDB_PATH`
 in the terminal that starts the launcher. Direct Uvicorn additionally needs `TASK_REPOSITORY=duckdb`.
 Missing files or an incompatible `main.fct_tasks` table fail explicitly; the API never creates them.
-This is a **single-process local exercise**, not a distributed persistence option.
+This is a local exercise with **one writing app/repository instance per file**.
+Multiple writers, even in one process, and distributed persistence are outside its scope.
 Stop the API before running dbt against the same file.
 API writes update only `fct_tasks`, not raw data or reports; rebuilding with dbt overwrites them.
-Follow the [API integration exercise](dbt/tutorial.md#8-connect-the-task-api-and-verify-persistence)
+Follow the [API integration exercise](dbt/tutorial.md#api-persistence-exercise)
 and [storage and analytics extension guide](dbt/backends.md) for verification and design details.
 
 ## 3. Run with Functions, if needed
