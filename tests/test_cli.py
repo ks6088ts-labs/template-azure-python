@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import ANY, patch
 
 import pytest
+from click import unstyle
 from typer.testing import CliRunner
 
 from scripts.template import app
@@ -166,8 +167,8 @@ def test_missing_repository_dependency_has_installation_guidance(backend, extra)
         return import_module(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=missing), patch("scripts.template.uvicorn.run") as server:
-        result = CliRunner().invoke(app, ["serve-container-apps", "--repository", backend])
+        result = CliRunner().invoke(app, ["serve-container-apps", "--repository", backend], color=True)
     assert result.exit_code == 2
-    plain = " ".join(line.strip(" │") for line in result.output.splitlines())
+    plain = " ".join(line.strip(" │") for line in unstyle(result.output).splitlines())
     assert f"uv sync --extra {extra}" in plain
     server.assert_not_called()
