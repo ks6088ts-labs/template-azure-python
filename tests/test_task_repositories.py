@@ -16,13 +16,15 @@ from template_azure_python.api import create_app
 from template_azure_python.application import TaskAlreadyExistsError, TaskRepositoryError
 from template_azure_python.domain import Task, TaskId, TaskStatus
 from template_azure_python.infrastructure import (
-    CosmosdbTaskRepository,
-    DuckdbTaskRepository,
     InMemoryTaskRepository,
     TaskStorageConfigurationError,
+)
+from template_azure_python.infrastructure.repositories.cosmosdb_task import (
+    TASK_QUERY,
+    CosmosdbTaskRepository,
     open_cosmos_task_repository,
 )
-from template_azure_python.infrastructure.repositories.cosmosdb_task import TASK_QUERY
+from template_azure_python.infrastructure.repositories.duckdb_task import DuckdbTaskRepository
 from template_azure_python.settings import TaskRepositoryBackend
 from template_azure_python.settings.azure import CosmosDBSettings
 
@@ -166,6 +168,8 @@ def test_missing_container_is_not_missing_task(operation, container):
     [
         {},
         {"id": "not-uuid", "title": "Task", "description": "", "status": "todo"},
+        {"id": str(TASK.id).replace("-", ""), "title": "Task", "description": "", "status": "todo"},
+        {"id": "ABCDEF01-0000-0000-0000-000000000001", "title": "Task", "description": "", "status": "todo"},
         {"id": str(TASK.id), "title": " ", "description": "", "status": "todo"},
         {"id": str(TASK.id), "title": "Task", "description": "", "status": "invalid"},
         {"id": str(TASK.id), "title": 12, "description": "", "status": "todo"},

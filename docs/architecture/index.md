@@ -7,6 +7,12 @@ It provides an **HTTP Task CRUD reference implementation** and **independent Azu
 The same FastAPI app runs through Uvicorn, Azure Functions, and Azure Container Apps.
 It is not a complete business system or a production persistence/authentication platform.
 
+The minimal runtime has five direct dependencies; Azure SDKs/telemetry, DuckDB, and
+Functions are optional extras. Storage adapters are imported only for the selected
+backend, and telemetry imports its exporter only when enabled. Import concrete
+Cosmos/DuckDB adapters from their modules, not the SDK-independent `infrastructure`
+package. See [installation choices](../scripts.md#minimal-runtime-and-optional-integrations).
+
 | Start here to understand... | Read |
 | --- | --- |
 | Local setup and startup | [Local development](../scripts.md). No Azure resources or sign-in are needed with InMemory and telemetry disabled |
@@ -114,6 +120,16 @@ DuckDB assumes **one writing app/repository instance per file**.
 Do not create multiple writers even in the same process; stop the API before running dbt.
 API writes do not synchronize raw/report tables, and dbt rebuilds overwrite fact mutations.
 Changing storage does not migrate Tasks automatically. See the [implementation/extension guide](../dbt/backends.md).
+
+HTTP title/description fields are stripped before length validation, matching domain
+normalization; limits apply to the normalized values. Validation failures retain
+the `{"detail": "..."}` / HTTP 422 contract. Cosmos documents must use canonical
+lowercase, hyphenated UUIDs so IDs returned by listing can be used for point reads.
+Invalid stored IDs fail as storage errors rather than appearing as usable Tasks.
+
+Library modules do not attach logging handlers. The CLI configures root logging;
+Uvicorn/Functions and embedding applications own their logging configuration.
+This avoids duplicate records and preserves host-provided handlers.
 
 ### Azure operations CLI - independent technical path
 

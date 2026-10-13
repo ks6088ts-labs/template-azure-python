@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import textwrap
+from builtins import __import__ as import_module
 from unittest.mock import patch
 
 import pytest
@@ -47,7 +48,7 @@ def azure(connection_string: str | None = CONNECTION_STRING) -> AzureSettings:
 
 
 def test_disabled_telemetry_does_not_configure_provider():
-    with patch("template_azure_python.telemetry.configure_azure_monitor") as configure:
+    with patch("azure.monitor.opentelemetry.configure_azure_monitor") as configure:
         assert configure_api_telemetry(project=project(), azure=azure()) is False
 
     configure.assert_not_called()
@@ -65,7 +66,7 @@ def test_enabled_telemetry_configures_azure_monitor_once():
         telemetry_traces_per_second=3.5,
         telemetry_live_metrics_enabled=True,
     )
-    with patch("template_azure_python.telemetry.configure_azure_monitor") as configure:
+    with patch("azure.monitor.opentelemetry.configure_azure_monitor") as configure:
         assert configure_api_telemetry(project=settings, azure=azure()) is True
         assert configure_api_telemetry(project=settings, azure=azure()) is True
 
@@ -82,7 +83,7 @@ def test_initialization_failure_is_sanitized():
     secret = "InstrumentationKey=do-not-disclose"
     with (
         patch(
-            "template_azure_python.telemetry.configure_azure_monitor",
+            "azure.monitor.opentelemetry.configure_azure_monitor",
             side_effect=RuntimeError(f"failed for {secret}"),
         ),
         pytest.raises(TelemetryConfigurationError, match="initialization failed") as error,
@@ -94,6 +95,19 @@ def test_initialization_failure_is_sanitized():
 
     assert secret not in str(error.value)
     assert error.value.__cause__ is None
+
+
+def test_missing_telemetry_dependency_has_installation_guidance():
+    def missing(name, *args, **kwargs):
+        if name == "azure.monitor.opentelemetry":
+            raise ModuleNotFoundError(name="azure")
+        return import_module(name, *args, **kwargs)
+
+    with (
+        patch("builtins.__import__", side_effect=missing),
+        pytest.raises(TelemetryConfigurationError, match="uv sync --extra azure"),
+    ):
+        configure_api_telemetry(project=project(telemetry_enabled=True), azure=azure())
 
 
 def test_fastapi_request_is_instrumented_offline():

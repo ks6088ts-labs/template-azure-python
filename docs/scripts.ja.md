@@ -25,10 +25,32 @@
 make install-deps-dev
 ```
 
-開発用の依存関係をすべてインストールし、[prek](https://prek.j178.dev/) の
+開発ツールとテストに必要な実行時の任意依存をインストールし、[prek](https://prek.j178.dev/) の
 Git hook を設定します。**既存の pre-commit hook は置き換えられます。**
-CI は JupyterLab を含まない依存関係セットを使います。課金される LLM 評価の依存は、
-通常の開発・CI インストールから除外します。任意の `eval` グループは [LLM 評価](evaluation.md)を参照してください。
+ドキュメント・JupyterLab・dbt・課金される LLM 評価の依存は既定ではインストールしません。
+必要なコマンドが対応するグループを選択します。
+任意の `eval` グループは [LLM 評価](evaluation.md)を参照してください。
+
+### 最小構成と任意の連携機能
+
+API だけを動かす場合は `make install-deps`（`uv sync --locked --no-dev`）を使います。
+直接の実行時依存は FastAPI・Pydantic・Pydantic Settings・Typer・Uvicorn の5つです。
+JSON 専用 API に不要な FastAPI の `standard` セットは使いません。
+既定の InMemory アプリは Azure SDK・DB driver・テレメトリ exporter を import しません。
+
+| 必要な機能 | 実行コマンドの接頭辞 |
+| --- | --- |
+| InMemory API・基本 CLI | `uv run --locked --no-dev` |
+| Azure 操作 CLI・Cosmos API・テレメトリ | `uv run --locked --no-dev --extra azure` |
+| DuckDB API | `uv run --locked --no-dev --extra duckdb` |
+| Azure Functions | `uv run --locked --no-dev --extra functions` |
+
+必要に応じて `--extra functions --extra azure` のように組み合わせます。
+`uv run` は選択した依存へ同期し、以前インストールした extra を削除する場合があるため、
+実行時にも extra のフラグを指定してください。`--no-dev` を付けなければ既定の開発グループが
+test グループ経由で全実行時 extra を含むため、以下の開発コマンドはそのまま使えます。
+プロジェクト名を変更する場合は、`test` 依存グループ内の自己参照
+`template-azure-python[azure,duckdb,functions]` も変更してください。
 
 ## 2. FastAPI を動かす
 
@@ -182,6 +204,16 @@ make docker-run
 
 Dockerfile は `serve-container-apps` を `0.0.0.0:8000` で起動します。
 `make docker-run` はホスト側のポートを `127.0.0.1` に限定します。
+既定のイメージは最小の実行時依存だけを含みます。Cosmos・テレメトリ・DuckDB を使う場合は、
+ビルド時に必要な extra を選択します。
+
+```shell
+docker build --build-arg APP_EXTRAS="azure duckdb" -t template-azure-python:custom .
+```
+
+Compose では `build.args.APP_EXTRAS` に必要な extra をスペース区切りで指定します。
+環境変数を設定するだけでは対応する SDK はインストールされません。
+イメージには実行用のパッケージと起動ポイントだけをコピーし、ドキュメントや開発時の生成物は含めません。
 
 ### イメージを検証する
 

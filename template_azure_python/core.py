@@ -15,5 +15,5 @@ def hello_world():
 
 
 if __name__ == "__main__":
-    logger.setLevel(logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
     hello_world()

@@ -6,14 +6,14 @@ from template_azure_python.domain import Task, TaskStatus
 
 
 class CreateTaskRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(default="", max_length=2000)
 
 
 class UpdateTaskRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(default="", max_length=2000)

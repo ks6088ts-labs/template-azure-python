@@ -1,4 +1,5 @@
 import subprocess
+from builtins import __import__ as import_module
 from pathlib import Path
 from unittest.mock import ANY, patch
 
@@ -36,7 +37,7 @@ def test_serve_container_apps_command(options: list[str], expected_host: str, ex
 )
 def test_serve_functions_command(options: list[str], expected_port: int):
     completed = subprocess.CompletedProcess(["func", "start"], 0)
-    with patch("scripts.template.subprocess.run", return_value=completed) as run:
+    with patch("scripts.template.run_process", return_value=completed) as run:
         result = CliRunner().invoke(app, ["serve-functions", *options])
 
     assert result.exit_code == 0, result.output
@@ -54,7 +55,7 @@ def test_serve_functions_command(options: list[str], expected_port: int):
 def test_serve_rejects_invalid_port(command: str, port: str):
     with (
         patch("scripts.template.uvicorn.run") as uvicorn_run,
-        patch("scripts.template.subprocess.run") as functions_run,
+        patch("scripts.template.run_process") as functions_run,
     ):
         result = CliRunner().invoke(app, [command, "--port", port])
 
@@ -65,7 +66,7 @@ def test_serve_rejects_invalid_port(command: str, port: str):
 
 
 def test_serve_functions_reports_missing_core_tools():
-    with patch("scripts.template.subprocess.run", side_effect=FileNotFoundError("func")) as run:
+    with patch("scripts.template.run_process", side_effect=FileNotFoundError("func")) as run:
         result = CliRunner().invoke(app, ["serve-functions"])
 
     assert result.exit_code == 1
@@ -75,7 +76,7 @@ def test_serve_functions_reports_missing_core_tools():
 
 def test_serve_functions_propagates_host_failure():
     completed = subprocess.CompletedProcess(["func", "start"], 42)
-    with patch("scripts.template.subprocess.run", return_value=completed):
+    with patch("scripts.template.run_process", return_value=completed):
         result = CliRunner().invoke(app, ["serve-functions"])
 
     assert result.exit_code == 42
@@ -90,7 +91,7 @@ def test_serve_repository_selection(command, backend, duckdb_file):
     with (
         patch("scripts.template.uvicorn.run"),
         patch("template_azure_python.api.create_app") as create_app,
-        patch("scripts.template.subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as run,
+        patch("scripts.template.run_process", return_value=subprocess.CompletedProcess([], 0)) as run,
     ):
         result = CliRunner().invoke(
             app,
@@ -111,7 +112,7 @@ def test_serve_repository_selection(command, backend, duckdb_file):
 
 @pytest.mark.parametrize("command", ["serve-container-apps", "serve-functions"])
 def test_serve_rejects_unknown_repository_and_missing_cosmos_settings(command):
-    with patch("scripts.template.uvicorn.run") as uvicorn_run, patch("scripts.template.subprocess.run") as run:
+    with patch("scripts.template.uvicorn.run") as uvicorn_run, patch("scripts.template.run_process") as run:
         invalid = CliRunner().invoke(app, [command, "--repository", "unknown"])
         missing = CliRunner().invoke(app, [command, "--repository", "cosmosdb"])
     assert invalid.exit_code == missing.exit_code == 2
@@ -125,7 +126,7 @@ def test_explicit_memory_overrides_environment_cosmos_without_endpoint(command):
     with (
         patch("scripts.template.uvicorn.run"),
         patch("template_azure_python.api.create_app") as create_app,
-        patch("scripts.template.subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as run,
+        patch("scripts.template.run_process", return_value=subprocess.CompletedProcess([], 0)) as run,
     ):
         result = CliRunner().invoke(app, [command, "--repository", "in-memory"], env={"TASK_REPOSITORY": "cosmosdb"})
     assert result.exit_code == 0, result.output
@@ -139,7 +140,7 @@ def test_explicit_memory_overrides_environment_cosmos_without_endpoint(command):
 @pytest.mark.parametrize("path", [None, "", "/nonexistent/task-file.duckdb"])
 def test_duckdb_cli_rejects_missing_file(command, path):
     env = {} if path is None else {"DUCKDB_PATH": path}
-    with patch("scripts.template.uvicorn.run") as server, patch("scripts.template.subprocess.run") as functions:
+    with patch("scripts.template.uvicorn.run") as server, patch("scripts.template.run_process") as functions:
         result = CliRunner().invoke(app, [command, "--repository", "duckdb"], env=env)
     assert result.exit_code == 2
     assert "DUCKDB_PATH" in result.output
@@ -151,7 +152,22 @@ def test_duckdb_cli_rejects_missing_file(command, path):
 def test_memory_override_does_not_require_duckdb_file(command):
     with (
         patch("scripts.template.uvicorn.run"),
-        patch("scripts.template.subprocess.run", return_value=subprocess.CompletedProcess([], 0)),
+        patch("scripts.template.run_process", return_value=subprocess.CompletedProcess([], 0)),
     ):
         result = CliRunner().invoke(app, [command, "--repository", "in-memory"], env={"TASK_REPOSITORY": "duckdb"})
     assert result.exit_code == 0, result.output
+
+
+@pytest.mark.parametrize(("backend", "extra"), [("cosmosdb", "azure"), ("duckdb", "duckdb")])
+def test_missing_repository_dependency_has_installation_guidance(backend, extra):
+    def missing(name, *args, **kwargs):
+        if name == f"template_azure_python.infrastructure.repositories.{backend}_task":
+            raise ModuleNotFoundError(name=extra)
+        return import_module(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=missing), patch("scripts.template.uvicorn.run") as server:
+        result = CliRunner().invoke(app, ["serve-container-apps", "--repository", backend])
+    assert result.exit_code == 2
+    plain = " ".join(line.strip(" │") for line in result.output.splitlines())
+    assert f"uv sync --extra {extra}" in plain
+    server.assert_not_called()

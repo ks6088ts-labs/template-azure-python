@@ -11,9 +11,9 @@ from fastapi.testclient import TestClient
 from template_azure_python.api import create_app
 from template_azure_python.application import TaskAlreadyExistsError, TaskRepositoryError
 from template_azure_python.domain import Task, TaskId, TaskStatus
-from template_azure_python.infrastructure import (
+from template_azure_python.infrastructure import TaskStorageConfigurationError
+from template_azure_python.infrastructure.repositories.duckdb_task import (
     DuckdbTaskRepository,
-    TaskStorageConfigurationError,
     open_duckdb_task_repository,
     validate_duckdb_task_path,
 )

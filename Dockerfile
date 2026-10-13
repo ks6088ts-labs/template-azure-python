@@ -6,7 +6,12 @@ COPY --from=astral/uv:0.12.19 /uv /usr/local/bin/uv
 
 COPY ./pyproject.toml ./uv.lock ./
 
-RUN uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+ARG APP_EXTRAS=""
+
+RUN set --; \
+    for extra in $APP_EXTRAS; do set -- "$@" --extra "$extra"; done; \
+    uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project \
+        --output-file requirements.txt "$@"
 
 FROM python:3.13-slim-bookworm
 
@@ -22,7 +27,9 @@ COPY --from=requirements-stage /build/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
 # Copy application code after dependencies are installed
-COPY . .
+COPY ./template_azure_python ./template_azure_python
+COPY ./scripts ./scripts
+COPY ./function_app.py ./host.json ./
 
 EXPOSE 8000
 

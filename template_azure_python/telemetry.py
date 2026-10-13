@@ -1,8 +1,5 @@
 from threading import Lock
 
-from azure.monitor.opentelemetry import configure_azure_monitor
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-
 from template_azure_python.settings import (
     AzureSettings,
     ProjectSettings,
@@ -29,6 +26,9 @@ def _configure_azure_monitor(project: ProjectSettings, azure: AzureSettings) -> 
         )
 
     try:
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+
         configure_azure_monitor(
             connection_string=connection_string.get_secret_value(),
             enable_live_metrics=project.telemetry_live_metrics_enabled,
@@ -36,6 +36,10 @@ def _configure_azure_monitor(project: ProjectSettings, azure: AzureSettings) -> 
             resource=Resource.create({SERVICE_NAME: project.project_name}),
             traces_per_second=project.telemetry_traces_per_second,
         )
+    except ModuleNotFoundError as error:
+        if error.name is None or error.name.split(".")[0] not in {"azure", "opentelemetry"}:
+            raise
+        raise TelemetryConfigurationError("API telemetry requires the 'azure' extra: uv sync --extra azure") from None
     except Exception:
         raise TelemetryConfigurationError("Azure Monitor telemetry initialization failed.") from None
 
