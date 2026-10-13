@@ -1,6 +1,6 @@
 import logging
-import subprocess
 from pathlib import Path
+from subprocess import run as run_process
 from typing import Annotated
 
 import typer
@@ -8,12 +8,8 @@ import uvicorn
 from pydantic import ValidationError
 
 from template_azure_python.core import hello_world
-from template_azure_python.infrastructure import (
-    TaskStorageConfigurationError,
-    validate_cosmos_task_settings,
-    validate_duckdb_task_path,
-)
-from template_azure_python.loggers import get_logger
+from template_azure_python.infrastructure import TaskStorageConfigurationError
+from template_azure_python.loggers import LOG_FORMAT, get_logger
 from template_azure_python.settings import (
     TaskRepositoryBackend,
     functions_environment,
@@ -38,12 +34,23 @@ def _repository(value: TaskRepositoryBackend | None) -> TaskRepositoryBackend:
     try:
         backend = value if value is not None else get_project_settings().task_repository
         if backend is TaskRepositoryBackend.COSMOSDB:
+            from template_azure_python.infrastructure.repositories.cosmosdb_task import validate_cosmos_task_settings
+
             validate_cosmos_task_settings(get_azure_settings().cosmos_db)
         elif backend is TaskRepositoryBackend.DUCKDB:
+            from template_azure_python.infrastructure.repositories.duckdb_task import validate_duckdb_task_path
+
             validate_duckdb_task_path(get_project_settings().duckdb_path)
         return backend
     except (ValidationError, TaskStorageConfigurationError) as error:
         raise typer.BadParameter(str(error), param_hint="--repository") from None
+    except ModuleNotFoundError as error:
+        if error.name is None or error.name.split(".")[0] not in {"azure", "duckdb"}:
+            raise
+        extra = "azure" if error.name.split(".")[0] == "azure" else "duckdb"
+        raise typer.BadParameter(
+            f"Install the '{extra}' extra: uv sync --extra {extra}", param_hint="--repository"
+        ) from None
 
 
 @app.callback()
@@ -57,8 +64,11 @@ def main(
         ),
     ] = False,
 ):
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else get_project_settings().project_log_level,
+        format=LOG_FORMAT,
+    )
     if verbose:
-        logging.basicConfig(level=logging.DEBUG)
         logger.setLevel(logging.DEBUG)
 
 
@@ -119,7 +129,7 @@ def serve_functions(
 ):
     backend = _repository(repository)
     try:
-        result = subprocess.run(
+        result = run_process(
             ["func", "start", "--port", str(port)],
             cwd=Path(__file__).resolve().parents[1],
             check=False,

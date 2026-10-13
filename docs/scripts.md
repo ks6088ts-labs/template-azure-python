@@ -25,10 +25,34 @@ Start with Python, uv, and Make. Install the other tools only when you need them
 make install-deps-dev
 ```
 
-This installs all development dependencies and the [prek](https://prek.j178.dev/)
+This installs the development tools, all runtime extras needed by the tests, and the [prek](https://prek.j178.dev/)
 Git hook. **It replaces any existing pre-commit hook.**
-CI uses a smaller dependency set without JupyterLab. Paid LLM evaluation dependencies are excluded from both
-default development and CI installation; see [LLM evaluation](evaluation.md) for the optional `eval` group.
+Documentation, JupyterLab, dbt, and paid LLM evaluation dependencies are not installed
+by default. Their commands select the corresponding group when needed.
+See [LLM evaluation](evaluation.md) for the optional `eval` group.
+
+### Minimal runtime and optional integrations
+
+For an API-only installation, use `make install-deps` (`uv sync --locked --no-dev`).
+The five direct runtime dependencies are FastAPI, Pydantic, Pydantic Settings, Typer,
+and Uvicorn. FastAPI's `standard` bundle is unnecessary for this JSON-only API.
+The Azure SDKs, database driver, and telemetry exporter are not imported by the
+default InMemory application.
+
+| Needed feature | Runtime command prefix |
+| --- | --- |
+| InMemory API / basic CLI | `uv run --locked --no-dev` |
+| Azure CLI samples, Cosmos API, or telemetry | `uv run --locked --no-dev --extra azure` |
+| DuckDB API | `uv run --locked --no-dev --extra duckdb` |
+| Azure Functions | `uv run --locked --no-dev --extra functions` |
+
+Combine extras when needed, for example `--extra functions --extra azure`.
+Keep the extra flags on `uv run`: it synchronizes the selected dependencies and
+may remove extras installed by a previous command. Without `--no-dev`, the default
+development group includes all runtime extras through the test group, so the
+development commands below continue to work unchanged.
+When renaming the project, also update the self-reference
+`template-azure-python[azure,duckdb,functions]` in the `test` dependency group.
 
 ## 2. Run FastAPI
 
@@ -181,6 +205,16 @@ make docker-run
 
 The Dockerfile starts `serve-container-apps` on `0.0.0.0:8000`.
 `make docker-run` restricts the host port to `127.0.0.1`.
+The default image contains only the minimal runtime. To enable Cosmos, telemetry,
+or a DuckDB backend, select the required extras at build time:
+
+```shell
+docker build --build-arg APP_EXTRAS="azure duckdb" -t template-azure-python:custom .
+```
+
+For Compose, set `build.args.APP_EXTRAS` to the required space-separated extras.
+Setting environment variables alone does not install the corresponding SDKs.
+The image copies only runtime packages and entrypoints, not documentation or development artifacts.
 
 ### Check the image
 

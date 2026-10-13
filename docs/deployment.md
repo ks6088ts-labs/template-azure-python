@@ -46,7 +46,7 @@ The file is Git-ignored but included in Functions publishing.
 
 ```shell
 FUNCTION_APP_NAME=your-function-app-name
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --format requirements-txt --no-dev --extra functions --no-hashes --no-emit-project --output-file requirements.txt
 ```
 
 #### 2. Publish
@@ -57,6 +57,8 @@ func azure functionapp publish "$FUNCTION_APP_NAME" --build remote
 
 Remote build installs the dependencies. No second FastAPI implementation or
 dedicated Docker image is needed. Configure app settings in Azure; do not publish `local.settings.json`.
+Add `--extra azure` to the export for Cosmos persistence or telemetry, and `--extra duckdb`
+for DuckDB. The `functions` extra is required even when using only InMemory.
 
 #### 3. Check the response
 
@@ -98,7 +100,7 @@ Confirm the displayed app is the intended target before continuing.
 #### 2. Export and publish
 
 ```shell
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --format requirements-txt --no-dev --extra functions --no-hashes --no-emit-project --output-file requirements.txt
 func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTION_ID" --build remote --python
 ```
 
@@ -135,6 +137,10 @@ You also need registry push permissions and an authenticated registry session.
 For a Terraform-managed app, use the Terraform procedure below instead.
 
 ### Update an existing Container App
+
+The default Docker image contains the minimal InMemory runtime. Add
+`--build-arg APP_EXTRAS="azure"` to the build commands below for Cosmos or telemetry,
+or `APP_EXTRAS="azure duckdb"` when both integrations are needed.
 
 #### 1. Build and push
 

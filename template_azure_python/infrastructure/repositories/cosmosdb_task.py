@@ -48,7 +48,10 @@ def _task(document: Mapping[str, object]) -> Task:
             or not isinstance(status, str)
         ):
             raise ValueError("Task document fields must be strings")
-        return Task(id=TaskId(UUID(task_id)), title=title, description=description, status=TaskStatus(status))
+        parsed_id = UUID(task_id)
+        if str(parsed_id) != task_id:
+            raise ValueError("Task UUID must use its canonical lowercase, hyphenated format")
+        return Task(id=TaskId(parsed_id), title=title, description=description, status=TaskStatus(status))
     except (KeyError, ValueError, TypeError) as error:
         raise _failure("decode", error) from None
 

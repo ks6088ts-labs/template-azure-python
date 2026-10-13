@@ -46,7 +46,7 @@ Azure Storage を設定した既存の Linux アプリを使います。この�
 
 ```shell
 FUNCTION_APP_NAME=your-function-app-name
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --format requirements-txt --no-dev --extra functions --no-hashes --no-emit-project --output-file requirements.txt
 ```
 
 #### 2. 発行する
@@ -57,6 +57,8 @@ func azure functionapp publish "$FUNCTION_APP_NAME" --build remote
 
 リモートビルドが依存関係をインストールします。別の FastAPI 実装や専用 Docker イメージは不要です。
 アプリの設定は Azure 側で行います。`local.settings.json` は発行しません。
+Cosmos 永続化・テレメトリには export に `--extra azure`、DuckDB には `--extra duckdb` を追加します。
+InMemory だけを使う場合も `functions` extra は必要です。
 
 #### 3. 応答を確認する
 
@@ -97,7 +99,7 @@ az functionapp show --ids "$FUNCTION_APP_ID" \
 #### 2. 依存関係を出力して発行する
 
 ```shell
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --format requirements-txt --no-dev --extra functions --no-hashes --no-emit-project --output-file requirements.txt
 func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTION_ID" --build remote --python
 ```
 
@@ -134,6 +136,10 @@ Functions の HTTP トリガー自体は匿名です。認証を有効にした�
 Terraform で管理するアプリには、次の Terraform 用手順を使ってください。
 
 ### 既存の Container App を更新する
+
+既定の Docker イメージは最小の InMemory 実行環境です。Cosmos・テレメトリを使う場合は、
+以下のビルドコマンドに `--build-arg APP_EXTRAS="azure"` を追加します。
+DuckDB も使う場合は `APP_EXTRAS="azure duckdb"` と指定します。
 
 #### 1. イメージをビルドして push する
 

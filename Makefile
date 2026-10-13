@@ -14,7 +14,7 @@ info: ## show information
 
 .PHONY: install-deps-dev
 install-deps-dev: ## install dependencies for development
-	uv sync --locked --all-groups --no-group eval
+	uv sync --locked --group dev
 	uv run --locked prek install -f
 	@which actionlint || echo "install actionlint https://github.com/rhysd/actionlint"
 

@@ -13,6 +13,16 @@ Clean Architecture boundaries, repository ports/adapters, explicit composition, 
 type checking, and CI-enforced import rules. See the architecture guide below before
 copying the pattern for a new feature.
 
+The default runtime needs only FastAPI, Pydantic, Pydantic Settings, Typer, and Uvicorn.
+Azure SDKs/telemetry, DuckDB, and Azure Functions are optional extras; the development
+and test groups include them for the complete sample suite.
+
+```shell
+uv run --locked --no-dev python -m scripts.template serve-container-apps
+# Azure-backed API or telemetry:
+uv run --locked --no-dev --extra azure python -m scripts.template serve-container-apps
+```
+
 ## Documentation
 
 | Topic | English | 日本語 |

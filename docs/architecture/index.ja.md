@@ -7,6 +7,11 @@ Python 3.10+ / FastAPI / Typer と Azure SDK を使う開発テンプレート�
 同じ FastAPI アプリを Uvicorn・Azure Functions・Azure Container Apps で動かします。
 完成した業務システムや本番向けの永続化・認証基盤ではありません。
 
+最小構成の直接依存は5つで、Azure SDK・テレメトリ、DuckDB、Functions は任意の extra です。
+保存先の adapter は選択された backend だけを import し、テレメトリ exporter は有効時だけ読み込みます。
+Cosmos / DuckDB の具象 adapter は、SDK 非依存の `infrastructure` パッケージではなく
+各実装モジュールから import してください。選択方法は[ローカル開発](../scripts.md)を参照してください。
+
 | 最初に知りたいこと | 読む場所 |
 | --- | --- |
 | 起動と開発環境 | [ローカル開発](../scripts.md)。InMemory・テレメトリ無効なら Azure リソース・サインインは不要 |
@@ -114,6 +119,14 @@ DuckDB は**1ファイルにつき1つの書き込みアプリ／Repository イ�
 同じプロセス内でも複数の writer を作らず、dbt を実行する前に API を停止します。
 API は raw・集計表と同期せず、dbt 再構築は fact への API 更新を上書きします。
 保存先を替えても Task の自動移行はしません。詳細は [実装・拡張ガイド](../dbt/backends.md)を参照してください。
+
+HTTP の title / description は前後の空白を除去してから長さを検証し、Domain の正規化と揃えます。
+上限は正規化後の値に適用し、検証失敗は従来どおり HTTP 422 / `{"detail": "..."}` で返します。
+Cosmos 文書の UUID は小文字・ハイフン付きの正規形に限定し、一覧の ID をそのまま point read に使えるようにします。
+不正な保存済み ID は、利用可能な Task として返さず storage error とします。
+
+ライブラリ側では logging handler を追加しません。CLI は root logging を設定し、
+Uvicorn・Functions・組み込み先アプリは各ホストが設定を管理します。ログの重複と既存 handler の上書きを避けます。
 
 ### Azure 操作 CLI - 独立した技術経路
 

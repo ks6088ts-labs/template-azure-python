@@ -97,7 +97,9 @@ def test_task_api_validation_and_application_state_isolation():
     second_application = create_app()
 
     with TestClient(first_application) as first_client:
-        assert first_client.post("/tasks", json={"title": " "}).json() == {"detail": "Task title must not be empty"}
+        assert first_client.post("/tasks", json={"title": " "}).json() == {
+            "detail": "String should have at least 1 character"
+        }
         invalid_response = first_client.post("/tasks", json={"title": ""})
         assert invalid_response.status_code == 422
         assert invalid_response.json() == {"detail": "String should have at least 1 character"}
@@ -142,6 +144,7 @@ def test_task_validation_response_matches_openapi(method: str, path: str, body: 
         ("a", "", 201),
         ("a" * 200, "b" * 2000, 201),
         ("a" * 201, "", 422),
+        ("  " + "a" * 200 + "  ", "  " + "b" * 2000 + "  ", 201),
         ("Valid", "b" * 2001, 422),
         (" ", "", 422),
     ],
