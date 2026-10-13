@@ -3,12 +3,13 @@ from collections.abc import AsyncGenerator, Mapping
 from contextlib import AsyncExitStack, asynccontextmanager
 from uuid import UUID
 
+from azure.core import MatchConditions
 from azure.core.exceptions import AzureError
 from azure.cosmos.aio import ContainerProxy, CosmosClient
-from azure.cosmos.exceptions import CosmosResourceExistsError, CosmosResourceNotFoundError
+from azure.cosmos.exceptions import CosmosHttpResponseError, CosmosResourceExistsError, CosmosResourceNotFoundError
 from azure.identity.aio import DefaultAzureCredential
 
-from template_azure_python.application import TaskAlreadyExistsError, TaskRepositoryError
+from template_azure_python.application import TaskAlreadyExistsError, TaskPreconditionError, TaskRepositoryError
 from template_azure_python.domain import Task, TaskId, TaskStatus
 from template_azure_python.infrastructure.repositories._errors import TaskStorageConfigurationError
 from template_azure_python.internals.azure._common import (
@@ -20,7 +21,7 @@ from template_azure_python.internals.azure._common import (
 from template_azure_python.settings.azure import CosmosDBSettings
 
 PARTITION_KEY_PATH = "/id"
-TASK_QUERY = "SELECT c.id, c.title, c.description, c.status FROM c"
+TASK_QUERY = "SELECT c.id, c.title, c.description, c.status, c._etag FROM c"
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +49,12 @@ def _task(document: Mapping[str, object]) -> Task:
             or not isinstance(status, str)
         ):
             raise ValueError("Task document fields must be strings")
-        return Task(id=TaskId(UUID(task_id)), title=title, description=description, status=TaskStatus(status))
+        etag = document.get("_etag")
+        if etag is not None and not isinstance(etag, str):
+            raise ValueError("Invalid Task ETag")
+        return Task(
+            id=TaskId(UUID(task_id)), title=title, description=description, status=TaskStatus(status), etag=etag
+        )
     except (KeyError, ValueError, TypeError) as error:
         raise _failure("decode", error) from None
 
@@ -88,22 +94,72 @@ class CosmosdbTaskRepository:
         except AzureError as error:
             raise _failure("list", error) from None
 
-    async def update(self, task: Task) -> bool:
+    async def ping(self) -> None:
         try:
-            await self._container.replace_item(item=str(task.id), body=_document(task), partition_key=str(task.id))
+            await self._container.read()
+        except AzureError as error:
+            raise _failure("ping", error) from None
+
+    async def page(self, *, offset: int, limit: int) -> tuple[tuple[Task, ...], int]:
+        try:
+            tasks = tuple(
+                [
+                    _task(document)
+                    async for document in self._container.query_items(
+                        query=f"{TASK_QUERY} ORDER BY c.id OFFSET @offset LIMIT @limit",
+                        parameters=[{"name": "@offset", "value": offset}, {"name": "@limit", "value": limit}],
+                        max_item_count=limit,
+                    )
+                ]
+            )
+            totals = [count async for count in self._container.query_items(query="SELECT VALUE COUNT(1) FROM c")]
+            if len(totals) != 1 or not isinstance(totals[0], int):
+                raise TaskRepositoryError()
+            return tasks, totals[0]
+        except AzureError as error:
+            raise _failure("page", error) from None
+
+    async def update(self, task: Task, *, expected_etag: str | None = None) -> bool:
+        try:
+            if expected_etag is None:
+                await self._container.replace_item(item=str(task.id), body=_document(task), partition_key=str(task.id))
+            else:
+                await self._container.replace_item(
+                    item=str(task.id),
+                    body=_document(task),
+                    partition_key=str(task.id),
+                    etag=expected_etag,
+                    match_condition=MatchConditions.IfNotModified,
+                )
         except CosmosResourceNotFoundError:
             await self._confirm_task_absence()
             return False
+        except CosmosHttpResponseError as error:
+            if error.status_code == 412:
+                raise TaskPreconditionError() from None
+            raise _failure("update", error) from None
         except AzureError as error:
             raise _failure("update", error) from None
         return True
 
-    async def delete(self, task_id: TaskId) -> bool:
+    async def delete(self, task_id: TaskId, *, expected_etag: str | None = None) -> bool:
         try:
-            await self._container.delete_item(item=str(task_id), partition_key=str(task_id))
+            if expected_etag is None:
+                await self._container.delete_item(item=str(task_id), partition_key=str(task_id))
+            else:
+                await self._container.delete_item(
+                    item=str(task_id),
+                    partition_key=str(task_id),
+                    etag=expected_etag,
+                    match_condition=MatchConditions.IfNotModified,
+                )
         except CosmosResourceNotFoundError:
             await self._confirm_task_absence()
             return False
+        except CosmosHttpResponseError as error:
+            if error.status_code == 412:
+                raise TaskPreconditionError() from None
+            raise _failure("delete", error) from None
         except AzureError as error:
             raise _failure("delete", error) from None
         return True
@@ -120,7 +176,7 @@ def validate_cosmos_task_settings(settings: CosmosDBSettings) -> tuple[str, str,
 
 
 @asynccontextmanager
-async def open_cosmos_task_repository(settings: CosmosDBSettings) -> AsyncGenerator[CosmosdbTaskRepository, None]:
+async def open_cosmos_task_repository(settings: CosmosDBSettings) -> AsyncGenerator[CosmosdbTaskRepository]:
     endpoint, database_id, container_id = validate_cosmos_task_settings(settings)
     try:
         async with AsyncExitStack() as stack:

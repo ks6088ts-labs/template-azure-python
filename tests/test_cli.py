@@ -24,6 +24,11 @@ def test_serve_container_apps_command(options: list[str], expected_host: str, ex
         create_app.return_value,
         host=expected_host,
         port=expected_port,
+        log_config=None,
+        server_header=False,
+        proxy_headers=True,
+        forwarded_allow_ips="127.0.0.1",
+        timeout_graceful_shutdown=30,
     )
 
 

@@ -306,25 +306,27 @@ def test_cancelled_startup_still_closes_acquired_connection(duckdb_file):
     proxy.close.assert_called_once()
 
 
-def test_api_lifespan_and_persistence_without_azure(duckdb_file, monkeypatch):
+def test_api_lifespan_reads_existing_data_without_azure(duckdb_file, monkeypatch):
     monkeypatch.setenv("TASK_REPOSITORY", "duckdb")
     monkeypatch.setenv("DUCKDB_PATH", str(duckdb_file))
+    with duckdb.connect(str(duckdb_file)) as connection:
+        connection.execute("INSERT INTO main.fct_tasks VALUES (?, 'Persist', '', 'todo', false)", [str(TASK.id)])
     with patch(f"{MODULE}.duckdb.connect", wraps=duckdb.connect) as connect:
         application = create_app()
         assert set(application.openapi()["paths"]) == {"/tasks", "/tasks/{task_id}"}
         connect.assert_not_called()
         with TestClient(application) as client:
-            created = client.post("/tasks", json={"title": " Persist "})
-            assert created.status_code == 201
-            task = created.json()
+            task = client.get(f"/tasks/{TASK.id}").json()
             assert set(task) == {"id", "title", "description", "status"}
             assert client.get(f"/tasks/{task['id']}").json() == task
-            assert client.put(f"/tasks/{task['id']}", json={"title": "Updated", "status": "done"}).status_code == 200
-        connect.assert_called_once()
+            assert client.post("/tasks", json={"title": " Persist "}).status_code == 405
+            assert client.put(f"/tasks/{task['id']}", json={"title": "Updated", "status": "done"}).status_code == 405
+            assert client.get("/readyz").status_code == 200
+        connect.assert_called_once_with(str(duckdb_file), read_only=True)
     with TestClient(create_app()) as client:
-        assert client.get("/tasks").json() == [{**task, "title": "Updated", "status": "done"}]
-        assert client.delete(f"/tasks/{task['id']}").status_code == 204
-        assert client.get(f"/tasks/{task['id']}").status_code == 404
+        assert client.get("/tasks").json() == [task]
+        assert client.delete(f"/tasks/{task['id']}").status_code == 405
+        assert client.get(f"/tasks/{task['id']}").status_code == 200
 
 
 def test_invalid_database_row_uses_existing_503_http_contract(duckdb_file, monkeypatch):
@@ -334,11 +336,13 @@ def test_invalid_database_row_uses_existing_503_http_contract(duckdb_file, monke
     with TestClient(create_app(repository_backend=TaskRepositoryBackend.DUCKDB)) as client:
         response = client.get("/tasks")
     assert response.status_code == 503
-    assert response.json() == {"detail": "Task storage is unavailable"}
+    assert response.json()["detail"] == "Task storage is unavailable"
 
 
 def test_functions_asgi_lifespan_uses_duckdb(duckdb_file, monkeypatch):
     monkeypatch.setenv("DUCKDB_PATH", str(duckdb_file))
+    with duckdb.connect(str(duckdb_file)) as connection:
+        connection.execute("INSERT INTO main.fct_tasks VALUES (?, 'Functions', '', 'todo', false)", [str(TASK.id)])
 
     async def scenario():
         middleware = func.AsgiMiddleware(create_app(repository_backend=TaskRepositoryBackend.DUCKDB))
@@ -353,7 +357,7 @@ def test_functions_asgi_lifespan_uses_duckdb(duckdb_file, monkeypatch):
                 ),
                 None,
             )
-            assert response.status_code == 201
+            assert response.status_code == 405
             response = await middleware.handle_async(
                 func.HttpRequest(method="GET", url="http://localhost/tasks", body=b""), None
             )

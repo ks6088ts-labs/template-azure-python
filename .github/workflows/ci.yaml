@@ -1,0 +1,149 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          version: "0.13.0"
+          python-version: "3.14"
+      - name: Install actionlint with checksum verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .ci-tools
+          gh release download v1.7.12 --repo rhysd/actionlint \
+            --pattern 'actionlint_1.7.12_linux_amd64.tar.gz' \
+            --pattern 'actionlint_1.7.12_checksums.txt' --dir .ci-tools
+          (cd .ci-tools && sha256sum -c --ignore-missing actionlint_1.7.12_checksums.txt)
+          tar -xzf .ci-tools/actionlint_1.7.12_linux_amd64.tar.gz -C .ci-tools actionlint
+          echo "$PWD/.ci-tools" >> "$GITHUB_PATH"
+      - name: Compile and lint infrastructure on every CI event
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            https://github.com/Azure/bicep/releases/download/v0.47.16/bicep-linux-x64 -o .ci-tools/bicep
+          echo "64c345a58e0c3e48b1bc98a4e62d6b3adb1d238281297de3400aeafb2697aa5a  .ci-tools/bicep" | sha256sum -c -
+          chmod +x .ci-tools/bicep
+          .ci-tools/bicep build infra/main.bicep --outfile .ci-tools/main.json
+          .ci-tools/bicep lint infra/main.bicep
+      - name: Run repository checks and hooks
+        run: |
+          make install-deps-ci format-check lint
+          make hooks-check
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          version: "0.13.0"
+          python-version: ${{ matrix.python-version }}
+      - name: Test all supported integrations and build the distribution
+        run: |
+          uv sync --locked --all-extras --no-dev --group test
+          uv run --locked --all-extras --no-dev --group test pytest --capture=no -vv
+          uv build
+
+  evaluation-compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14"]
+    env:
+      DEEPEVAL_TELEMETRY_OPT_OUT: "1"
+      DEEPEVAL_DISABLE_DOTENV: "1"
+      DEEPEVAL_DISABLE_LEGACY_KEYFILE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          version: "0.13.0"
+          python-version: ${{ matrix.python-version }}
+      - name: Validate evaluation plumbing without credentials or LLM calls
+        run: |
+          uv sync --locked --all-extras --group dev --group eval
+          uv run --locked --all-extras --group eval pytest \
+            tests/test_evaluation_harness.py tests/test_evaluation_deepeval.py --no-cov
+          make test-eval EVAL_ARGS=--collect-only
+
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint, build, scan, and smoke-test the container
+        run: make ci-test-docker
+
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          version: "0.13.0"
+          python-version: "3.14"
+      - name: Build documentation without publishing
+        run: |
+          uv sync --locked --no-dev --group docs
+          uv run --locked --no-dev --group docs mkdocs build --strict
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  ci-ok:
+    if: always()
+    needs: [check, test, evaluation-compatibility, docker, docs]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require every CI job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          jq -e 'length > 0 and all(.[]; .result == "success")' <<< "$RESULTS"

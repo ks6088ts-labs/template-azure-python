@@ -1,8 +1,6 @@
-[![test](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/test.yaml?query=branch%3Amain)
-[![docker](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/docker.yaml/badge.svg?branch=main)](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/docker.yaml?query=branch%3Amain)
-[![docker-release](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/docker-release.yaml/badge.svg)](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/docker-release.yaml)
-[![ghcr-release](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/ghcr-release.yaml/badge.svg)](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/ghcr-release.yaml)
-[![docs](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/github-pages.yaml/badge.svg)](https://github.com/ks6088ts-labs/template-azure-python/actions/workflows/github-pages.yaml)
+[![ci](https://github.com/OWNER/template-azure-python/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/OWNER/template-azure-python/actions/workflows/ci.yaml)
+[![release](https://github.com/OWNER/template-azure-python/actions/workflows/cd.yaml/badge.svg)](https://github.com/OWNER/template-azure-python/actions/workflows/cd.yaml)
+[![docs](https://github.com/OWNER/template-azure-python/actions/workflows/pages.yaml/badge.svg)](https://github.com/OWNER/template-azure-python/actions/workflows/pages.yaml)
 
 # template-azure-python
 
@@ -13,16 +11,34 @@ Clean Architecture boundaries, repository ports/adapters, explicit composition, 
 type checking, and CI-enforced import rules. See the architecture guide below before
 copying the pattern for a new feature.
 
+## Quick start
+
+Python 3.13+ is required; the default interpreter is Python 3.14.
+
+```shell
+make install-deps-dev
+uv run --locked python -m template_azure_python
+```
+
+Use `/healthz` and `/readyz` for probes. Local API documentation is available
+at `/docs`; production disables it by default. Azure deployment uses Easy Auth,
+environment-scoped OIDC, verified image digests, and production approval.
+Configure the prerequisites in [Deployment](docs/deployment.md) before enabling CD.
+
+Runtime dependencies exclude optional CLI samples, Functions, and storage SDKs.
+Development installation enables those extras for the existing sample tests.
+See [SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Documentation
 
 | Topic | English | 日本語 |
 | --- | --- | --- |
-| Getting started | [Guide](https://ks6088ts-labs.github.io/template-azure-python/) | [はじめに](https://ks6088ts-labs.github.io/template-azure-python/ja/) |
-| Local development | [Guide](https://ks6088ts-labs.github.io/template-azure-python/scripts/) | [ローカル開発](https://ks6088ts-labs.github.io/template-azure-python/ja/scripts/) |
-| Architecture | [Guide](https://ks6088ts-labs.github.io/template-azure-python/architecture/) | [アーキテクチャ](https://ks6088ts-labs.github.io/template-azure-python/ja/architecture/) |
-| Data engineering | [Guide](https://ks6088ts-labs.github.io/template-azure-python/dbt/) | [dbt・DuckDB 入門](https://ks6088ts-labs.github.io/template-azure-python/ja/dbt/) |
-| Microsoft Foundry | [Guide](https://ks6088ts-labs.github.io/template-azure-python/foundry/) | [ガイド](https://ks6088ts-labs.github.io/template-azure-python/ja/foundry/) |
-| Azure Cosmos DB | [Guide](https://ks6088ts-labs.github.io/template-azure-python/cosmosdb/) | [ガイド](https://ks6088ts-labs.github.io/template-azure-python/ja/cosmosdb/) |
-| Messaging | [Guide](https://ks6088ts-labs.github.io/template-azure-python/messaging/) | [メッセージング](https://ks6088ts-labs.github.io/template-azure-python/ja/messaging/) |
-| Monitoring and logs | [Guide](https://ks6088ts-labs.github.io/template-azure-python/monitoring/) | [監視とログ](https://ks6088ts-labs.github.io/template-azure-python/ja/monitoring/) |
-| Deployment | [Guide](https://ks6088ts-labs.github.io/template-azure-python/deployment/) | [ガイド](https://ks6088ts-labs.github.io/template-azure-python/ja/deployment/) |
+| Getting started | [Guide](docs/index.md) | [はじめに](docs/index.ja.md) |
+| Local development | [Guide](docs/scripts.md) | [ローカル開発](docs/scripts.ja.md) |
+| Architecture | [Guide](docs/architecture/index.md) | [アーキテクチャ](docs/architecture/index.ja.md) |
+| Data engineering | [Guide](docs/dbt/index.md) | [dbt・DuckDB 入門](docs/dbt/index.ja.md) |
+| Microsoft Foundry | [Guide](docs/foundry.md) | [ガイド](docs/foundry.ja.md) |
+| Azure Cosmos DB | [Guide](docs/cosmosdb.md) | [ガイド](docs/cosmosdb.ja.md) |
+| Messaging | [Guide](docs/messaging.md) | [メッセージング](docs/messaging.ja.md) |
+| Monitoring and logs | [Guide](docs/monitoring.md) | [監視とログ](docs/monitoring.ja.md) |
+| Deployment | [Guide](docs/deployment.md) | [ガイド](docs/deployment.ja.md) |

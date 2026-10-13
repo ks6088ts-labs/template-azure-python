@@ -10,11 +10,11 @@
 
 | ツール | 必要になる場面 |
 | --- | --- |
-| [Python 3.10+](https://www.python.org/downloads/) | すべての Python コマンド。CI は 3.10～3.14 でテスト |
-| [uv 0.12.19](https://docs.astral.sh/uv/getting-started/installation/) | 依存関係の管理とコマンド実行 |
+| [Python 3.13+](https://www.python.org/downloads/) | 既定は 3.14。CI は 3.13 と 3.14 でテスト |
+| [uv](https://docs.astral.sh/uv/getting-started/installation/) | `pyproject.toml` の `required-version` 範囲に従う |
 | [GNU Make](https://www.gnu.org/software/make/) | `make` コマンド |
 | `curl` | API の応答確認 |
-| [actionlint](https://github.com/rhysd/actionlint) | `make lint` と `make ci-test`。CI は v1.7.12 を使用 |
+| [actionlint](https://github.com/rhysd/actionlint) | `make workflows-lint`。未導入の場合は Go から実行 |
 | [Docker](https://docs.docker.com/get-docker/) | Docker / Compose の実行 |
 | [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local) | Functions のローカル実行 |
 | [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) | Azure サンプルの認証とデプロイ |
@@ -29,6 +29,10 @@ make install-deps-dev
 Git hook を設定します。**既存の pre-commit hook は置き換えられます。**
 CI は JupyterLab を含まない依存関係セットを使います。課金される LLM 評価の依存は、
 通常の開発・CI インストールから除外します。任意の `eval` グループは [LLM 評価](evaluation.md)を参照してください。
+
+本番には実行時依存だけを導入します。SDK サンプルは `--extra samples`、
+Functions は `--extra functions`、永続化は `pyproject.toml` に記載した storage extra
+を追加します。開発・CI では既存のサンプルを検証するため全 extra を有効にします。
 
 ## 2. FastAPI を動かす
 
@@ -80,7 +84,7 @@ Cosmos DB 選択時に `CosmosResourceNotFoundError, status=404` で起動に失
 [Task API の起動トラブルシュート](cosmosdb.md#task-api-startup-troubleshooting)を参照してください。
 実効設定と Azure 上のリソースを確認し、不足している Task 専用コンテナーを安全に準備する手順です。
 
-直接 `uvicorn template_azure_python.api:app` を起動する場合も `TASK_REPOSITORY` が使われます。
+直接 `uvicorn template_azure_python.api:create_app --factory` を起動する場合も `TASK_REPOSITORY` が使われます。
 Docker / Compose でも同じ環境設定を渡せます。InMemory はアプリごとに独立し、
 Cosmos は設定したコンテナーを共有します。
 
@@ -187,7 +191,7 @@ Dockerfile は `serve-container-apps` を `0.0.0.0:8000` で起動します。
 
 | 確認内容 | コマンド |
 | --- | --- |
-| コンテナーを起動し、`/tasks` と `/docs` を確認して停止 | `make docker-smoke-test` |
+| 制限付きのコンテナーを起動し、`/healthz` と `/readyz` を確認して停止 | `make docker-smoke-test` |
 | Dockerfile の lint、ビルド、スキャン、起動確認をまとめて実行 | `make ci-test-docker` |
 
 スモークテストは自分でコンテナーを起動するため、`make docker-run` の実行中でなくても使えます。

@@ -185,12 +185,72 @@ def test_empty_environment_values_use_defaults(monkeypatch: pytest.MonkeyPatch):
     assert get_azure_settings().cosmos_db.database == "cosmicworks"
 
 
-def test_settings_are_cached_and_can_be_reset(monkeypatch: pytest.MonkeyPatch):
+def test_settings_are_fresh_and_can_be_reset(monkeypatch: pytest.MonkeyPatch):
     first = get_azure_settings()
     monkeypatch.setenv("AZURE_COSMOS_DB_DATABASE", "changed")
-    assert get_azure_settings() is first
+    assert get_azure_settings() is not first
+    assert first.cosmos_db.database == "cosmicworks"
+    assert get_azure_settings().cosmos_db.database == "changed"
     get_azure_settings.cache_clear()
     assert get_azure_settings().cosmos_db.database == "changed"
+
+
+def test_settings_are_frozen_and_log_level_is_validated():
+    from pydantic import ValidationError
+
+    settings = ProjectSettings(_env_file=None, cors_allowed_origins=["https://frontend.example"])
+    assert settings.cors_allowed_origins == ("https://frontend.example",)
+    with pytest.raises(ValidationError, match="frozen"):
+        settings.app_version = "new"
+    with pytest.raises(ValidationError):
+        ProjectSettings(_env_file=None, project_log_level="not-a-level")
+    azure = AzureSettings(_env_file=None)
+    with pytest.raises(ValidationError, match="frozen"):
+        azure.cosmos_db.database = "new"
+    with pytest.raises(ValidationError, match="frozen"):
+        azure.cosmos_db = CosmosDBSettings(_env_file=None)
+
+
+def test_project_settings_are_fresh_and_security_configuration_fails_closed(monkeypatch):
+    first = get_project_settings()
+    monkeypatch.setenv("APP_VERSION", "1.2.3")
+    assert first.app_version == "0.0.1"
+    assert get_project_settings().app_version == "1.2.3"
+    for options in (
+        {"auth_mode": "unknown"},
+        {"auth_required_role": "writer"},
+        {"auth_mode": "easyauth", "auth_required_role": " "},
+        {"cors_allowed_origins": ["*"]},
+        {"cors_allowed_origins": ["https://example.com/path"]},
+        {"cors_allowed_origins": ["******example.com"]},
+        {"cors_allowed_origins": ["https://"]},
+    ):
+        with pytest.raises(ValueError):
+            ProjectSettings(_env_file=None, **options)
+
+
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_deployment_environment_contract(monkeypatch, environment):
+    monkeypatch.setenv("APP_ENVIRONMENT", environment)
+    monkeypatch.setenv("APP_VERSION", "1.2.3")
+    monkeypatch.setenv("AUTH_MODE", "easyauth")
+    monkeypatch.setenv("AUTH_REQUIRED_ROLE", "Task.ReadWrite")
+    monkeypatch.setenv("TELEMETRY_ENABLED", "true")
+    monkeypatch.setenv("TELEMETRY_USE_MANAGED_IDENTITY", "true")
+    monkeypatch.setenv("AZURE_CLIENT_ID", "runtime-client-id")
+    monkeypatch.setenv("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=test-key")
+    settings = get_project_settings()
+    assert settings.app_environment == environment
+    assert settings.app_version == "1.2.3"
+    assert settings.docs_enabled is False
+    assert settings.auth_mode == "easyauth"
+    assert settings.auth_required_role == "Task.ReadWrite"
+    assert settings.telemetry_enabled
+    assert settings.telemetry_use_managed_identity
+    assert settings.azure_client_id == "runtime-client-id"
+    connection_string = get_azure_settings().application_insights.connection_string
+    assert connection_string is not None
+    assert connection_string.get_secret_value() == "InstrumentationKey=test-key"
 
 
 def test_secret_is_not_in_settings_output(monkeypatch: pytest.MonkeyPatch):

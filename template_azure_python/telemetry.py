@@ -29,12 +29,26 @@ def _configure_azure_monitor(project: ProjectSettings, azure: AzureSettings) -> 
         )
 
     try:
+        options: dict[str, object] = {}
+        if project.telemetry_use_managed_identity:
+            from azure.identity import ManagedIdentityCredential
+
+            options["credential"] = ManagedIdentityCredential(client_id=project.azure_client_id)
         configure_azure_monitor(
             connection_string=connection_string.get_secret_value(),
             enable_live_metrics=project.telemetry_live_metrics_enabled,
             logger_name=LOGGER_NAME,
-            resource=Resource.create({SERVICE_NAME: project.project_name}),
+            resource=Resource.create(
+                {
+                    SERVICE_NAME: project.project_name,
+                    "service.version": project.app_version,
+                    "deployment.environment.name": project.app_environment,
+                }
+            ),
             traces_per_second=project.telemetry_traces_per_second,
+            instrumentation_options={"fastapi": {"enabled": False}},
+            disable_offline_storage=True,
+            **options,
         )
     except Exception:
         raise TelemetryConfigurationError("Azure Monitor telemetry initialization failed.") from None

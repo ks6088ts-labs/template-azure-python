@@ -30,7 +30,9 @@ def cosmos_clients():
     container = MagicMock()
     partition_key = MagicMock()
     client.create_database_if_not_exists.return_value = database
+    client.get_database_client.return_value = database
     database.create_container_if_not_exists.return_value = container
+    database.get_container_client.return_value = container
 
     with (
         patch(
@@ -59,12 +61,11 @@ def assert_default_resources(cosmos_clients: SimpleNamespace) -> None:
         url=ENDPOINT,
         credential=cosmos_clients.credential,
     )
-    cosmos_clients.client.create_database_if_not_exists.assert_called_once_with(id=DEFAULT_DATABASE)
-    cosmos_clients.partition_key_type.assert_called_once_with(path=PARTITION_KEY_PATH)
-    cosmos_clients.database.create_container_if_not_exists.assert_called_once_with(
-        id=DEFAULT_CONTAINER,
-        partition_key=cosmos_clients.partition_key,
-    )
+    cosmos_clients.client.get_database_client.assert_called_once_with(DEFAULT_DATABASE)
+    cosmos_clients.database.get_container_client.assert_called_once_with(DEFAULT_CONTAINER)
+    cosmos_clients.client.create_database_if_not_exists.assert_not_called()
+    cosmos_clients.database.create_container_if_not_exists.assert_not_called()
+    cosmos_clients.partition_key_type.assert_not_called()
     cosmos_clients.client.close.assert_called_once_with()
     cosmos_clients.credential.close.assert_called_once_with()
 
@@ -109,6 +110,7 @@ def test_upsert_item_uses_cli_options_and_throughput(cosmos_clients: SimpleNames
             "custom-container",
             "--throughput",
             "500",
+            "--create-resources",
             "--item-id",
             "custom-id",
             "--category",
@@ -124,6 +126,7 @@ def test_upsert_item_uses_cli_options_and_throughput(cosmos_clients: SimpleNames
     assert result.exit_code == 0, result.output
     assert json.loads(result.output) == expected_item
     cosmos_clients.client.create_database_if_not_exists.assert_called_once_with(id="custom-database")
+    cosmos_clients.partition_key_type.assert_called_once_with(path=PARTITION_KEY_PATH)
     cosmos_clients.database.create_container_if_not_exists.assert_called_once_with(
         id="custom-container",
         partition_key=cosmos_clients.partition_key,
@@ -158,11 +161,9 @@ def test_read_item_reads_resource_options_from_environment(cosmos_clients: Simpl
         url=ENDPOINT,
         credential=cosmos_clients.credential,
     )
-    cosmos_clients.client.create_database_if_not_exists.assert_called_once_with(id="environment-database")
-    cosmos_clients.database.create_container_if_not_exists.assert_called_once_with(
-        id="environment-container",
-        partition_key=cosmos_clients.partition_key,
-    )
+    cosmos_clients.client.get_database_client.assert_called_once_with("environment-database")
+    cosmos_clients.database.get_container_client.assert_called_once_with("environment-container")
+    cosmos_clients.client.create_database_if_not_exists.assert_not_called()
     cosmos_clients.container.read_item.assert_called_once_with(
         item="custom-id",
         partition_key="custom-category",
@@ -258,6 +259,25 @@ def test_query_items_reports_azure_error(cosmos_clients: SimpleNamespace):
 
     assert result.exit_code == 1
     assert "Error: Azure Cosmos DB operation failed: request failed" in result.output
+
+
+def test_throughput_requires_explicit_resource_creation(cosmos_clients: SimpleNamespace):
+    result = CliRunner().invoke(app, ["upsert-item", "--endpoint", ENDPOINT, "--throughput", "500"])
+    assert result.exit_code == 2
+    assert "--create-resources" in result.output
+    cosmos_clients.client_type.assert_not_called()
+
+
+def test_read_missing_database_does_not_create_it(cosmos_clients: SimpleNamespace):
+    from azure.cosmos.exceptions import CosmosResourceNotFoundError
+
+    cosmos_clients.database.read.side_effect = CosmosResourceNotFoundError(status_code=404)
+    result = CliRunner().invoke(app, ["read-item", "--endpoint", ENDPOINT])
+    assert result.exit_code == 1
+    cosmos_clients.client.create_database_if_not_exists.assert_not_called()
+    cosmos_clients.database.create_container_if_not_exists.assert_not_called()
+    cosmos_clients.credential.close.assert_called_once()
+    cosmos_clients.client.close.assert_called_once()
     cosmos_clients.client.close.assert_called_once_with()
     cosmos_clients.credential.close.assert_called_once_with()
 

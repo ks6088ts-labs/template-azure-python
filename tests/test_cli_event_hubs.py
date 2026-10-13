@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -68,7 +68,7 @@ def event(body="hello"):
         body_as_str=lambda: body,
         offset="17",
         sequence_number=3,
-        enqueued_time=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        enqueued_time=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
 

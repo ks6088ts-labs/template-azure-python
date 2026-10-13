@@ -1,164 +1,149 @@
-# Git
 GIT_REVISION ?= $(shell git rev-parse --short HEAD)
-GIT_TAG ?= $(shell git describe --tags --abbrev=0 --always | sed -e s/v//g)
+GIT_TAG ?= $(shell git describe --tags --abbrev=0 --always | sed 's/^v//')
+UV ?= uv
+UV_VERSION = $(shell sed -n 's/^required-version = "==\(.*\)"/\1/p' pyproject.toml)
 
-.PHONY: help
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .DEFAULT_GOAL := help
+.PHONY: help info install-deps-dev install-deps-ci install-deps format-check format fix check lint lint-python lint-workflows test
+.PHONY: test-eval lint-eval typecheck-compare hooks-check ci-test update jupyterlab
+.PHONY: docker-build docker-run docker-smoke-test docker-lint docker-scan ci-test-docker
+.PHONY: install-deps-docs docs docs-serve ci-test-docs build smoke-test init-template
 
-.PHONY: info
-info: ## show information
+help: ## show available commands
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+info: ## show Git information
 	@echo "GIT_REVISION: $(GIT_REVISION)"
 	@echo "GIT_TAG: $(GIT_TAG)"
+	@echo "UV_VERSION: $(UV_VERSION)"
 
-.PHONY: install-deps-dev
-install-deps-dev: ## install dependencies for development
-	uv sync --locked --all-groups --no-group eval
-	uv run --locked prek install -f
-	@which actionlint || echo "install actionlint https://github.com/rhysd/actionlint"
+install-deps-dev: ## install development dependencies and all optional integrations
+	$(UV) sync --locked --all-extras --group dev --group docs
+	$(UV) run --locked --all-extras --group dev prek install -f
 
-.PHONY: install-deps-ci
-install-deps-ci: ## install dependencies for CI checks
-	uv sync --locked --group dev
+install-deps-ci: ## install CI dependencies and all optional integrations
+	$(UV) sync --locked --all-extras --group dev
 
-.PHONY: install-deps
-install-deps: ## install dependencies for production
-	uv sync --locked --no-dev
+install-deps: ## install only production dependencies
+	$(UV) sync --locked --no-default-groups
 
-.PHONY: format-check
-format-check: ## format check
-	uv run --locked ruff format --check --verbose
+format-check: ## check formatting
+	$(UV) run --locked --all-extras --group dev ruff format --check .
 
-.PHONY: format
 format: ## format code
-	uv run --locked ruff format --verbose
+	$(UV) run --locked --all-extras --group dev ruff format .
 
-.PHONY: fix
-fix: format ## apply auto-fixes
-	uv run --locked ruff check --fix
+fix: format ## apply lint fixes
+	$(UV) run --locked --all-extras --group dev ruff check --fix .
 
-.PHONY: lint
-lint: ## lint
-	uv run --locked ruff check .
-	uv run --locked mypy
-	uv run --locked ty check
-	uv run --locked pyrefly check
-	uv run --locked lint-imports
-	actionlint
-	uv run --locked zizmor --offline --strict-collection --min-severity high .
+lint: lint-python lint-workflows ## run Python and workflow quality gates
 
-.PHONY: test
-test: ## run tests
-	uv run --locked pytest --capture=no -vv
+check: format-check lint-python ## check Python formatting, typing, linting, and architecture
+
+lint-python: ## run the canonical Python quality gates (mypy, Ruff, architecture)
+	$(UV) run --locked --all-extras --group dev ruff check .
+	$(UV) run --locked --all-extras --group dev mypy
+	$(UV) run --locked --all-extras --group dev lint-imports
+
+ACTIONLINT_VERSION ?= 1.7.12
+lint-workflows: ## lint workflows with native actionlint or its pinned Docker fallback
+	@if command -v actionlint >/dev/null 2>&1; then \
+		actionlint; \
+	elif command -v docker >/dev/null 2>&1; then \
+		docker run --rm -v "$(CURDIR):/repo:ro" -w /repo rhysd/actionlint:$(ACTIONLINT_VERSION); \
+	else \
+		echo "Install actionlint $(ACTIONLINT_VERSION) or Docker to lint workflows." >&2; exit 1; \
+	fi
+	$(UV) run --locked --all-extras --group dev zizmor --offline --strict-collection --min-severity high .github/workflows
+
+test: ## run offline tests with concise captured output
+	$(UV) run --locked --all-extras --group dev pytest -q
 
 EVAL_ARGS ?=
-
-.PHONY: test-eval
-test-eval: ## run paid local Foundry evaluations explicitly (EVAL_ARGS='-m llm_eval_smoke' for one case)
+test-eval: ## run paid local Foundry evaluations explicitly (EVAL_ARGS='-m llm_eval_smoke')
 	env -u CONFIDENT_API_KEY \
 		DEEPEVAL_TELEMETRY_OPT_OUT=1 DEEPEVAL_DISABLE_DOTENV=1 DEEPEVAL_DISABLE_LEGACY_KEYFILE=1 \
 		DEEPEVAL_EVAL_MODE=llm DEEPEVAL_MODE=stable CONFIDENT_OPEN_BROWSER=0 \
 		DEEPEVAL_RETRY_MAX_ATTEMPTS=2 DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=60 \
 		DEEPEVAL_RESULTS_FOLDER=artifacts/evaluations \
-		uv run --locked --no-dev --group eval deepeval test run tests/evaluations \
+		$(UV) run --locked --all-extras --no-default-groups --group eval deepeval test run tests/evaluations \
 		--run-llm-evals --override-ini='addopts=-ra --strict-markers' --override-ini='log_cli=false' \
 		--capture=fd --junitxml=artifacts/evaluations/junit.xml $(EVAL_ARGS)
 
-.PHONY: lint-eval
-lint-eval: ## type-check optional evaluation code with its dependencies installed
-	uv run --locked --group eval ty check tests/evaluations tests/test_evaluation_deepeval.py
-	uv run --locked --group eval pyrefly check tests/evaluations tests/test_evaluation_deepeval.py
+lint-eval: ## compare optional type checkers on the existing evaluation tests
+	$(UV) run --locked --all-extras --group eval --group type-eval ty check tests/evaluations tests/test_evaluation_deepeval.py
+	$(UV) run --locked --all-extras --group eval --group type-eval pyrefly check tests/evaluations tests/test_evaluation_deepeval.py
 
-.PHONY: hooks-check
+typecheck-compare: ## evaluate alternative type checkers without changing the required mypy gate
+	$(UV) run --locked --all-extras --group type-eval ty check
+	$(UV) run --locked --all-extras --group type-eval pyrefly check
+
 hooks-check: ## check all configured hooks
-	uv run --locked prek run --all-files
+	$(UV) run --locked --all-extras --group dev prek run --all-files
 
-.PHONY: ci-test
-ci-test: install-deps-ci format-check lint test ## run CI tests
+ci-test: install-deps-ci format-check lint test ## run CI checks
 
-.PHONY: update
-update: ## update packages
-	uv lock --upgrade
+update: ## update dependency locks (review advisories before committing)
+	$(UV) lock --upgrade
 
-.PHONY: jupyterlab
+build: ## build an installable wheel and source distribution
+	$(UV) build
+
 jupyterlab: ## run Jupyter Lab
-	uv run --locked --group notebook jupyter lab
+	$(UV) run --locked --all-extras --group notebook jupyter lab
 
-# ---
-# Docker
-# ---
+smoke-test: ## probe health and readiness without mutating application data
+	$(UV) run --locked --no-default-groups python -m scripts.smoke_test $(SMOKE_ARGS)
+
+init-template: ## preview metadata customization (INIT_ARGS='--name my-service --apply' to write)
+	$(UV) run --locked --no-default-groups python -m scripts.init_template $(INIT_ARGS)
+
 DOCKER_REPO_NAME ?= ks6088ts
 DOCKER_IMAGE_NAME ?= template-azure-python
-DOCKER_COMMAND ?=
-
-# Tools
+DOCKER_IMAGE = $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)
 HADOLINT_VERSION ?= v2.15.1
 TRIVY_VERSION ?= 0.74.0
+TRIVY_DIGEST ?= sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
 TRIVY_CACHE_VOLUME ?= template-azure-python-trivy-cache
 
-.PHONY: docker-build
-docker-build: ## build Docker image
-	docker build \
-		-t $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) \
-		--build-arg GIT_REVISION=$(GIT_REVISION) \
-		--build-arg GIT_TAG=$(GIT_TAG) \
-		.
+docker-build: ## build the minimal production image
+	docker build -t $(DOCKER_IMAGE) --build-arg GIT_REVISION=$(GIT_REVISION) --build-arg GIT_TAG=$(GIT_TAG) .
 
-.PHONY: docker-run
-docker-run: ## run Docker container
-	docker run --rm -p 127.0.0.1:8000:8000 $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) $(DOCKER_COMMAND)
+docker-run: ## run a non-root, read-only container on loopback
+	docker run --rm --read-only --cap-drop=ALL --security-opt=no-new-privileges \
+		--tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m -p 127.0.0.1:8000:8000 $(DOCKER_IMAGE)
 
-.PHONY: docker-smoke-test
-docker-smoke-test: ## check the default Docker server over HTTP
+docker-smoke-test: ## check the production image with read-only health probes
 	@set -eu; \
-	container=$$(docker run -d -p 127.0.0.1::8000 $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)); \
+	container=$$(docker run -d --read-only --cap-drop=ALL --security-opt=no-new-privileges \
+		--tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m -p 127.0.0.1::8000 $(DOCKER_IMAGE)); \
 	trap 'docker rm -f "$$container" >/dev/null' EXIT; \
 	port=$$(docker port "$$container" 8000/tcp | sed 's/.*://'); \
-	attempt=0; \
-	while [ "$$attempt" -lt 30 ]; do \
-		if response=$$(curl --fail --silent "http://127.0.0.1:$$port/tasks") && \
-			[ "$$response" = '[]' ] && \
-			curl --fail --silent -o /dev/null "http://127.0.0.1:$$port/docs"; then \
-			printf 'Container served /tasks and /docs on port %s\n' "$$port"; \
-			exit 0; \
-		fi; \
-		attempt=$$((attempt + 1)); \
-		sleep 1; \
-	done; \
-	printf 'Container did not serve /tasks and /docs on port %s\n' "$$port" >&2; \
-	docker logs "$$container"; \
-	exit 1
+	$(UV) run --locked --no-default-groups python -m scripts.smoke_test --base-url "http://127.0.0.1:$$port" \
+		|| { docker logs "$$container"; exit 1; }
 
-.PHONY: docker-lint
-docker-lint: ## lint Dockerfile
+docker-lint: ## lint the Dockerfile
 	docker run --rm -i hadolint/hadolint:$(HADOLINT_VERSION) < Dockerfile
 
-.PHONY: docker-scan
-docker-scan: ## scan Docker image
-	docker run --rm \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(TRIVY_CACHE_VOLUME):/root/.cache/trivy \
-		aquasec/trivy:$(TRIVY_VERSION) image $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)
+docker-scan: ## scan an image archive without sharing the Docker socket
+	@set -eu; mkdir -p artifacts; \
+	archive="$(CURDIR)/artifacts/image-scan.tar"; \
+	trap 'rm -f "$$archive"' EXIT; \
+	docker save --output "$$archive" $(DOCKER_IMAGE); \
+	docker run --rm -v "$$archive:/scan/image.tar:ro" -v $(TRIVY_CACHE_VOLUME):/root/.cache/trivy \
+		aquasec/trivy:$(TRIVY_VERSION)@$(TRIVY_DIGEST) image --input /scan/image.tar --scanners vuln \
+		--db-repository ghcr.io/aquasecurity/trivy-db:2 \
+		--severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
 
-.PHONY: ci-test-docker
-ci-test-docker: docker-lint docker-build docker-scan docker-smoke-test ## run CI test for Docker
+ci-test-docker: docker-lint docker-build docker-scan docker-smoke-test ## validate the production container
 
-# ---
-# Docs
-# ---
+install-deps-docs: ## install documentation dependencies
+	$(UV) sync --locked --no-default-groups --group docs
 
-.PHONY: install-deps-docs
-install-deps-docs: ## install dependencies for documentation
-	uv sync --locked --no-dev --group docs
+docs: ## build documentation with warnings treated as errors
+	$(UV) run --locked --no-default-groups --group docs mkdocs build --strict
 
-.PHONY: docs
-docs: ## build documentation
-	uv run --locked --no-dev --group docs mkdocs build
-
-.PHONY: docs-serve
 docs-serve: ## serve documentation
-	uv run --locked --no-dev --group docs mkdocs serve
+	$(UV) run --locked --no-default-groups --group docs mkdocs serve
 
-.PHONY: ci-test-docs
-ci-test-docs: install-deps-docs docs ## run CI test for documentation
+ci-test-docs: install-deps-docs docs ## run documentation CI checks

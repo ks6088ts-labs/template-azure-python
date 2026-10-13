@@ -23,7 +23,7 @@ class _ProjectClient(Protocol):
 
 
 @contextmanager
-def _project_client(endpoint: str | None) -> Generator[_ProjectClient, None, None]:
+def _project_client(endpoint: str | None) -> Generator[_ProjectClient]:
     endpoint = required_value(endpoint, get_azure_settings().foundry.endpoint, "--endpoint")
     try:
         parsed = urlparse(endpoint)

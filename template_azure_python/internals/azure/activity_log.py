@@ -1,6 +1,6 @@
 from collections import Counter
 from contextlib import closing
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from itertools import islice
 
 from azure.identity import DefaultAzureCredential
@@ -43,7 +43,7 @@ def _read_events(
         raise InputError("must be between 1 and 168", "--hours")
     if not 1 <= limit <= 1000:
         raise InputError("must be between 1 and 1000", "--limit")
-    end_time = datetime.now(timezone.utc)
+    end_time = datetime.now(UTC)
     start_time = end_time - timedelta(hours=hours)
     start = start_time.isoformat().replace("+00:00", "Z")
     end = end_time.isoformat().replace("+00:00", "Z")

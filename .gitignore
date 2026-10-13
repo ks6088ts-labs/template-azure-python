@@ -166,3 +166,6 @@ local.settings.json
 .deepeval/
 artifacts/evaluations/
 artifacts/dbt/
+infra/*.json
+.scratch/
+.cache/

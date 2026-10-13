@@ -18,7 +18,7 @@ SERVICE = "Azure Service Bus"
 
 
 @contextmanager
-def _queue_client(namespace: str | None, queue: str | None) -> Generator[tuple[str, ServiceBusClient], None, None]:
+def _queue_client(namespace: str | None, queue: str | None) -> Generator[tuple[str, ServiceBusClient]]:
     settings = get_azure_settings()
     namespace = validate_namespace(
         required_value(namespace, settings.service_bus.fully_qualified_namespace, "--fully-qualified-namespace")

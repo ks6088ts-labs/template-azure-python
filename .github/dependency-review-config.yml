@@ -1,0 +1,10 @@
+fail-on-severity: high
+fail-on-scopes:
+  - runtime
+  - development
+  - unknown
+vulnerability-check: true
+license-check: false
+warn-only: false
+comment-summary-in-pr: never
+show-openssf-scorecard: true

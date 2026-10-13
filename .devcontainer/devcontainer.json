@@ -1,7 +1,6 @@
 {
     "name": "template-azure-python",
-    // https://mcr.microsoft.com/en-us/product/devcontainers/python/tags
-    "image": "mcr.microsoft.com/devcontainers/python:dev-3.13-bookworm",
+    "image": "mcr.microsoft.com/devcontainers/python:dev-3.14-trixie@sha256:06ce237a5513cc8c7fc7ec2c82632fab4ba9db31ac0d726855adf84521e25874",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -11,6 +10,6 @@
             ]
         }
     },
-    "postCreateCommand": "pipx install uv==0.12.19 && make install-deps-dev",
+    "postCreateCommand": "pipx install \"uv$(python -c 'import tomllib; print(tomllib.load(open(\"pyproject.toml\", \"rb\"))[\"tool\"][\"uv\"][\"required-version\"])')\" && make install-deps-dev",
     "remoteUser": "vscode"
 }

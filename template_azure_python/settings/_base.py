@@ -1,4 +1,17 @@
+from collections.abc import Callable
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class FreshSettings[T]:
+    def __init__(self, load: Callable[[], T]) -> None:
+        self._load = load
+
+    def __call__(self) -> T:
+        return self._load()
+
+    def cache_clear(self) -> None:
+        """Preserve the cached-getter API without retaining stale settings."""
 
 
 class EnvironmentSettings(BaseSettings):
@@ -8,4 +21,5 @@ class EnvironmentSettings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
         hide_input_in_errors=True,
+        frozen=True,
     )

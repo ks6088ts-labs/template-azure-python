@@ -8,8 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from function_app import app as functions_app
-from template_azure_python.api import app, create_app
+from template_azure_python.api import create_app
 from template_azure_python.domain import Task
+
+app = create_app()
 
 
 def test_mock_root_is_removed():
@@ -19,13 +21,50 @@ def test_mock_root_is_removed():
     assert response.status_code == 404
 
 
-def test_app_factory_configures_telemetry():
+def test_app_lifespan_configures_telemetry():
     with patch("template_azure_python.api.configure_api_telemetry") as configure:
         application = create_app()
+        configure.assert_not_called()
+        with TestClient(application) as client:
+            assert client.get("/tasks").status_code == 200
+        configure.assert_called_once()
 
-    configure.assert_called_once_with()
-    with TestClient(application) as client:
-        assert client.get("/tasks").status_code == 200
+
+def test_module_entrypoint_uses_uvicorn_factory_and_settings(monkeypatch):
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.setenv("PORT", "8080")
+    with patch("uvicorn.run") as run:
+        runpy.run_module("template_azure_python.__main__", run_name="__main__")
+    run.assert_called_once_with(
+        "template_azure_python.api:create_app",
+        factory=True,
+        host="0.0.0.0",
+        port=8080,
+        log_config=None,
+        server_header=False,
+        proxy_headers=True,
+        forwarded_allow_ips="127.0.0.1",
+        timeout_graceful_shutdown=30,
+    )
+
+
+def test_module_entrypoint_forwarded_trust_is_explicitly_configurable(monkeypatch):
+    from template_azure_python.__main__ import main
+
+    monkeypatch.setenv("FORWARDED_ALLOW_IPS", "10.0.0.0/8,127.0.0.1")
+    with patch("uvicorn.run") as run:
+        main()
+    assert run.call_args.kwargs["forwarded_allow_ips"] == "10.0.0.0/8,127.0.0.1"
+
+
+@pytest.mark.parametrize("value", ["0", "65536", "not-an-integer"])
+def test_module_entrypoint_rejects_invalid_port_settings(monkeypatch, value):
+    from template_azure_python.__main__ import main
+
+    monkeypatch.setenv("PORT", value)
+    with patch("uvicorn.run") as run, pytest.raises(ValueError):
+        main()
+    run.assert_not_called()
 
 
 def test_no_items_endpoint():
@@ -53,10 +92,11 @@ def test_router_is_in_openapi():
 def test_functions_wraps_the_same_fastapi_app():
     assert isinstance(functions_app, func.AsgiFunctionApp)
 
-    with patch("azure.functions.AsgiFunctionApp") as asgi_app:
+    with patch("azure.functions.AsgiFunctionApp") as asgi_app, patch("template_azure_python.api.create_app") as factory:
         module = runpy.run_path(str(Path(__file__).resolve().parents[1] / "function_app.py"))
 
-    asgi_app.assert_called_once_with(app=app, http_auth_level=func.AuthLevel.ANONYMOUS)
+    factory.assert_called_once_with()
+    asgi_app.assert_called_once_with(app=factory.return_value, http_auth_level=func.AuthLevel.ANONYMOUS)
     assert module["app"] is asgi_app.return_value
 
 
@@ -89,7 +129,7 @@ def test_task_crud_api():
         assert client.delete(f"/tasks/{task_id}").status_code == 204
         missing_response = client.get(f"/tasks/{task_id}")
         assert missing_response.status_code == 404
-        assert missing_response.json() == {"detail": f"Task {task_id} was not found"}
+        assert missing_response.json()["detail"] == f"Task {task_id} was not found"
 
 
 def test_task_api_validation_and_application_state_isolation():
@@ -97,10 +137,10 @@ def test_task_api_validation_and_application_state_isolation():
     second_application = create_app()
 
     with TestClient(first_application) as first_client:
-        assert first_client.post("/tasks", json={"title": " "}).json() == {"detail": "Task title must not be empty"}
+        assert first_client.post("/tasks", json={"title": " "}).json()["detail"] == "Task title must not be empty"
         invalid_response = first_client.post("/tasks", json={"title": ""})
         assert invalid_response.status_code == 422
-        assert invalid_response.json() == {"detail": "String should have at least 1 character"}
+        assert invalid_response.json()["detail"] == "String should have at least 1 character"
         assert first_client.post("/tasks", json={"title": "Persist only here"}).status_code == 201
 
     with TestClient(second_application) as second_client:
@@ -127,13 +167,13 @@ def test_task_validation_response_matches_openapi(method: str, path: str, body: 
         schema = client.get("/openapi.json").json()
 
     assert response.status_code == 422
-    assert set(response.json()) == {"detail"}
+    assert set(response.json()) == {"type", "title", "status", "detail", "instance"}
+    assert response.headers["content-type"] == "application/problem+json"
     assert isinstance(response.json()["detail"], str)
     assert response.json()["detail"]
-    assert schema["paths"][schema_path][method]["responses"]["422"]["content"]["application/json"]["schema"] == {
-        "$ref": "#/components/schemas/ErrorResponse"
-    }
-    assert schema["components"]["schemas"]["ErrorResponse"]["properties"]["detail"]["type"] == "string"
+    content = schema["paths"][schema_path][method]["responses"]["422"]["content"]
+    assert set(content) == {"application/problem+json"}
+    assert content["application/problem+json"]["schema"]["properties"]["detail"]["type"] == "string"
 
 
 @pytest.mark.parametrize(
@@ -164,7 +204,7 @@ def test_task_missing_mutation_returns_not_found(method: str):
         )
 
     assert response.status_code == 404
-    assert response.json() == {"detail": f"Task {task_id} was not found"}
+    assert response.json()["detail"] == f"Task {task_id} was not found"
 
 
 def test_task_duplicate_returns_conflict():
@@ -178,7 +218,7 @@ def test_task_duplicate_returns_conflict():
         assert len(client.get("/tasks").json()) == 1
 
     assert response.status_code == 409
-    assert response.json() == {"detail": f"Task {task.id} already exists"}
+    assert response.json()["detail"] == f"Task {task.id} already exists"
 
 
 def test_explicit_repository_is_used_and_ambiguous_injection_is_rejected():
@@ -198,7 +238,7 @@ def test_explicit_repository_is_used_and_ambiguous_injection_is_rejected():
     ("method", "path", "operation"),
     [
         ("post", "/tasks", "add"),
-        ("get", "/tasks", "list"),
+        ("get", "/tasks", "page"),
         ("get", "/tasks/00000000-0000-0000-0000-000000000001", "get"),
         ("put", "/tasks/00000000-0000-0000-0000-000000000001", "get"),
         ("delete", "/tasks/00000000-0000-0000-0000-000000000001", "delete"),
@@ -219,9 +259,9 @@ def test_storage_failure_matches_openapi(method, path, operation, caplog):
         response = client.request(method, path, json=body)
         schema = client.get("/openapi.json").json()
     assert response.status_code == 503
-    assert response.json() == {"detail": "Task storage is unavailable"}
+    assert response.json()["detail"] == "Task storage is unavailable"
     schema_path = "/tasks" if path == "/tasks" else "/tasks/{task_id}"
-    assert schema["paths"][schema_path][method]["responses"]["503"]["content"]["application/json"]["schema"] == {
-        "$ref": "#/components/schemas/ErrorResponse"
-    }
+    content = schema["paths"][schema_path][method]["responses"]["503"]["content"]
+    assert set(content) == {"application/problem+json"}
+    assert content["application/problem+json"]["schema"]["properties"]["detail"]["type"] == "string"
     assert "Task storage unavailable" in caplog.text

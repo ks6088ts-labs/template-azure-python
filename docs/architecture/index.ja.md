@@ -2,7 +2,7 @@
 
 ## プロジェクト概要
 
-Python 3.10+ / FastAPI / Typer と Azure SDK を使う開発テンプレートです。
+Python 3.13+ / FastAPI / Typer と Azure SDK を使う開発テンプレートです。
 **HTTP の Task CRUD 参照実装**と、**Azure サービスを操作する独立した CLI サンプル**を提供します。
 同じ FastAPI アプリを Uvicorn・Azure Functions・Azure Container Apps で動かします。
 完成した業務システムや本番向けの永続化・認証基盤ではありません。
@@ -101,8 +101,21 @@ flowchart TD
 
 `create_app()` が use case と具象 Repository を接続し、HTTP router に provider を渡します。
 provider はリクエスト時に use case を生成する関数です。Cosmos / DuckDB の接続の生成・解放は lifespan が担当します。
-起動 CLI は backend を factory に渡します。直接 Uvicorn の入口は `template_azure_python.api:app` で、
+起動 CLI は backend を factory に渡します。直接 Uvicorn の入口は `template_azure_python.api:create_app --factory` で、
 Functions も同じ app をラップします。Functions の HTTP trigger は匿名で、`host.json` により `/api` を付けません。
+
+import 時に起動処理は行いません。lifespan がテレメトリと接続を初期化し、
+`create_app(settings=..., repository=...)` でテストを分離できます。
+`/healthz` は版を返し、`/readyz` は保存先の疎通を確認して障害時に 503 を返します。
+staging / production は OpenAPI を既定で公開しません。`AUTH_MODE=easyauth`
+には保護された Azure ingress が必要で、`AUTH_REQUIRED_ROLE` でアプリロールも要求できます。
+
+作成時には `Location` と `ETag`、単件取得時には `ETag` を返します。
+更新・削除に単一の強い ETag を `If-Match` で指定すると、古い更新は 412 で拒否します。
+省略時は互換性のため無条件更新です。競合を防ぐクライアントは必ず指定してください。
+一覧は `offset` と `limit`（最大 100）を受け付け、Task 配列の形式を維持したまま
+`X-Total-Count` を返します。エラーは RFC 9457 の `application/problem+json` で、
+検証エラーにはフィールド位置を含め、入力値そのものは返しません。
 
 | backend | 保存先・必要な準備 | 寿命と制限 |
 | --- | --- | --- |

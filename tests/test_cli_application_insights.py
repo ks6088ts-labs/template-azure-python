@@ -395,22 +395,37 @@ def test_real_distro_exporter_construction_offline(live_metrics_enabled: bool):
         import json
         import os
         from unittest.mock import patch
-        from azure.monitor.opentelemetry.exporter._generated import AzureMonitorClient
-        from azure.monitor.opentelemetry.exporter._generated.exporter.models import TrackResponse
+        from azure.monitor.opentelemetry.exporter import (
+            AzureMonitorLogExporter, AzureMonitorMetricExporter, AzureMonitorTraceExporter,
+        )
+        from opentelemetry.sdk.trace.export import SpanExportResult
+        from opentelemetry.sdk.metrics.export import MetricExportResult
+        from opentelemetry.sdk._logs.export import LogRecordExportResult
+        from opentelemetry.trace import SpanKind
         from typer.testing import CliRunner
         from scripts.cli_application_insights import app
         from template_azure_python.settings import AzureSettings
 
         AzureSettings.model_config["env_file"] = None
 
-        uploaded = []
+        uploaded = {"traces": [], "logs": [], "metrics": []}
 
-        def track(self, body, **kwargs):
-            uploaded.extend(body)
-            return TrackResponse(items_received=len(body), items_accepted=len(body), errors=[])
+        def export_traces(self, spans, **kwargs):
+            uploaded["traces"].extend(spans)
+            return SpanExportResult.SUCCESS
+
+        def export_logs(self, records, **kwargs):
+            uploaded["logs"].extend(records)
+            return LogRecordExportResult.SUCCESS
+
+        def export_metrics(self, data, **kwargs):
+            uploaded["metrics"].append(data)
+            return MetricExportResult.SUCCESS
 
         with (
-            patch.object(AzureMonitorClient, "track", track),
+            patch.object(AzureMonitorTraceExporter, "export", export_traces),
+            patch.object(AzureMonitorLogExporter, "export", export_logs),
+            patch.object(AzureMonitorMetricExporter, "export", export_metrics),
             patch("requests.sessions.Session.send", side_effect=AssertionError("Network forbidden")),
             patch("azure.monitor.opentelemetry._configure._setup_live_metrics") as live_setup,
         ):
@@ -422,10 +437,9 @@ def test_real_distro_exporter_construction_offline(live_metrics_enabled: bool):
         summary = json.loads(result.output)
         assert summary["flushed"] is True, summary
         assert summary["ingestion_guaranteed"] is False
-        types = {item.data.base_type for item in uploaded}
-        assert {"RequestData", "MessageData", "MetricData"} <= types, types
-        assert len([item for item in uploaded if item.data.base_type == "RequestData"]) == 2
-        assert len([item for item in uploaded if item.data.base_type == "MessageData"]) == 2
+        assert all(uploaded.values()), uploaded
+        assert len([span for span in uploaded["traces"] if span.kind == SpanKind.SERVER]) == 2
+        assert len(uploaded["logs"]) == 2
         print(result.output, end="")
     """)
     result = subprocess.run(

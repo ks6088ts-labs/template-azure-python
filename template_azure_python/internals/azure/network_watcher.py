@@ -16,7 +16,7 @@ from template_azure_python.settings import get_azure_settings
 
 
 @contextmanager
-def _network_client(subscription_id: str) -> Generator[NetworkManagementClient, None, None]:
+def _network_client(subscription_id: str) -> Generator[NetworkManagementClient]:
     with azure_errors("Azure Network Watcher request failed. Check Azure authentication and Reader access."):
         with closing(DefaultAzureCredential()) as credential:
             with closing(NetworkManagementClient(credential=credential, subscription_id=subscription_id)) as client:

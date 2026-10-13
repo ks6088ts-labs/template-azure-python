@@ -22,7 +22,7 @@ def resolve_queue(endpoint: str | None, queue: str | None) -> tuple[str, str]:
 
 
 @contextmanager
-def _queue_client(endpoint: str | None, queue: str | None) -> Generator[tuple[str, QueueClient], None, None]:
+def _queue_client(endpoint: str | None, queue: str | None) -> Generator[tuple[str, QueueClient]]:
     endpoint, queue = resolve_queue(endpoint, queue)
     with managed_client(
         "Azure Queue Storage",

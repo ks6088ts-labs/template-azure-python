@@ -83,7 +83,7 @@ class FoundryAgent:
 
 
 @contextmanager
-def create_evaluation_agent(settings: EvaluationSettings, instructions: str) -> Generator[FoundryAgent, None, None]:
+def create_evaluation_agent(settings: EvaluationSettings, instructions: str) -> Generator[FoundryAgent]:
     with ResourceScope() as resources:
         credential = DefaultAzureCredential()
         resources.register_cleanup("Foundry credential", credential.close)

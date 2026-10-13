@@ -1,7 +1,7 @@
 import json
 import runpy
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -16,7 +16,7 @@ from scripts.cli_activity_log import app
 SUBSCRIPTION = "11111111-2222-3333-4444-555555555555"
 OTHER_SUBSCRIPTION = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 COMMANDS = ("list-events", "summarize-events")
-NOW = datetime(2026, 10, 2, 3, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 2, 3, 0, tzinfo=UTC)
 
 
 def _event(status: str = "Succeeded", operation: str = "Microsoft.Compute/virtualMachines/write") -> EventData:
@@ -83,7 +83,7 @@ def test_utc_filter_and_metadata(command: str, hours: int | None, resource_group
     if resource_group:
         expected_filter += " and resourceGroupName eq 'my-rg'"
     clients.client.activity_logs.list.assert_called_once_with(filter=expected_filter)
-    clients.clock.now.assert_called_once_with(timezone.utc)
+    clients.clock.now.assert_called_once_with(UTC)
     clients.client_type.assert_called_once_with(credential=clients.credential, subscription_id=SUBSCRIPTION)
     output = json.loads(result.output)
     assert {key: output[key] for key in ("start_time", "end_time", "limit", "sample_count")} == {

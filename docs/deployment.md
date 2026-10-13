@@ -7,8 +7,8 @@ Publish the app or documentation after checking it locally.
 | --- | --- | --- |
 | Python API | [Azure Functions](#azure-functions) | Existing Linux Function App |
 | Containerized API | [Azure Container Apps](#azure-container-apps) | Existing Container App and registry |
-| Docker image | [Docker Hub](#docker-hub) | Docker Hub account and access token |
-| MkDocs documentation site | [Azure Static Web Apps](#azure-static-web-apps) | Azure resource group and GitHub repository |
+| Tested Docker image | [GHCR](#ghcr-and-github-pages) | GitHub Actions permissions |
+| MkDocs documentation site | [GitHub Pages](#ghcr-and-github-pages) | Pages source set to GitHub Actions |
 
 ## Before publishing
 
@@ -18,11 +18,12 @@ Publish the app or documentation after checking it locally.
 - For Azure, sign in with `az login` and check the target with `az account show`.
   Switch with `az account set --subscription "<subscription-id>"` if needed.
 - GitHub secrets and Actions commands need `gh`, authenticated with `gh auth login`.
-- The sample API is anonymous. Set up access controls before exposing it publicly.
+- Local development is anonymous. Azure deployments must use protected ingress
+  and Easy Auth before exposing the Task API publicly.
   Azure resources and image storage may incur charges.
 
-For API checks, expect a Task array (initially `[]`) from `/tasks` and HTTP 200 from `/docs`.
-The mock `/` has been removed. Probes use `/docs` to avoid repeatedly fetching all Tasks.
+Probes use `/healthz` and `/readyz`, not `/docs` or the Task collection.
+Production disables OpenAPI documentation by default.
 
 InMemory is the default and does not share data between replicas.
 For Cosmos, [prepare the Task container](cosmosdb.md#task-api-persistence-and-container-management),
@@ -30,6 +31,118 @@ then set `TASK_REPOSITORY=cosmosdb`, `AZURE_COSMOS_DB_ENDPOINT`, `AZURE_COSMOS_D
 and `AZURE_COSMOS_DB_TASK_CONTAINER` in Functions app settings / Container Apps environment variables.
 Grant the API managed identity the appropriate data-plane RBAC, not management CLI permissions.
 Management account-name/subscription/resource-group settings are unnecessary for API startup.
+
+## Protected deployment setup
+
+The repository includes `infra/main.bicep` and `infra/app.bicep`; no external
+Terraform repository is required. Provision separate staging and production
+resource groups. The templates create Log Analytics, Application Insights with
+local authentication disabled, an admin-disabled ACR, Container Apps, and separate
+runtime/deployment managed identities. GHCR is the default release registry;
+the ACR is available for a future private-registry integration, not automatically
+populated by the release workflow.
+
+1. Create an Entra application registration for the API. Expose an application
+   role named `Task.ReadWrite`, assign it to authorized callers, and use the
+   application client ID below. Easy Auth verifies tokens at ingress; the API
+   authorizes its trusted principal header. **Never enable header-based
+   authentication on an origin that callers can reach without Easy Auth.**
+2. Make the GHCR package public so Container Apps can pull it without stored
+   credentials. Choose a verified image digest, never a mutable tag.
+3. Sign in with `az login` and `gh auth login`. The provisioning identity needs
+   resource creation and role-assignment permissions; the generated deployment
+   identity is scoped only to its Container App.
+4. Run bootstrap for each environment (the final argument is a numeric GitHub
+   user ID, obtained with `gh api users/REVIEWER --jq .id`):
+
+   ```shell
+   bash scripts/bootstrap-azure.sh OWNER/REPO staging rg-api-staging eastus api \
+     ghcr.io/owner/repo@sha256:REPLACE_WITH_64_HEX_DIGITS \
+     YOUR_ENTRA_APPLICATION_CLIENT_ID YOUR_REVIEWER_USER_ID
+   bash scripts/bootstrap-azure.sh OWNER/REPO production rg-api-production eastus api \
+     ghcr.io/owner/repo@sha256:REPLACE_WITH_64_HEX_DIGITS \
+     YOUR_ENTRA_APPLICATION_CLIENT_ID YOUR_REVIEWER_USER_ID
+   ```
+
+   Bootstrap creates environment protections **before** Azure federation:
+   main-only deployment branches, no administrator bypass, and a mandatory
+   production reviewer who cannot approve their own deployment. It writes
+   environment variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+   `AZURE_SUBSCRIPTION_ID`, `RESOURCE_GROUP`, and `CONTAINER_APP_NAME`.
+   Each Azure OIDC subject is
+   `repo:OWNER/REPO:environment:staging` or `...:production`.
+   Environment protection availability depends on repository visibility and plan.
+   If GitHub rejects protection setup, do not bypass it to enable production CD.
+   Reruns preserve existing reviewers and wait timers and reject non-main
+   policies before modifying protections. Change reviewer membership manually
+   in GitHub settings when needed.
+5. Review the provisioned identity, ingress, application roles, environment
+   reviewers, and policies before enabling automatic deployment. Keep
+   `maxReplicas: 1` for process-local demo storage. Use a shared durable adapter
+   and its data-plane RBAC before enabling multiple replicas.
+
+Validate changes without deploying:
+
+```shell
+az bicep build --file infra/main.bicep --outfile /tmp/main.json
+az bicep lint --file infra/main.bicep
+az deployment group what-if --resource-group rg-api-staging \
+  --template-file infra/main.bicep --parameters \
+  namePrefix=api environment=staging githubRepository=OWNER/REPO \
+  image=ghcr.io/owner/repo@sha256:REPLACE_WITH_64_HEX_DIGITS \
+  authClientId=YOUR_ENTRA_APPLICATION_CLIENT_ID
+```
+
+Infrastructure applies manage configuration as well as the image: pass the
+currently promoted digest on subsequent applies to avoid reverting a release.
+Initial ingress is internal; bootstrap opens it only after Easy Auth deployment
+succeeds. For subsequent applies to an already protected app, pass
+`externalIngress=true`; the default safely closes external ingress.
+An initial bootstrap image must already exist; provision from a reviewed,
+attested release rather than a third-party demo image.
+
+### Repository protections
+
+Enable private vulnerability reporting, secret scanning, push protection,
+Dependabot alerts, and CodeQL in repository settings. Review `SECURITY.md`.
+Replace `OWNER` in `.github/CODEOWNERS`, documentation metadata, and issue links
+using `scripts/init_template.py` before enabling CODEOWNERS enforcement.
+
+The rulesets in `.github/rulesets/` are **samples to review**, not automatically
+applied settings. Before importing release-tag protection, add your trusted
+release GitHub App's integration ID to `bypass_actors` with
+`actor_type: "Integration"` and `bypass_mode: "always"`. Without that explicit
+publisher, creation of all `v*` tags is intentionally denied. Do not grant a
+bypass to all writers.
+
+```shell
+gh api --method POST repos/OWNER/REPO/rulesets --input .github/rulesets/main.json
+gh api --method POST repos/OWNER/REPO/rulesets --input .github/rulesets/release-tags.json
+```
+
+The main sample requires CODEOWNERS approval, `ci-ok`, `pr-title`, squash
+merges, and a merge queue. Confirm merge queues are supported by your plan.
+The sample also gates CodeQL security findings at medium or above.
+Verify Code Security/ruleset entitlement before importing it into a private
+repository. Enable immutable releases in GitHub settings.
+
+### Release, verification, and rollback
+
+Release automation uses Conventional Commit squash titles and release-please.
+Release jobs build once, smoke-test the resulting image, and publish provenance
+and an SBOM. Staging and production use the same immutable digest; production
+requires environment approval. A prerelease must not update `latest`.
+Deployment verifies GitHub provenance before changing Azure.
+
+For rollback, run the manual deployment workflow with a previously verified
+digest from this repository's trusted main-branch release workflow. It uses
+the same staging/production approval, verification, and probe checks as a
+normal deployment; it does not rebuild an old revision. Keep the last known
+good digest in release records and verify it before approving production.
+
+GitHub artifact attestations require a supported GitHub plan for private
+repositories. Do not disable verification to work around missing entitlements;
+configure the required plan or a separately reviewed signing solution first.
 
 ## Azure Functions
 
@@ -46,7 +159,7 @@ The file is Git-ignored but included in Functions publishing.
 
 ```shell
 FUNCTION_APP_NAME=your-function-app-name
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --extra functions --format requirements-txt --no-dev --no-emit-project --output-file requirements.txt
 ```
 
 #### 2. Publish
@@ -62,7 +175,7 @@ dedicated Docker image is needed. Configure app settings in Azure; do not publis
 
 ```shell
 curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/tasks"
-curl --fail --show-error --output /dev/null "https://$FUNCTION_APP_NAME.azurewebsites.net/docs"
+curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/readyz"
 ```
 
 If the app has authentication enabled, also supply the credentials it requires.
@@ -98,7 +211,7 @@ Confirm the displayed app is the intended target before continuing.
 #### 2. Export and publish
 
 ```shell
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --extra functions --format requirements-txt --no-dev --no-emit-project --output-file requirements.txt
 func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTION_ID" --build remote --python
 ```
 
@@ -110,7 +223,7 @@ Microsoft Entra authentication is off by default:
 
 ```shell
 curl --fail --show-error "$FUNCTION_APP_URL/tasks"
-curl --fail --show-error --output /dev/null "$FUNCTION_APP_URL/docs"
+curl --fail --show-error "$FUNCTION_APP_URL/readyz"
 ```
 
 If you applied `enable_authentication=true`, use this instead.
@@ -124,8 +237,8 @@ curl --fail --show-error --output /dev/null --header "Authorization: Bearer $ACC
 unset ACCESS_TOKEN
 ```
 
-The Functions HTTP trigger itself is anonymous. When enabled, App Service
-authentication checks the token before the request reaches the trigger.
+App Service authentication must protect the trigger before traffic reaches it.
+Use the same production settings and app-role policy as Container Apps.
 
 ## Azure Container Apps
 
@@ -145,6 +258,8 @@ CONTAINER_APP_NAME=your-container-app-name
 
 docker build --platform linux/amd64 -t "$IMAGE" .
 docker push "$IMAGE"
+IMAGE_DIGEST=$(docker buildx imagetools inspect "$IMAGE" --format '{{.Manifest.Digest}}')
+IMAGE="${IMAGE%:*}@$IMAGE_DIGEST"
 ```
 
 #### 2. Update the port and image
@@ -165,7 +280,7 @@ az containerapp update --name "$CONTAINER_APP_NAME" \
 ```shell
 CONTAINER_APP_FQDN=$(az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query properties.configuration.ingress.fqdn -o tsv)
 curl --fail --show-error "https://$CONTAINER_APP_FQDN/tasks"
-curl --fail --show-error --output /dev/null "https://$CONTAINER_APP_FQDN/docs"
+curl --fail --show-error "https://$CONTAINER_APP_FQDN/readyz"
 ```
 
 ### Use the Terraform Container Apps scenario
@@ -216,7 +331,7 @@ Pin the pushed image by digest. The command below updates
 | --- | --- |
 | Image | Pushed image digest |
 | Ingress and health probe port | `8000` |
-| Health probe path | `/docs` |
+| Health probe paths | `/healthz` and `/readyz` |
 | Container command | Dockerfile default |
 
 ```shell
@@ -235,7 +350,7 @@ Pin the pushed image by digest. The command below updates
   TEMP_FILE=$(mktemp "${VARS_FILE}.XXXXXX")
   trap 'rm -f "$TEMP_FILE"' EXIT
   jq -e --arg image "$IMAGE_BY_DIGEST" \
-    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/docs" | .container_command = []' \
+    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/healthz" | .container_command = []' \
     "$VARS_FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$VARS_FILE"
 )
@@ -265,7 +380,7 @@ Check this API's routes:
 ```shell
 CONTAINER_APP_URL=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_url)
 curl --fail --show-error "$CONTAINER_APP_URL/tasks"
-curl --fail --show-error --output /dev/null "$CONTAINER_APP_URL/docs"
+curl --fail --show-error "$CONTAINER_APP_URL/readyz"
 ```
 
 If Microsoft Entra authentication is enabled, use this instead:
@@ -282,70 +397,32 @@ External ingress makes the API public unless authentication or access controls
 are enabled. Keep `deployment.auto.tfvars.json` for later applies.
 Rerunning the scenario's MCP deployment script replaces these image and port settings.
 
-## Docker Hub
+## GHCR and GitHub Pages
 
-This publishes an **image**; it does not start an API server.
+GHCR publication uses `GITHUB_TOKEN`, not a Docker Hub token. Grant Actions
+package publication permission and make the resulting package public for the
+default Container Apps path.
 
-1. Create a Docker Hub [access token](https://app.docker.com/settings/personal-access-tokens/create).
-2. Register repository secrets. Enter the values when prompted:
+In **Settings → Pages**, select **GitHub Actions** as the source. The Pages
+workflow builds with read-only permissions and credential-free checkout,
+uploads a Pages artifact, and deploys from a separate `github-pages`
+environment. No `gh-pages` branch or Static Web Apps deployment token is needed.
 
-   ```shell
-   gh secret set DOCKERHUB_USERNAME
-   gh secret set DOCKERHUB_TOKEN
-   ```
+Documentation has no analytics or author social links by default. If analytics
+are needed, configure your own property with an appropriate privacy notice.
+MkDocs/Material dependencies are bounded; review upstream support status before
+upgrading. Evaluate a successor in a separate branch and migrate only after
+both languages, Mermaid diagrams, deep links, and strict builds work. Do not
+replace the existing Japanese/English content with an unverified alpha migration.
 
-3. Push a tag starting with `v` to trigger the `docker-release` workflow.
-4. Check that GitHub Actions succeeds and tags appear in `<username>/template-azure-python` on Docker Hub.
+Copilot cloud agent setup is in `.github/workflows/copilot-setup-steps.yml`;
+it takes effect after merging into the default branch. AGENTS.md documents
+commands and safety boundaries. The Microsoft Learn MCP entry in `.mcp.json`
+is opt-in for compatible clients; configure cloud-agent MCP servers separately
+in repository settings, without credentials in checked-in configuration.
 
-   ```shell
-   gh run list --workflow docker-release.yaml --limit 1
-   ```
-
-## Azure Static Web Apps
-
-This repository's workflow publishes the **MkDocs site**, not FastAPI.
-The default documentation deployment is GitHub Pages on pushes to `main`.
-Configure the following only if you want to use Static Web Apps.
-
-### 1. Create a Static Web App
-
-Use an existing resource group:
-
-```shell
-RESOURCE_GROUP_NAME=your-resource-group-name
-SWA_NAME=your-static-web-app-name
-az staticwebapp create --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP_NAME"
-```
-
-### 2. Register the deployment secret
-
-Retrieve the API key and register it in GitHub. Do not print it or save it in source.
-
-```shell
-AZURE_STATIC_WEB_APPS_API_TOKEN=$(az staticwebapp secrets list --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query "properties.apiKey" -o tsv)
-gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN --body "$AZURE_STATIC_WEB_APPS_API_TOKEN"
-unset AZURE_STATIC_WEB_APPS_API_TOKEN
-```
-
-### 3. Run the workflow
-
-The default trigger is manual. The workflow builds documentation and uploads the generated site.
-
-```shell
-gh workflow run azure-static-web-app.yaml
-gh run list --workflow azure-static-web-app.yaml --limit 1
-```
-
-To deploy automatically, follow the workflow comments to enable the push trigger for `main`.
-
-### 4. Check the published site
-
-Wait for Actions to succeed, then open this hostname in a browser.
-Check that both English and Japanese pages are available:
-
-```shell
-az staticwebapp show --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query defaultHostname -o tsv
-```
-
-See [deployment from GitHub Actions](https://docs.github.com/en/actions/use-cases-and-examples/deploying/deploying-to-azure-static-web-app)
-and [`az staticwebapp create`](https://learn.microsoft.com/en-us/cli/azure/staticwebapp?view=azure-cli-latest#az-staticwebapp-create).
+The pre-tool hooks in `.github/hooks/guardrails.json` reject common destructive
+shell mistakes such as force pushes and Azure deletion. They are not a sandbox:
+shell indirection and arbitrary programs cannot be reliably secured by command
+matching. Keep human approval, least-privilege identities, and environment
+protections as the enforcement boundaries.

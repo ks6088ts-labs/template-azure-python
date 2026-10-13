@@ -2,7 +2,7 @@ import logging
 from collections.abc import Generator
 from contextlib import closing, contextmanager
 from datetime import timedelta
-from enum import Enum
+from enum import StrEnum
 from typing import cast
 from uuid import uuid4
 
@@ -40,7 +40,7 @@ INSTRUMENTATIONS = (
 )
 
 
-class TelemetryTable(str, Enum):
+class TelemetryTable(StrEnum):
     REQUESTS = "AppRequests"
     DEPENDENCIES = "AppDependencies"
     TRACES = "AppTraces"
@@ -84,7 +84,7 @@ class _Diagnostics(logging.Handler):
 
 
 @contextmanager
-def _isolated_logging(logger: logging.Logger) -> Generator[_Diagnostics, None, None]:
+def _isolated_logging(logger: logging.Logger) -> Generator[_Diagnostics]:
     # Exporter workers also log failures; isolate their handlers for this CLI run.
     root = logging.getLogger()
     loggers = [root, *(item for item in root.manager.loggerDict.values() if isinstance(item, logging.Logger))]

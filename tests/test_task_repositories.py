@@ -59,15 +59,24 @@ def container():
         await read(item=item, partition_key=partition_key)
         del documents[item]
 
-    async def query() -> AsyncIterator[dict[str, object]]:
-        for document in documents.values():
+    async def query(**kwargs) -> AsyncIterator[object]:
+        if kwargs["query"] == "SELECT VALUE COUNT(1) FROM c":
+            yield len(documents)
+            return
+        values = list(documents.values())
+        if "parameters" in kwargs:
+            parameters = {entry["name"]: entry["value"] for entry in kwargs["parameters"]}
+            values = sorted(values, key=lambda document: document["id"])[
+                parameters["@offset"] : parameters["@offset"] + parameters["@limit"]
+            ]
+        for document in values:
             yield document.copy()
 
     proxy.create_item.side_effect = create
     proxy.read_item.side_effect = read
     proxy.replace_item.side_effect = replace
     proxy.delete_item.side_effect = delete
-    proxy.query_items.side_effect = lambda **kwargs: query()
+    proxy.query_items.side_effect = query
     return proxy
 
 

@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def telemetry_environment() -> Generator[None, None, None]:
+def telemetry_environment() -> Generator[None]:
     """Apply SDK-only controls for one emission, then restore the process environment."""
     controls = {
         "APPLICATIONINSIGHTS_STATSBEAT_DISABLED_ALL": "true",

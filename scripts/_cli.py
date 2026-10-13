@@ -16,7 +16,7 @@ class _MissingOption(typer.BadParameter):
 
 
 @contextmanager
-def cli_errors(*, json_error: bool = False) -> Generator[None, None, None]:
+def cli_errors(*, json_error: bool = False) -> Generator[None]:
     try:
         yield
     except MissingSetting as exc:

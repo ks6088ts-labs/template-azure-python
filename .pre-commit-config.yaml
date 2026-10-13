@@ -1,16 +1,38 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+  - repo: builtin
     hooks:
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-toml
       - id: check-yaml
+      - id: detect-private-key
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+  - repo: local
     hooks:
       - id: ruff
+        name: ruff
+        entry: uv run --locked --all-extras --group dev ruff check --fix
+        language: system
         types_or: [python, pyi]
-        args: [--fix]
       - id: ruff-format
+        name: ruff-format
+        entry: uv run --locked --all-extras --group dev ruff format
+        language: system
         types_or: [python, pyi]
-exclude: "generated/.*|artifacts/.*"
+      - id: clean-notebooks
+        name: require notebooks without outputs or execution counts
+        entry: >-
+          python -c 'import json, sys;
+          dirty = [p for p in sys.argv[1:] if any(c.get("outputs") or c.get("execution_count") is not None
+          for c in json.load(open(p, encoding="utf-8"))["cells"])];
+          print("\n".join("Clear notebook outputs before committing: " + p for p in dirty));
+          sys.exit(bool(dirty))'
+        language: system
+        files: \.ipynb$
+      - id: zizmor
+        name: offline high-severity workflow security
+        entry: uv run --locked --all-extras --group dev zizmor --offline --strict-collection --min-severity high
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
+exclude: "^(generated|artifacts|\\.cache|\\.scratch)/"

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from azure.monitor.query import LogsQueryError, LogsQueryPartialResult, LogsQueryResult, LogsTable
@@ -64,7 +64,7 @@ def test_invalid_arm_id_is_sanitized(value):
 @pytest.mark.parametrize("partial", [False, True])
 @pytest.mark.parametrize("empty", [False, True])
 def test_logs_format(partial: bool, empty: bool, capsys: pytest.CaptureFixture):
-    timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    timestamp = datetime(2026, 1, 1, tzinfo=UTC)
     tables = (
         []
         if empty

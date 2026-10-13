@@ -1,12 +1,16 @@
 services:
-  template-azure-python:
-    container_name: template-azure-python
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - .env
-    environment:
-      PROJECT_NAME: hello
+    user: "10001:10001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"

@@ -12,7 +12,7 @@ from tests.evaluations.foundry import AgentTurn, FoundryAgent, ResourceScope
 
 
 @contextmanager
-def create_judge(settings: EvaluationSettings) -> Generator[AzureOpenAIModel, None, None]:
+def create_judge(settings: EvaluationSettings) -> Generator[AzureOpenAIModel]:
     with ResourceScope() as resources:
         credential = DefaultAzureCredential()
         resources.register_cleanup("Judge credential", credential.close)

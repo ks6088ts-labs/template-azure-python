@@ -36,30 +36,51 @@ def _validate_endpoint(endpoint: str) -> str:
 
 @contextmanager
 def _container_client(
-    endpoint: str | None, database_id: str | None, container_id: str | None, throughput: int | None
-) -> Generator[ContainerProxy, None, None]:
+    endpoint: str | None,
+    database_id: str | None,
+    container_id: str | None,
+    throughput: int | None,
+    *,
+    create_resources: bool = False,
+) -> Generator[ContainerProxy]:
     settings = get_azure_settings()
     endpoint = _validate_endpoint(required_value(endpoint, settings.cosmos_db.endpoint, "--endpoint"))
     database_id = required_value(database_id, settings.cosmos_db.database, "--database")
     container_id = required_value(container_id, settings.cosmos_db.container, "--container")
+    if throughput is not None and not create_resources:
+        raise InputError("--throughput requires --create-resources", "--throughput")
     with azure_errors("Azure Cosmos DB operation failed", include_details=True):
         with closing(DefaultAzureCredential()) as credential:
             with closing(CosmosClient(url=endpoint, credential=credential)) as client:
-                database = client.create_database_if_not_exists(id=database_id)
-                partition_key = PartitionKey(path=PARTITION_KEY_PATH)
-                if throughput is None:
-                    container = database.create_container_if_not_exists(id=container_id, partition_key=partition_key)
+                if not create_resources:
+                    database = client.get_database_client(database_id)
+                    database.read()
+                    container = database.get_container_client(container_id)
+                    container.read()
                 else:
-                    container = database.create_container_if_not_exists(
-                        id=container_id, partition_key=partition_key, offer_throughput=throughput
-                    )
+                    database = client.create_database_if_not_exists(id=database_id)
+                    partition_key = PartitionKey(path=PARTITION_KEY_PATH)
+                    if throughput is None:
+                        container = database.create_container_if_not_exists(
+                            id=container_id, partition_key=partition_key
+                        )
+                    else:
+                        container = database.create_container_if_not_exists(
+                            id=container_id, partition_key=partition_key, offer_throughput=throughput
+                        )
                 yield container
 
 
 def upsert_item(
-    endpoint: str | None, database: str | None, container: str | None, throughput: int | None, item: dict[str, object]
+    endpoint: str | None,
+    database: str | None,
+    container: str | None,
+    throughput: int | None,
+    item: dict[str, object],
+    *,
+    create_resources: bool = False,
 ) -> dict[str, object]:
-    with _container_client(endpoint, database, container, throughput) as client:
+    with _container_client(endpoint, database, container, throughput, create_resources=create_resources) as client:
         return client.upsert_item(body=item)
 
 
@@ -70,15 +91,23 @@ def read_item(
     throughput: int | None,
     item_id: str,
     category: str,
+    *,
+    create_resources: bool = False,
 ) -> dict[str, object]:
-    with _container_client(endpoint, database, container, throughput) as client:
+    with _container_client(endpoint, database, container, throughput, create_resources=create_resources) as client:
         return client.read_item(item=item_id, partition_key=category)
 
 
 def query_items(
-    endpoint: str | None, database: str | None, container: str | None, throughput: int | None, category: str
+    endpoint: str | None,
+    database: str | None,
+    container: str | None,
+    throughput: int | None,
+    category: str,
+    *,
+    create_resources: bool = False,
 ) -> list[dict[str, object]]:
-    with _container_client(endpoint, database, container, throughput) as client:
+    with _container_client(endpoint, database, container, throughput, create_resources=create_resources) as client:
         return list(
             client.query_items(
                 query=CATEGORY_QUERY,

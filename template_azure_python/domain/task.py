@@ -1,12 +1,12 @@
-from dataclasses import dataclass, replace
-from enum import Enum
-from typing import NewType
+from dataclasses import dataclass, field, replace
+from enum import StrEnum
+from typing import NewType, Self
 from uuid import UUID, uuid4
 
 TaskId = NewType("TaskId", UUID)
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     TODO = "todo"
     IN_PROGRESS = "in_progress"
     DONE = "done"
@@ -38,13 +38,14 @@ class Task:
     title: str
     description: str
     status: TaskStatus
+    etag: str | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "title", _validated_title(self.title))
         object.__setattr__(self, "description", _validated_description(self.description))
 
     @classmethod
-    def create(cls, title: str, description: str = "") -> "Task":
+    def create(cls, title: str, description: str = "") -> Self:
         return cls(
             id=TaskId(uuid4()),
             title=title,
@@ -52,5 +53,5 @@ class Task:
             status=TaskStatus.TODO,
         )
 
-    def update(self, *, title: str, description: str, status: TaskStatus) -> "Task":
+    def update(self, *, title: str, description: str, status: TaskStatus) -> Self:
         return replace(self, title=title, description=description, status=status)

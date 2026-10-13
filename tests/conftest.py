@@ -34,7 +34,7 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool 
 
 
 @pytest.fixture(autouse=True)
-def isolated_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+def isolated_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
     for settings_type in (ProjectSettings, AzureSettings):
         config = settings_type.model_config.copy()
         config["env_file"] = None

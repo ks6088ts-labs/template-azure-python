@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from azure.core.messaging import CloudEvent
 from azure.eventgrid import EventGridEvent, EventGridPublisherClient
@@ -13,7 +13,7 @@ from template_azure_python.internals.azure._common import (
 from template_azure_python.settings import get_azure_settings
 
 
-class EventSchema(str, Enum):
+class EventSchema(StrEnum):
     EVENT_GRID = "event-grid"
     CLOUD_EVENT = "cloud-event"
 

@@ -1,8 +1,9 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+# The Python YAML tag below is required by the Mermaid fence renderer.
 site_name: template-azure-python
-site_url: https://ks6088ts-labs.github.io/template-azure-python
-repo_url: https://github.com/ks6088ts-labs/template-azure-python
-repo_name: ks6088ts-labs/template-azure-python
+site_url: https://OWNER.github.io/template-azure-python/
+repo_url: https://github.com/OWNER/template-azure-python
+repo_name: OWNER/template-azure-python
 nav:
   - Getting started: index.md
   - Local development: scripts.md
@@ -50,17 +51,6 @@ theme:
   icon:
     repo: fontawesome/brands/github
   language: en
-extra:
-  social:
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/in/ks6088ts/
-    - icon: fontawesome/brands/github
-      link: https://github.com/ks6088ts
-    - icon: fontawesome/brands/x-twitter
-      link: https://x.com/ks6088ts
-  analytics:
-    provider: google
-    property: G-0ZTKFXVQ5K
 plugins:
   - i18n:
       docs_structure: suffix

@@ -1,4 +1,3 @@
-import logging
 import subprocess
 from pathlib import Path
 from typing import Annotated
@@ -13,7 +12,7 @@ from template_azure_python.infrastructure import (
     validate_cosmos_task_settings,
     validate_duckdb_task_path,
 )
-from template_azure_python.loggers import get_logger
+from template_azure_python.loggers import configure_logging, get_logger
 from template_azure_python.settings import (
     TaskRepositoryBackend,
     functions_environment,
@@ -57,9 +56,7 @@ def main(
         ),
     ] = False,
 ):
-    if verbose:
-        logging.basicConfig(level=logging.DEBUG)
-        logger.setLevel(logging.DEBUG)
+    configure_logging("DEBUG" if verbose else get_project_settings().project_log_level)
 
 
 @app.command()
@@ -75,7 +72,6 @@ def hello(
 ):
     hello_world()
     logger.debug(f"This is a debug message with name: {name}")
-    logger.info(f"Settings from .env: {get_project_settings().model_dump_json(indent=2)}")
 
 
 @app.command()
@@ -101,7 +97,16 @@ def serve_container_apps(
     backend = _repository(repository)
     from template_azure_python.api import create_app
 
-    uvicorn.run(create_app(repository_backend=backend), host=host, port=port)
+    uvicorn.run(
+        create_app(repository_backend=backend),
+        host=host,
+        port=port,
+        log_config=None,
+        server_header=False,
+        proxy_headers=True,
+        forwarded_allow_ips=get_project_settings().forwarded_allow_ips,
+        timeout_graceful_shutdown=30,
+    )
 
 
 @app.command()

@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
@@ -69,7 +69,7 @@ def test_invalid_json(value):
 
 def test_json_object_and_output(capsys):
     value = messaging.validate_json_object('{"message": "こんにちは"}')
-    value["time"] = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    value["time"] = datetime(2026, 1, 1, tzinfo=UTC)
     value["id"] = UUID(int=0)
     cli.print_json(value)
     result = json.loads(capsys.readouterr().out)

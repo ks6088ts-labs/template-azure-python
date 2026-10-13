@@ -2,7 +2,7 @@
 
 ## Project overview
 
-A development template using Python 3.10+, FastAPI, Typer, and Azure SDKs.
+A development template using Python 3.13+, FastAPI, Typer, and Azure SDKs.
 It provides an **HTTP Task CRUD reference implementation** and **independent Azure service CLI samples**.
 The same FastAPI app runs through Uvicorn, Azure Functions, and Azure Container Apps.
 It is not a complete business system or a production persistence/authentication platform.
@@ -101,8 +101,24 @@ The responsibility table covers settings/telemetry; [component wiring](#reposito
 
 `create_app()` connects use cases to a concrete repository and passes providers to the HTTP router.
 A provider creates a use case for a request; lifespan owns connections for Cosmos/DuckDB backends.
-The launcher passes the backend to the factory. Direct Uvicorn uses `template_azure_python.api:app`;
+The launcher passes the backend to the factory. Direct Uvicorn uses `template_azure_python.api:create_app --factory`;
 Functions wraps that same app. Its HTTP trigger is anonymous and `host.json` removes the `/api` prefix.
+
+Application import has no startup side effects. Lifespan initializes telemetry
+and repository connections, and `create_app(settings=..., repository=...)`
+supports isolated tests. `/healthz` reports the version; `/readyz` checks
+repository availability and returns 503 on failure. Production/staging hide
+OpenAPI by default. `AUTH_MODE=easyauth` requires protected Azure ingress and
+can require an application role with `AUTH_REQUIRED_ROLE`.
+
+Task creation returns `Location` and `ETag`. Reads return an `ETag`; send that
+single strong tag in `If-Match` on updates/deletes to reject stale writes with
+412. Omitted `If-Match` retains unconditional-write compatibility, so clients
+that need concurrency protection must supply it. Collection reads accept
+`offset` and `limit` (maximum 100) and return `X-Total-Count` without changing
+the Task-array response shape. Failures use RFC 9457
+`application/problem+json`; validation errors include field locations and
+never include raw submitted values.
 
 | Backend | Storage and preparation | Lifetime and limits |
 | --- | --- | --- |
@@ -157,7 +173,7 @@ The diagram focuses on major calls; the table and service guides cover arguments
 | `presentation/http/` | HTTP DTOs, routing, response/error mapping |
 | `scripts/` | Launch commands, CLI arguments, presentation, deletion confirmation, exit codes |
 | `internals/azure/` | Service SDK operations and Task management az adapter, mapping, validation, resource lifetime |
-| `settings/`, `telemetry.py` | Public configuration access and caching, process-level Azure Monitor initialization |
+| `settings/`, `telemetry.py` | Centralized immutable configuration, lifespan-owned process-level Azure Monitor initialization |
 | `tests/`, `pyproject.toml`, `Makefile` | Regression/structural tests, dependency/type rules, development/CI commands |
 | `docs/`, `mkdocs.yml` | English/Japanese usage and design guides, site configuration |
 

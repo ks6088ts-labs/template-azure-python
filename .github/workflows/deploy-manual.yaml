@@ -1,0 +1,48 @@
+name: deploy-manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: Previously tested and attested GHCR sha256 digest (also used for rollback)
+        required: true
+        type: string
+      environment:
+        description: Target environment (production always passes through staging)
+        required: true
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-container-app
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy.yaml
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+      id-token: write
+    with:
+      environment: staging
+      digest: ${{ inputs.digest }}
+
+  production:
+    if: github.ref == 'refs/heads/main' && inputs.environment == 'production'
+    needs: [staging]
+    uses: ./.github/workflows/deploy.yaml
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+      id-token: write
+    with:
+      environment: production
+      digest: ${{ inputs.digest }}

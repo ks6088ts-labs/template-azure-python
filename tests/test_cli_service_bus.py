@@ -1,6 +1,6 @@
 import json
 import runpy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, call, patch
 from uuid import UUID
@@ -239,7 +239,7 @@ def received_message(body: str = "hello") -> MagicMock:
     message.correlation_id = None
     message.content_type = "text/plain"
     message.sequence_number = 12
-    message.enqueued_time_utc = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    message.enqueued_time_utc = datetime(2026, 1, 1, tzinfo=UTC)
     message.delivery_count = 1
     message.lock_token = UUID("aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb")
     return message

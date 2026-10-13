@@ -10,11 +10,11 @@ Start with Python, uv, and Make. Install the other tools only when you need them
 
 | Tool | When you need it |
 | --- | --- |
-| [Python 3.10+](https://www.python.org/downloads/) | All Python commands. CI tests 3.10 through 3.14 |
-| [uv 0.12.19](https://docs.astral.sh/uv/getting-started/installation/) | Managing dependencies and running commands |
+| [Python 3.13+](https://www.python.org/downloads/) | All Python commands. Default 3.14; CI tests 3.13 and 3.14 |
+| [uv](https://docs.astral.sh/uv/getting-started/installation/) | Use the `required-version` range in `pyproject.toml` |
 | [GNU Make](https://www.gnu.org/software/make/) | `make` commands |
 | `curl` | Checking API responses |
-| [actionlint](https://github.com/rhysd/actionlint) | `make lint` and `make ci-test`. CI uses v1.7.12 |
+| [actionlint](https://github.com/rhysd/actionlint) | Workflow checks; `make workflows-lint` uses Go when no binary is installed |
 | [Docker](https://docs.docker.com/get-docker/) | Docker and Compose |
 | [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local) | Running Functions locally |
 | [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) | Azure sample authentication and deployment |
@@ -29,6 +29,11 @@ This installs all development dependencies and the [prek](https://prek.j178.dev/
 Git hook. **It replaces any existing pre-commit hook.**
 CI uses a smaller dependency set without JupyterLab. Paid LLM evaluation dependencies are excluded from both
 default development and CI installation; see [LLM evaluation](evaluation.md) for the optional `eval` group.
+
+Production installs only the runtime dependencies. Use `--extra samples` for
+the SDK sample CLIs, `--extra functions` for the Functions adapter, and the
+storage extras documented in `pyproject.toml` when selecting a durable adapter.
+Development and CI enable all extras so these examples remain tested.
 
 ## 2. Run FastAPI
 
@@ -79,7 +84,7 @@ If selecting Cosmos DB fails at startup with `CosmosResourceNotFoundError, statu
 follow [Task API startup troubleshooting](cosmosdb.md#task-api-startup-troubleshooting)
 to check effective settings and Azure resources and safely prepare the missing dedicated Task container.
 
-Direct `uvicorn template_azure_python.api:app` also reads `TASK_REPOSITORY`.
+Direct `uvicorn template_azure_python.api:create_app --factory` also reads `TASK_REPOSITORY`.
 Pass the same environment settings to Docker/Compose. InMemory is isolated per app;
 Cosmos shares the configured container.
 
@@ -186,7 +191,7 @@ The Dockerfile starts `serve-container-apps` on `0.0.0.0:8000`.
 
 | Check | Command |
 | --- | --- |
-| Start a container, check `/tasks` and `/docs`, then stop it | `make docker-smoke-test` |
+| Start a restricted container, check `/healthz` and `/readyz`, then stop it | `make docker-smoke-test` |
 | Run Dockerfile lint, build, scan, and startup checks | `make ci-test-docker` |
 
 The smoke test starts its own container; it does not need `make docker-run` to be running.

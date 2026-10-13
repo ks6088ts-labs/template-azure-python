@@ -102,26 +102,35 @@ def test_fastapi_request_is_instrumented_offline():
         import json
         from unittest.mock import patch
 
-        from azure.monitor.opentelemetry.exporter._generated import AzureMonitorClient
-        from azure.monitor.opentelemetry.exporter._generated.exporter.models import TrackResponse
+        from azure.monitor.opentelemetry.exporter import (
+            AzureMonitorLogExporter, AzureMonitorMetricExporter, AzureMonitorTraceExporter,
+        )
         from fastapi.testclient import TestClient
         from opentelemetry import metrics, trace
         from opentelemetry._logs import get_logger_provider
+        from opentelemetry.sdk.trace.export import SpanExportResult
+        from opentelemetry.sdk.metrics.export import MetricExportResult
+        from opentelemetry.sdk._logs.export import LogRecordExportResult
+        from opentelemetry.trace import SpanKind
 
         uploaded = []
 
-        def track(self, body, **kwargs):
-            uploaded.extend(body)
-            return TrackResponse(items_received=len(body), items_accepted=len(body), errors=[])
+        def export(self, spans, **kwargs):
+            uploaded.extend(spans)
+            return SpanExportResult.SUCCESS
 
         with (
-            patch.object(AzureMonitorClient, "track", track),
+            patch.object(AzureMonitorTraceExporter, "export", export),
+            patch.object(AzureMonitorLogExporter, "export", return_value=LogRecordExportResult.SUCCESS),
+            patch.object(AzureMonitorMetricExporter, "export", return_value=MetricExportResult.SUCCESS),
             patch("requests.sessions.Session.send", side_effect=AssertionError("Network forbidden")),
         ):
-            from template_azure_python.api import app
+            from template_azure_python.api import create_app
 
-            with TestClient(app) as client:
+            with TestClient(create_app()) as client:
                 response = client.get("/tasks")
+                assert client.get("/healthz").status_code == 200
+                assert client.get("/readyz").status_code == 200
             assert response.status_code == 200
             for provider in (
                 trace.get_tracer_provider(),
@@ -130,10 +139,10 @@ def test_fastapi_request_is_instrumented_offline():
             ):
                 provider.force_flush(timeout_millis=5000)
 
-        requests = [item for item in uploaded if item.data.base_type == "RequestData"]
-        assert requests
-        request = requests[0].data.base_data
-        print(json.dumps({"name": request.name, "response_code": request.response_code}))
+        requests = [span for span in uploaded if span.kind == SpanKind.SERVER]
+        assert len(requests) == 1, [span.name for span in uploaded]
+        request = requests[0]
+        print(json.dumps({"name": request.name, "status": request.attributes["http.response.status_code"]}))
         """
     )
     result = subprocess.run(
@@ -157,5 +166,87 @@ def test_fastapi_request_is_instrumented_offline():
 
     assert result.returncode == 0, result.stdout + result.stderr
     summary = json.loads(result.stdout)
-    assert summary["response_code"] == "200"
+    assert summary["status"] == 200
     assert summary["name"]
+
+
+def test_managed_identity_and_resource_attributes():
+    settings = ProjectSettings(
+        _env_file=None,
+        telemetry_enabled=True,
+        telemetry_use_managed_identity=True,
+        azure_client_id="runtime-identity",
+        app_environment="production",
+        app_version="1.2.3",
+    )
+    with (
+        patch("azure.identity.ManagedIdentityCredential") as credential,
+        patch("template_azure_python.telemetry.configure_azure_monitor") as configure,
+    ):
+        assert configure_api_telemetry(project=settings, azure=azure())
+    credential.assert_called_once_with(client_id="runtime-identity")
+    options = configure.call_args.kwargs
+    assert options["credential"] is credential.return_value
+    assert options["instrumentation_options"]["fastapi"]["enabled"] is False
+    assert options["resource"].attributes["service.version"] == "1.2.3"
+    assert options["resource"].attributes["deployment.environment.name"] == "production"
+
+
+def test_parallel_startups_only_initialize_one_provider():
+    from concurrent.futures import ThreadPoolExecutor
+
+    settings = project(telemetry_enabled=True)
+    azure_settings = azure()
+    with patch("template_azure_python.telemetry.configure_azure_monitor") as configure, ThreadPoolExecutor(4) as pool:
+        results = list(pool.map(lambda _: configure_api_telemetry(settings, azure_settings), range(16)))
+    assert all(results)
+    configure.assert_called_once()
+
+
+def test_api_import_has_no_telemetry_or_logging_side_effects():
+    script = """
+import logging
+root = logging.getLogger()
+before = (root.level, tuple(root.handlers))
+import template_azure_python.api
+assert before == (root.level, tuple(root.handlers))
+assert not hasattr(template_azure_python.api, "app")
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env={**os.environ, "TELEMETRY_ENABLED": "true", "APPLICATIONINSIGHTS_CONNECTION_STRING": ""},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_core_api_does_not_import_optional_storage_or_sample_sdks():
+    script = """
+import importlib.abc
+import sys
+from fastapi.testclient import TestClient
+
+class BlockOptional(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if any(fullname == name or fullname.startswith(name + ".") for name in (
+            "azure.cosmos", "duckdb", "azure.monitor.query", "azure.functions", "typer",
+        )):
+            raise ModuleNotFoundError("Optional SDK forbidden: " + fullname)
+
+sys.meta_path.insert(0, BlockOptional())
+from template_azure_python.api import create_app
+from template_azure_python.settings import ProjectSettings
+with TestClient(create_app(settings=ProjectSettings(_env_file=None))) as client:
+    assert client.get("/tasks").json() == []
+    assert client.get("/readyz").status_code == 200
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env={**os.environ, "TELEMETRY_ENABLED": "false"},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

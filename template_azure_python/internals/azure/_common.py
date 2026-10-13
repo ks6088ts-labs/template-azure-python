@@ -2,13 +2,15 @@ import json
 import re
 from collections.abc import AsyncGenerator, Callable, Generator
 from contextlib import asynccontextmanager, closing, contextmanager
-from typing import Protocol, TypeVar
+from typing import TYPE_CHECKING, Protocol
 from urllib.parse import urlparse
 
 from azure.core.exceptions import AzureError
 from azure.identity import DefaultAzureCredential
 from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
-from azure.monitor.query import LogsQueryPartialResult, LogsQueryResult, LogsQueryStatus
+
+if TYPE_CHECKING:
+    from azure.monitor.query import LogsQueryPartialResult, LogsQueryResult
 
 
 class InputError(ValueError):
@@ -40,8 +42,6 @@ class _AsyncClosable(Protocol):
     async def close(self) -> None: ...
 
 
-Client = TypeVar("Client", bound=_Closable)
-AsyncClient = TypeVar("AsyncClient", bound=_AsyncClosable)
 _DNS_LABEL = re.compile(r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?")
 _GUID = re.compile(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")
 _SEGMENT = re.compile(r"[a-zA-Z0-9_().-]+")
@@ -155,7 +155,7 @@ def validate_resource_group(value: str | None) -> str | None:
 
 
 @contextmanager
-def azure_errors(message: str, *, include_details: bool = False) -> Generator[None, None, None]:
+def azure_errors(message: str, *, include_details: bool = False) -> Generator[None]:
     try:
         yield
     except AzureError as exc:
@@ -163,7 +163,9 @@ def azure_errors(message: str, *, include_details: bool = False) -> Generator[No
 
 
 @contextmanager
-def managed_client(service: str, factory: Callable[[DefaultAzureCredential], Client]) -> Generator[Client, None, None]:
+def managed_client[Client: _Closable](
+    service: str, factory: Callable[[DefaultAzureCredential], Client]
+) -> Generator[Client]:
     with azure_errors(f"{service} operation failed", include_details=True):
         with closing(DefaultAzureCredential()) as credential:
             with closing(factory(credential)) as client:
@@ -171,9 +173,9 @@ def managed_client(service: str, factory: Callable[[DefaultAzureCredential], Cli
 
 
 @asynccontextmanager
-async def async_managed_client(
+async def async_managed_client[AsyncClient: _AsyncClosable](
     service: str, factory: Callable[[AsyncDefaultAzureCredential], AsyncClient]
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     with azure_errors(f"{service} operation failed", include_details=True):
         credential = AsyncDefaultAzureCredential()
         try:
@@ -186,7 +188,9 @@ async def async_managed_client(
             await credential.close()
 
 
-def format_logs_result(result: LogsQueryResult | LogsQueryPartialResult) -> dict[str, object]:
+def format_logs_result(result: "LogsQueryResult | LogsQueryPartialResult") -> dict[str, object]:
+    from azure.monitor.query import LogsQueryPartialResult, LogsQueryStatus
+
     partial = result.status == LogsQueryStatus.PARTIAL
     tables = result.partial_data if isinstance(result, LogsQueryPartialResult) else result.tables
     output: dict[str, object] = {

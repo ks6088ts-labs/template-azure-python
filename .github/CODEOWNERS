@@ -1,0 +1,4 @@
+# Replace OWNER with your GitHub organization/team or user before importing rulesets.
+* @OWNER
+/.github/ @OWNER
+/infra/ @OWNER

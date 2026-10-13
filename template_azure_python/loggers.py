@@ -1,36 +1,49 @@
+import json
 import logging
+from datetime import UTC, datetime
+from threading import Lock
 
-from template_azure_python.settings import get_project_settings
+from opentelemetry import trace
+
+_lock = Lock()
+
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        context = trace.get_current_span().get_span_context()
+        event = {
+            "timestamp": datetime.fromtimestamp(record.created, UTC).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "trace_id": f"{context.trace_id:032x}" if context.is_valid else None,
+            "span_id": f"{context.span_id:016x}" if context.is_valid else None,
+        }
+        return json.dumps(event, ensure_ascii=False)
+
+
+def configure_logging(log_level: str = "INFO") -> None:
+    """Configure one owned root handler without removing host/test/SDK handlers."""
+    with _lock:
+        root = logging.getLogger()
+        root.setLevel(log_level)
+        if not any(getattr(handler, "_template_json", False) for handler in root.handlers):
+            handler = logging.StreamHandler()
+            handler.setFormatter(JsonFormatter())
+            handler._template_json = True  # type: ignore[attr-defined]
+            root.addHandler(handler)
+        for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+            logger = logging.getLogger(name)
+            logger.handlers.clear()
+            logger.propagate = True
 
 
 def get_logger(
     name: str = "default",
     log_level: str | None = None,
 ) -> logging.Logger:
-    """
-    Get a logger with the specified name.
-
-    If the logger already has handlers, it is returned as-is to avoid
-    adding duplicate handlers on repeated calls.
-
-    Args:
-        name (str): The name of the logger.
-        log_level (str | None): The logging level. Defaults to the project setting.
-    Returns:
-        logging.Logger: Configured logger instance.
-    """
+    """Return a propagating logger; root configuration is explicit at startup."""
     logger = logging.getLogger(name)
-
-    # Avoid adding duplicate handlers on repeated calls
-    if logger.handlers:
-        return logger
-
-    if log_level is None:
-        log_level = get_project_settings().project_log_level
-
-    logger.setLevel(log_level)
-    formatter = logging.Formatter("%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)")
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    if log_level is not None:
+        logger.setLevel(log_level)
     return logger

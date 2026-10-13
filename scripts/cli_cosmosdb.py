@@ -37,7 +37,7 @@ DatabaseOption = Annotated[
     str | None,
     typer.Option(
         "--database",
-        help="Database to create if needed and use. Reads AZURE_COSMOS_DB_DATABASE when omitted.",
+        help="Existing database to use. Reads AZURE_COSMOS_DB_DATABASE when omitted.",
         show_default=DEFAULT_DATABASE,
     ),
 ]
@@ -45,7 +45,7 @@ ContainerOption = Annotated[
     str | None,
     typer.Option(
         "--container",
-        help="Container to create if needed and use. Reads AZURE_COSMOS_DB_CONTAINER when omitted.",
+        help="Existing container to use. Reads AZURE_COSMOS_DB_CONTAINER when omitted.",
         show_default=DEFAULT_CONTAINER,
     ),
 ]
@@ -68,6 +68,14 @@ QuantityOption = Annotated[
 ]
 SaleOption = Annotated[
     bool, typer.Option("--sale/--no-sale", help="Whether the product is on sale.", show_default=True)
+]
+CreateResourcesOption = Annotated[
+    bool,
+    typer.Option(
+        "--create-resources",
+        help="Explicitly create tutorial database/container if absent.",
+        rich_help_panel="Resource provisioning",
+    ),
 ]
 
 tasks_app = typer.Typer(
@@ -154,11 +162,15 @@ def upsert_item(
     name: NameOption = DEFAULT_ITEM_NAME,
     quantity: QuantityOption = DEFAULT_QUANTITY,
     sale: SaleOption = DEFAULT_SALE,
+    create_resources: CreateResourcesOption = False,
 ) -> None:
     """Create the tutorial item, or replace it when the same ID already exists."""
     item: dict[str, object] = {"id": item_id, "category": category, "name": name, "quantity": quantity, "sale": sale}
     with cli_errors():
-        print_json(cosmosdb.upsert_item(endpoint, database, container, throughput, item), indent=2)
+        print_json(
+            cosmosdb.upsert_item(endpoint, database, container, throughput, item, create_resources=create_resources),
+            indent=2,
+        )
 
 
 @app.command()
@@ -169,10 +181,16 @@ def read_item(
     throughput: ThroughputOption = None,
     item_id: ItemIdOption = DEFAULT_ITEM_ID,
     category: CategoryOption = DEFAULT_CATEGORY,
+    create_resources: CreateResourcesOption = False,
 ) -> None:
     """Read one item efficiently using its ID and partition key."""
     with cli_errors():
-        print_json(cosmosdb.read_item(endpoint, database, container, throughput, item_id, category), indent=2)
+        print_json(
+            cosmosdb.read_item(
+                endpoint, database, container, throughput, item_id, category, create_resources=create_resources
+            ),
+            indent=2,
+        )
 
 
 @app.command()
@@ -182,10 +200,16 @@ def query_items(
     container: ContainerOption = None,
     throughput: ThroughputOption = None,
     category: CategoryOption = DEFAULT_CATEGORY,
+    create_resources: CreateResourcesOption = False,
 ) -> None:
     """Query items in one category with a parameterized, partition-scoped query."""
     with cli_errors():
-        print_json(cosmosdb.query_items(endpoint, database, container, throughput, category), indent=2)
+        print_json(
+            cosmosdb.query_items(
+                endpoint, database, container, throughput, category, create_resources=create_resources
+            ),
+            indent=2,
+        )
 
 
 if __name__ == "__main__":

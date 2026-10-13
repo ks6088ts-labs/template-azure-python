@@ -1,11 +1,10 @@
 from collections.abc import Mapping, Sequence
-from functools import lru_cache
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any
 
-from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from template_azure_python.settings._base import FreshSettings
 from template_azure_python.settings.azure.cosmos_db import CosmosDBSettings
 from template_azure_python.settings.azure.foundry import FoundrySettings
 from template_azure_python.settings.azure.messaging import (
@@ -22,7 +21,7 @@ from template_azure_python.settings.azure.observability import (
 )
 from template_azure_python.settings.azure.resource import ResourceSettings
 
-EnvFile: TypeAlias = str | Path | Sequence[str | Path] | None
+type EnvFile = str | Path | Sequence[str | Path] | None
 
 
 class _EnvFileSentinel:
@@ -61,7 +60,7 @@ class AzureSettings(BaseSettings):
     network_watcher: NetworkWatcherSettings
     resource: ResourceSettings
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True, frozen=True)
 
     def __init__(
         self,
@@ -87,9 +86,9 @@ class AzureSettings(BaseSettings):
             name: _load_service_settings(settings_type, data.pop(name, None), env_file)
             for name, settings_type in settings_types.items()
         }
-        BaseModel.__init__(self, **values, **data)
+        super().__init__(_env_file=env_file, **values, **data)
 
 
-@lru_cache
+@FreshSettings
 def get_azure_settings() -> AzureSettings:
     return AzureSettings()

@@ -99,7 +99,7 @@ async def _receive_bounded(
                 break
             try:
                 await asyncio.wait_for(changed.wait(), timeout=remaining)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 break
     finally:
         stopped = True

@@ -7,8 +7,8 @@
 | --- | --- | --- |
 | Python API | [Azure Functions](#azure-functions) | 既存の Linux Function App |
 | Docker で動く API | [Azure Container Apps](#azure-container-apps) | 既存の Container App とレジストリ |
-| Docker イメージ | [Docker Hub](#docker-hub) | Docker Hub アカウントと access token |
-| MkDocs のドキュメントサイト | [Azure Static Web Apps](#azure-static-web-apps) | Azure のリソースグループと GitHub リポジトリ |
+| 検証済み Docker イメージ | [GHCR](#ghcr-github-pages) | GitHub Actions の公開権限 |
+| MkDocs のドキュメントサイト | [GitHub Pages](#ghcr-github-pages) | Pages の公開元を GitHub Actions に設定 |
 
 ## 公開前の共通確認
 
@@ -18,11 +18,11 @@
 - Azure では `az login` でサインインし、`az account show` で対象を確認します。
   必要なら `az account set --subscription "<subscription-id>"` で切り替えます。
 - GitHub の secret 登録や Actions の操作には `gh` が必要です。`gh auth login` で認証します。
-- API は認証なしのサンプルです。一般公開する前に、必要なアクセス制御を用意してください。
+- ローカル開発は認証なしです。Azure では、公開前に Easy Auth とアプリロールを設定してください。
   Azure リソースやイメージの保存には料金が発生する場合があります。
 
-API の確認では、`/tasks` が Task の配列（初期状態は `[]`）を返し、`/docs` が HTTP 200 を返せば正常です。
-旧モックの `/` は削除されています。probe は全件取得を繰り返さない `/docs` を使います。
+probe は `/healthz` と `/readyz` を使います。`/docs` や Task 全件取得には依存しません。
+本番では OpenAPI ドキュメントを既定で公開しません。
 
 既定の保存先は InMemory で、replica 間で共有されません。
 Cosmos を使う場合は [Task コンテナーの準備](cosmosdb.md#task-api)を済ませ、
@@ -30,6 +30,85 @@ Functions のアプリ設定 / Container Apps の環境変数に `TASK_REPOSITOR
 `AZURE_COSMOS_DB_ENDPOINT`、`AZURE_COSMOS_DB_DATABASE`、`AZURE_COSMOS_DB_TASK_CONTAINER` を設定します。
 API のマネージド ID に対象のデータプレーン RBAC を付与し、管理 CLI の権限は付けません。
 管理 CLI 用の account 名・subscription・resource group は API の起動に不要です。
+
+## 保護されたデプロイの初期設定
+
+`infra/main.bicep` と `infra/app.bicep` を同梱しています。外部 Terraform
+リポジトリは不要です。staging / production を別のリソースグループに構築します。
+Log Analytics、ローカル認証を無効にした Application Insights、管理者認証を無効にした
+ACR、Container Apps、実行用とデプロイ用の別々のマネージド ID を作成します。
+既定の公開先は GHCR です。ACR へのイメージの転送は自動では行いません。
+
+1. API 用の Entra アプリ登録を作り、`Task.ReadWrite` アプリロールを呼び出し元に割り当てます。
+   Easy Auth がトークンを検証し、API が principal ヘッダーで認可します。
+   **Easy Auth を経由せず到達できる origin では、このヘッダーを信頼してはいけません。**
+2. GHCR パッケージを public にし、検証済みのダイジェストを用意します。可変タグは使いません。
+3. `az login` と `gh auth login` を実行します。初期構築にはリソース作成とロール割り当ての権限が必要です。
+   レビュー担当者の数値 ID は `gh api users/REVIEWER --jq .id` で取得します。
+
+   ```shell
+   bash scripts/bootstrap-azure.sh OWNER/REPO staging rg-api-staging eastus api \
+     ghcr.io/owner/repo@sha256:REPLACE_WITH_64_HEX_DIGITS \
+     YOUR_ENTRA_APPLICATION_CLIENT_ID YOUR_REVIEWER_USER_ID
+   bash scripts/bootstrap-azure.sh OWNER/REPO production rg-api-production eastus api \
+     ghcr.io/owner/repo@sha256:REPLACE_WITH_64_HEX_DIGITS \
+     YOUR_ENTRA_APPLICATION_CLIENT_ID YOUR_REVIEWER_USER_ID
+   ```
+
+   Azure の OIDC 設定より先に GitHub 環境を保護します。main のみ許可し、
+   production の承認を必須にして自己承認・管理者バイパスを禁止します。
+   GitHub プランにより保護機能が利用できない場合は、保護を外して続行しないでください。
+   環境変数 `AZURE_CLIENT_ID`、`AZURE_TENANT_ID`、`AZURE_SUBSCRIPTION_ID`、
+   `RESOURCE_GROUP`、`CONTAINER_APP_NAME` を設定します。OIDC subject は
+   `repo:OWNER/REPO:environment:staging` または `...:production` です。
+   再実行では既存のレビュー担当者と待機時間を保持し、main 以外の許可を変更前に拒否します。
+   担当者の変更は GitHub 設定画面で明示的に行ってください。
+4. ID、アプリロール、認証、環境の承認者を確認してから CD を有効にします。
+   InMemory では最大 replica を 1 にします。複数 replica は永続化とデータプレーン RBAC を設定してから使います。
+
+デプロイせず検証するには次を実行します。
+
+```shell
+az bicep build --file infra/main.bicep --outfile /tmp/main.json
+az bicep lint --file infra/main.bicep
+```
+
+`az deployment group what-if` で差分を確認してから適用してください。
+再適用時も現在のダイジェストを指定します。古いイメージに戻るのを防ぐためです。
+初回は internal ingress で作成し、Easy Auth の構築成功後に bootstrap が外部公開します。
+認証済みのアプリへの再適用で公開を維持する場合は `externalIngress=true` を指定します。
+既定値は外部公開を安全側に閉じます。
+初回 bootstrap 用のイメージは事前に存在する、レビュー・証明済みのものを使います。
+
+### リポジトリの保護とリリース
+
+private vulnerability reporting、secret scanning、push protection、Dependabot、
+CodeQL を設定画面で有効にします。`scripts/init_template.py` で `OWNER` を置換し、
+CODEOWNERS が実際の担当者を指すことを確認してください。
+
+`.github/rulesets/` はインポート用のサンプルです。main は `ci-ok` と `pr-title`、
+CODEOWNERS レビュー、squash merge と merge queue を要求します。
+タグ保護の `bypass_actors` には信頼するリリース用 GitHub App の integration ID
+（`actor_type: "Integration"`、`bypass_mode: "always"`）を追加してからインポートします。
+空のままでは全ての `v*` タグ作成を禁止します。全 write ユーザーに例外を付けないでください。
+
+```shell
+gh api --method POST repos/OWNER/REPO/rulesets --input .github/rulesets/main.json
+gh api --method POST repos/OWNER/REPO/rulesets --input .github/rulesets/release-tags.json
+```
+
+サンプルは medium 以上の CodeQL 検出もゲートします。private リポジトリでは
+Code Security と ruleset のプラン対応を確認してからインポートします。
+immutable releases も有効にします。
+Conventional Commit の PR タイトルから release-please がリリースを作成します。
+イメージは一度だけビルドして検証し、provenance / SBOM を付与します。
+staging と承認済み production には同じダイジェストをデプロイします。
+プレリリースで `latest` は更新しません。
+
+ロールバックは手動デプロイワークフローに過去の検証済みダイジェストを指定します。
+再ビルドせず、通常と同じ証明の検証・環境承認・probe を通します。
+private リポジトリの証明に必要な GitHub プランがない場合は、検証を無効にせず、
+対応プランまたは別途レビューした署名方式を用意してください。
 
 ## Azure Functions
 
@@ -46,7 +125,7 @@ Azure Storage を設定した既存の Linux アプリを使います。この�
 
 ```shell
 FUNCTION_APP_NAME=your-function-app-name
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --extra functions --format requirements-txt --no-dev --no-emit-project --output-file requirements.txt
 ```
 
 #### 2. 発行する
@@ -62,7 +141,7 @@ func azure functionapp publish "$FUNCTION_APP_NAME" --build remote
 
 ```shell
 curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/tasks"
-curl --fail --show-error --output /dev/null "https://$FUNCTION_APP_NAME.azurewebsites.net/docs"
+curl --fail --show-error "https://$FUNCTION_APP_NAME.azurewebsites.net/readyz"
 ```
 
 アプリで認証を有効にしている場合は、その設定に合う認証情報も必要です。
@@ -97,7 +176,7 @@ az functionapp show --ids "$FUNCTION_APP_ID" \
 #### 2. 依存関係を出力して発行する
 
 ```shell
-uv export --locked --format requirements-txt --no-dev --no-hashes --no-emit-project --output-file requirements.txt
+uv export --locked --extra functions --format requirements-txt --no-dev --no-emit-project --output-file requirements.txt
 func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTION_ID" --build remote --python
 ```
 
@@ -109,7 +188,7 @@ func azure functionapp publish "$FUNCTION_APP_NAME" --subscription "$SUBSCRIPTIO
 
 ```shell
 curl --fail --show-error "$FUNCTION_APP_URL/tasks"
-curl --fail --show-error --output /dev/null "$FUNCTION_APP_URL/docs"
+curl --fail --show-error "$FUNCTION_APP_URL/readyz"
 ```
 
 `enable_authentication=true` で適用した場合は、代わりに次を使います。
@@ -144,6 +223,8 @@ CONTAINER_APP_NAME=your-container-app-name
 
 docker build --platform linux/amd64 -t "$IMAGE" .
 docker push "$IMAGE"
+IMAGE_DIGEST=$(docker buildx imagetools inspect "$IMAGE" --format '{{.Manifest.Digest}}')
+IMAGE="${IMAGE%:*}@$IMAGE_DIGEST"
 ```
 
 #### 2. ポートとイメージを更新する
@@ -164,7 +245,7 @@ az containerapp update --name "$CONTAINER_APP_NAME" \
 ```shell
 CONTAINER_APP_FQDN=$(az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query properties.configuration.ingress.fqdn -o tsv)
 curl --fail --show-error "https://$CONTAINER_APP_FQDN/tasks"
-curl --fail --show-error --output /dev/null "https://$CONTAINER_APP_FQDN/docs"
+curl --fail --show-error "https://$CONTAINER_APP_FQDN/readyz"
 ```
 
 ### Terraform の Container Apps シナリオを使う場合
@@ -214,7 +295,7 @@ push 済みイメージを digest（イメージの固定識別子）で指定�
 | --- | --- |
 | イメージ | push 済みの digest |
 | ingress とヘルスチェックのポート | `8000` |
-| ヘルスチェックのパス | `/docs` |
+| ヘルスチェックのパス | `/healthz`（生存）・`/readyz`（依存先の疎通） |
 | 起動コマンド | Dockerfile の既定値 |
 
 ```shell
@@ -233,7 +314,7 @@ push 済みイメージを digest（イメージの固定識別子）で指定�
   TEMP_FILE=$(mktemp "${VARS_FILE}.XXXXXX")
   trap 'rm -f "$TEMP_FILE"' EXIT
   jq -e --arg image "$IMAGE_BY_DIGEST" \
-    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/docs" | .container_command = []' \
+    '.container_image = $image | .container_port = 8000 | .health_probe_path = "/healthz" | .container_command = []' \
     "$VARS_FILE" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$VARS_FILE"
 )
@@ -262,7 +343,7 @@ MCP 専用の `verify_deployment.sh` は `/health` と `/mcp` を確認するた
 ```shell
 CONTAINER_APP_URL=$(terraform -chdir="$SCENARIO_DIR" output -raw container_app_url)
 curl --fail --show-error "$CONTAINER_APP_URL/tasks"
-curl --fail --show-error --output /dev/null "$CONTAINER_APP_URL/docs"
+curl --fail --show-error "$CONTAINER_APP_URL/readyz"
 ```
 
 Microsoft Entra 認証を有効にした場合は、代わりに次を使います。
@@ -279,70 +360,25 @@ unset ACCESS_TOKEN
 `deployment.auto.tfvars.json` は次回の apply 用に保持してください。
 シナリオの MCP デプロイスクリプトを再実行すると、イメージやポートの設定が置き換わります。
 
-## Docker Hub
+## GHCR と GitHub Pages
 
-この手順は**イメージの公開**です。API サーバーの起動は行いません。
+GHCR は `GITHUB_TOKEN` で公開します。Docker Hub トークンは不要です。
+Actions の package 公開権限と、Container Apps 用の public package を設定してください。
 
-1. Docker Hub の [access token](https://app.docker.com/settings/personal-access-tokens/create)を作成します。
-2. GitHub リポジトリに secret を登録します。次のコマンドで表示される入力欄に値を入れます。
+**Settings → Pages** の公開元を **GitHub Actions** にします。read-only 権限・資格情報を
+保持しない checkout でビルドし、Pages artifact を別の `github-pages` 環境で公開します。
+`gh-pages` ブランチへの push と Static Web Apps トークンは不要です。
 
-   ```shell
-   gh secret set DOCKERHUB_USERNAME
-   gh secret set DOCKERHUB_TOKEN
-   ```
+既定では閲覧解析や作者の SNS リンクを含みません。必要なら自分の解析 ID と
+プライバシー告知を設定してください。MkDocs / Material の依存には上限を設け、
+upstream の保守状態を確認して更新します。後継への移行は別ブランチで試し、
+日英の両言語・Mermaid・既存の URL・strict build が動作するまで切り替えません。
 
-3. `v` で始まるタグを push すると、`docker-release` ワークフローがイメージを公開します。
-4. GitHub Actions の成功と、Docker Hub の `<username>/template-azure-python` のタグを確認します。
+Copilot cloud agent の環境定義は `.github/workflows/copilot-setup-steps.yml` です。
+default branch にマージしてから有効になります。手順と安全境界は AGENTS.md に記載しています。
+`.mcp.json` の Microsoft Learn は対応クライアントで任意に使います。
+cloud agent の MCP はリポジトリ設定画面で別途設定し、資格情報をソースに保存しません。
 
-   ```shell
-   gh run list --workflow docker-release.yaml --limit 1
-   ```
-
-## Azure Static Web Apps
-
-このリポジトリのワークフローは **MkDocs のサイト**を公開します。FastAPI の公開先ではありません。
-既定のドキュメント公開は GitHub Pages（`main` への push）です。
-Static Web Apps を使う場合だけ、以下を設定します。
-
-### 1. Static Web App を作成する
-
-既存のリソースグループを指定します。
-
-```shell
-RESOURCE_GROUP_NAME=your-resource-group-name
-SWA_NAME=your-static-web-app-name
-az staticwebapp create --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP_NAME"
-```
-
-### 2. デプロイ用の secret を登録する
-
-API key を取得して GitHub に登録します。値を表示したり、ソースに保存したりしないでください。
-
-```shell
-AZURE_STATIC_WEB_APPS_API_TOKEN=$(az staticwebapp secrets list --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query "properties.apiKey" -o tsv)
-gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN --body "$AZURE_STATIC_WEB_APPS_API_TOKEN"
-unset AZURE_STATIC_WEB_APPS_API_TOKEN
-```
-
-### 3. ワークフローを実行する
-
-既定は手動実行です。ドキュメントをビルドして、生成されたサイトをアップロードします。
-
-```shell
-gh workflow run azure-static-web-app.yaml
-gh run list --workflow azure-static-web-app.yaml --limit 1
-```
-
-自動実行する場合は、ワークフローのコメントに従い `main` への push トリガーを有効にします。
-
-### 4. 公開サイトを確認する
-
-Actions の成功を待ち、次のホスト名をブラウザーで開きます。
-英語・日本語のページが表示されることを確認してください。
-
-```shell
-az staticwebapp show --name "$SWA_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query defaultHostname -o tsv
-```
-
-詳細は [GitHub Actions からの公開](https://docs.github.com/en/actions/use-cases-and-examples/deploying/deploying-to-azure-static-web-app)と
-[`az staticwebapp create`](https://learn.microsoft.com/en-us/cli/azure/staticwebapp?view=azure-cli-latest#az-staticwebapp-create)を参照してください。
+`.github/hooks/guardrails.json` は強制 push や Azure 削除などの典型的な操作ミスを拒否します。
+コマンドの文字列検査は sandbox ではなく、変数展開や任意のプログラムまで安全性を保証しません。
+人の承認・最小権限の ID・環境保護を、実際の強制境界として維持してください。

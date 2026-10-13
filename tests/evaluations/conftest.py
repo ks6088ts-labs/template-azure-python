@@ -15,7 +15,7 @@ os.environ.pop("CONFIDENT_API_KEY", None)
 
 
 @pytest.fixture(autouse=True)
-def isolated_settings() -> Generator[None, None, None]:
+def isolated_settings() -> Generator[None]:
     from template_azure_python.settings import get_azure_settings, get_project_settings
 
     get_azure_settings.cache_clear()

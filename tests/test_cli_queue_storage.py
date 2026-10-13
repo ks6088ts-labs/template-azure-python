@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from uuid import UUID
@@ -123,7 +123,7 @@ def test_send_update_custom_content_and_visibility(clients, command, timeout):
 @pytest.mark.parametrize("command", ["peek-messages", "receive-messages"])
 @pytest.mark.parametrize("limit", [1, 2, 32])
 def test_read_messages_metadata_and_total_limit(clients, command, limit):
-    date = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    date = datetime(2026, 1, 1, tzinfo=UTC)
     message = QueueMessage(
         id=UUID("aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb"),
         content="hello 🌍",
