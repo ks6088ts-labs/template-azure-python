@@ -1,0 +1,1478 @@
+
+<!doctype html>
+<html lang="ja" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/ja/dbt/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="tutorial/">
+      
+      
+        
+          <link rel="alternate" href="../../dbt/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>dbt と DuckDB 入門 - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-engineering-dbt-v2-duckdb" class="md-skip">
+          コンテンツにスキップ
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="ヘッダー">
+    <a href="../" title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              dbt と DuckDB 入門
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="言語切り替え">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../dbt/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="リポジトリへ" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="ナビゲーション" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../" title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="リポジトリへ" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    はじめに
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ローカル開発
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    アーキテクチャ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    データエンジニアリング
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    データエンジニアリング
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt と DuckDB 入門
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt と DuckDB 入門
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最初の問い: 何を分析したいか
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        何を学ぶか
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="何を学ぶか">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dbt-duckdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbt と DuckDB の役割
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task と教材の境界
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        完成版を最短で動かす
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="完成版を最短で動かす">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前提
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        実際の集計結果を確かめる
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        依存関係
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dbt-task-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbt 生成 Task を API で操作する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕様・設計判断・期待値を区別する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考資料
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task 分析ハンズオン
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    保存先と分析基盤の拡張
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM 評価
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure サンプル
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure サンプル
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cosmosdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    メッセージング
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    監視とログ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    デプロイ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最初の問い: 何を分析したいか
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        何を学ぶか
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="何を学ぶか">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dbt-duckdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbt と DuckDB の役割
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task と教材の境界
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        完成版を最短で動かす
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="完成版を最短で動かす">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前提
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        実際の集計結果を確かめる
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        依存関係
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dbt-task-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dbt 生成 Task を API で操作する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕様・設計判断・期待値を区別する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考資料
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="data-engineering-dbt-v2-duckdb">Data engineering 入門: dbt v2 と DuckDB</h1>
+<p>既存の <strong>Task</strong> を題材に、データの取り込み、SQL による変換、集計、品質検証、
+ドキュメント化を体験します。Azure リソース、DB サーバー、dbt platform のアカウントは不要です。</p>
+<p>まず完成版を動かし、その後 <a href="tutorial/">ゼロから作るハンズオン</a> で同じプロジェクトを組み立てます。
+説明・コマンドは dbt <strong>2.0.8</strong> で検証しています。
+検証環境は macOS / Apple Silicon、一次情報の確認日は <strong>2026-10-11</strong> です。
+公式資料は最新版に更新されるため、一般仕様へのリンクと、この教材での実測値を区別して読みます。
+Windows の補助記法は掲載していますが、Windows での実行検証は行っていません。</p>
+<h2 id="_1">最初の問い: 何を分析したいか</h2>
+<p>この教材の問いは「現在の Task は各状態に何件あり、全体の何%が完了しているか」です。
+Task を1件作成・更新する <strong>OLTP（トランザクション処理）</strong> と、
+複数の Task をまとめて読む <strong>OLAP（分析処理）</strong> は、同じデータでも目的が違います。
+今回は分析側だけを作り、Task API の保存先を DuckDB に置き換えません。
+DuckDB を選ぶ根拠は、<a href="https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup">公式の dbt 接続ガイド</a>
+が説明する、サーバー・認証なしのローカル実行と OLAP 向けの特性です。</p>
+<h2 id="_2">何を学ぶか</h2>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>この教材での体験</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OLTP / OLAP</td>
+<td>アプリの Task CRUD と、Task 全体の分析を分離する</td>
+</tr>
+<tr>
+<td>ELT</td>
+<td>CSV を取り込み、DB 内の SQL で整形・集計する</td>
+</tr>
+<tr>
+<td>粒度 (grain)</td>
+<td>「1行が何を表すか」を Task 単位 / status 単位で定義する</td>
+</tr>
+<tr>
+<td>staging / mart</td>
+<td>入力の正規化と、分析向けのモデルを分ける</td>
+</tr>
+<tr>
+<td>dimension / fact</td>
+<td>状態の参照データと、現在の Task を結び付ける</td>
+</tr>
+<tr>
+<td>DAG / lineage</td>
+<td><code>ref()</code> で依存を宣言し、実行順とデータの由来を確認する</td>
+</tr>
+<tr>
+<td>データ品質</td>
+<td>重複、NULL、不正 status、文字数、集計の整合性を検証する</td>
+</tr>
+<tr>
+<td>再現性</td>
+<td>固定入力、ロック済み依存、再実行、期待値で結果を確かめる</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dbt-duckdb">dbt と DuckDB の役割</h3>
+<p><strong>DuckDB</strong> は SQL を実行してデータを保存する、分析向けの組み込みデータベースです。
+この教材ではローカルの <code>.duckdb</code> ファイルを使います。DB サーバーの起動や認証はありません。</p>
+<p><strong>dbt</strong> は SQL モデルの依存、実行、テスト、ドキュメントを管理します。
+dbt 自体がデータベースになるわけではなく、一般的な API export や CDC の取り込みツールでもありません。
+<code>seed</code> による CSV 取り込みは、小さな教材・参照データに適した簡易的な Load です。</p>
+<p>ETL は「抽出 → 変換 → 読み込み」、ELT は「抽出 → 読み込み → DB 内で変換」です。
+今回は抽出済みと見なすサンプル CSV から始めるため、実データの Extract は実装しません。
+この責務分担は <a href="https://docs.getdbt.com/docs/build/sources">dbt の Sources</a>
+（別ツールで Load した table の宣言）と
+<a href="https://docs.getdbt.com/reference/commands/seed">seed コマンド</a>
+（小さな version-controlled CSV の Load）の公式説明に対応します。</p>
+<pre class="mermaid"><code>flowchart TD
+    app["Task API / operational storage"] -.-&gt;|Export: not implemented| csv["Learning CSV"]
+    csv --&gt;|dbt seed| raw[("Raw tables")]
+    subgraph warehouse["DuckDB: SQL execution and persistence"]
+        raw --&gt;|SQL transformations| mart[("Analytical views / tables")]
+    end
+    mart --&gt;|SELECT| report["Counts / completion rate"]
+    dbt["dbt: dependencies, SQL, tests, docs"] -.-&gt;|Controls execution| raw
+    dbt -.-&gt;|Controls execution| mart</code></pre>
+<p>実線は教材で動かす流れ、API からの破線は <strong>未実装の取り込み境界</strong> です。
+固定 CSV は API と同期していません。dbt が処理を管理し、DuckDB が SQL と保存を担うことを分けて考えます。
+後述の任意の DuckDB Repository は API から fact を直接編集するものであり、取り込み処理ではありません。</p>
+<h2 id="task">Task と教材の境界</h2>
+<p><a href="https://github.com/ks6088ts-labs/template-azure-python/blob/main/template_azure_python/domain/task.py">既存の Task</a>
+は次の4項目です。Domain と use case は変更せず、同じ CRUD port の実装として任意の DuckDB Repository を追加しています。</p>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>ドメインの意味</th>
+<th>教材での扱い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>UUID</td>
+<td>CSV では UUID 文字列、分析モデルでは <code>task_id</code></td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>前後の空白を除去、空文字不可、200文字以内</td>
+<td><code>task_title</code> として正規化・検証</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>前後の空白を除去、2000文字以内、空文字可</td>
+<td>空の CSV セルを空文字として扱う</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>todo</code> / <code>in_progress</code> / <code>done</code></td>
+<td>値を勝手に補正・除外せず、テストで検証</td>
+</tr>
+</tbody>
+</table>
+<p>CSV は実 API の export ではなく、UUID を固定した学習用データです。
+教材の SQL <code>trim()</code> は通常の前後スペースを除去します。Python の <code>str.strip()</code> が扱う
+タブ・Unicode 空白すべてを再現するものではありません。実データとの厳密な境界検証には
+既存の Task の正規化・検証を利用してください。
+なお <code>Task.__post_init__()</code> が実行時に検証するのは title / description です。
+<code>TaskId</code> / <code>TaskStatus</code> の型注釈だけが外部入力を自動検証するわけではありません
+（<a href="https://docs.python.org/3/library/typing.html">Python の型注釈の仕様</a>）。
+実際の取り込みでは UUID の解析、<code>TaskStatus</code> への変換と、Task の文字列検証を明示的に行います。</p>
+<p>Task には日時や担当者がありません。計算できるのは <strong>現在状態の件数や完了率</strong> であり、
+日別推移、処理時間、期限超過、担当者別生産性ではありません。
+<code>status_label</code>、<code>status_order</code>、<code>is_completed</code> は分析用の参照情報で、
+ドメインに追加するフィールドではありません。</p>
+<h2 id="_3">完成版を最短で動かす</h2>
+<h3 id="_4">前提</h3>
+<ul>
+<li>リポジトリを取得済みで、<a href="../scripts/">Python・uv</a> が利用できる。</li>
+<li>以下は macOS / Linux の shell 用。<strong>すべてリポジトリルートで実行</strong>する。</li>
+<li>最初の依存取得にはネットワークが必要。取得後のデータ処理はローカル完結。</li>
+<li>既存の dependency group <code>dbt</code> を使う。v2 は DuckDB アダプター内蔵のため、
+  <code>dbt-core</code>、<code>dbt-duckdb</code> は追加インストールしない。API の Repository 用の Python <code>duckdb</code>
+  driver は通常のアプリ依存に含まれ、dbt 内蔵 driver とは別のものです。
+  これは <a href="https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup#installing-dbt-duckdb">v2 の公式説明</a>
+  に基づく手順で、v1 の adapter インストール手順とは異なる。
+  拡張ドライバーが必要な機能や CSV の直接 <code>read_csv()</code> は使わない。</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">DBT_PROJECT_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/docs/dbt/task_analytics"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DBT_PROFILES_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DBT_SEND_ANONYMOUS_USAGE_STATS</span><span class="o">=</span><span class="nb">false</span>
+
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>--version
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>debug
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>build
+</code></pre></div>
+<p>PowerShell では最初の3行を次に置き換えます。1行の <code>uv run</code> コマンドは共通ですが、
+以降の shell 例の行末 <code>\</code> は PowerShell の継続記号ではありません。
+複数行のコマンドは <code>\</code> と改行を除いて1行にまとめて実行します。
+ハンズオンのファイル作成・コピー・変数解除は、エディター操作や PowerShell の同等操作へ置き換えてください。</p>
+<div class="highlight"><pre><span></span><code><span class="nv">$env:DBT_PROJECT_DIR</span> <span class="p">=</span> <span class="nb">Join-Path</span> <span class="p">(</span><span class="nb">Get-Location</span><span class="p">)</span> <span class="s2">"docs/dbt/task_analytics"</span>
+<span class="nv">$env:DBT_PROFILES_DIR</span> <span class="p">=</span> <span class="nv">$env:DBT_PROJECT_DIR</span>
+<span class="nv">$env:DBT_SEND_ANONYMOUS_USAGE_STATS</span> <span class="p">=</span> <span class="s2">"false"</span>
+</code></pre></div>
+<p><code>debug</code> が接続成功になり、<code>build</code> が <strong>2 seeds・4 models・42 tests</strong> に成功すれば構築完了です。
+DB は <code>docs/dbt/task_analytics/task_analytics.duckdb</code> に保存されます。
+<code>DBT_PROJECT_DIR</code> は絶対パスにし、途中で <code>cd</code> せずに実行します。
+設定はこの shell 内だけに適用され、<code>~/.dbt/profiles.yml</code> を書き換えません。</p>
+<p>コマンドを丸暗記せず、<a href="https://docs.astral.sh/uv/concepts/projects/sync/">uv の locking / syncing</a>
+と <a href="https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-groups">dependency groups</a> に対応させます。</p>
+<table>
+<thead>
+<tr>
+<th>指定</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uv run</code></td>
+<td>プロジェクト環境を同期してからコマンドを実行する</td>
+</tr>
+<tr>
+<td><code>--locked</code></td>
+<td>lockfile の整合性を検査し、更新が必要ならエラーにする。自動 upgrade しない</td>
+</tr>
+<tr>
+<td><code>--no-dev --group dbt</code></td>
+<td>既定の dev group を選ばず dbt group を選ぶ。通常のアプリ依存も対象</td>
+</tr>
+<tr>
+<td><code>DBT_PROJECT_DIR</code> / <code>DBT_PROFILES_DIR</code></td>
+<td>プロジェクトと profile を明示し、他のプロジェクトと混同しない</td>
+</tr>
+<tr>
+<td><code>DBT_SEND_ANONYMOUS_USAGE_STATS=false</code></td>
+<td>dbt の匿名利用統計を送らない</td>
+</tr>
+</tbody>
+</table>
+<p><code>--no-dev</code> は dbt 専用の別 virtualenv を作る指定ではありません。
+既存の <code>.venv</code> を使用します。strict なオフライン実行や他のプロジェクトとの環境分離を保証する指定でもありません。</p>
+<h3 id="_5">実際の集計結果を確かめる</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select status, task_count from {{ ref('task_status_summary') }} order by status_order"</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>status</th>
+<th>task_count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>todo</td>
+<td>2</td>
+</tr>
+<tr>
+<td>in_progress</td>
+<td>2</td>
+</tr>
+<tr>
+<td>done</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>--no-dev<span class="w"> </span>--group<span class="w"> </span>dbt<span class="w"> </span>dbt<span class="w"> </span>show<span class="w"> </span>--inline<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">"select count(*) as total_tasks, sum(case when is_completed then 1 else 0 end) as completed_tasks, round(100.0 * sum(case when is_completed then 1 else 0 end) / nullif(count(*), 0), 2) as completion_rate_pct from {{ ref('fct_tasks') }}"</span>
+</code></pre></div>
+<p>期待値は <code>total_tasks=6</code>、<code>completed_tasks=2</code>、<code>completion_rate_pct=33.33</code> です。
+分母は全 Task、分子は現在 <code>done</code> の Task です。
+<code>case</code> が完了を1・未完了を0にし、<code>sum</code> が完了数を数え、<code>100.0</code> が百分率へ変換し、
+<code>round(..., 2)</code> が表示を小数点以下2桁に丸めます。
+<code>nullif(count(*), 0)</code> は分母が0なら NULL にし、率を未定義とします。</p>
+<p><a href="https://duckdb.org/docs/current/sql/functions/aggregates#handling-null-values">DuckDB の aggregate 仕様</a>
+では、空集合の <code>count(*)</code> は0、<code>sum(...)</code> は NULL です。
+したがって入力が空なら、このクエリは <code>total_tasks=0</code>、<code>completed_tasks=NULL</code>、率も <code>NULL</code>。
+「Task はあるが done が0件」の <strong>0%</strong> と、「Task 自体が0件」の <strong>未定義</strong> を区別します。
+完了数だけを表示上0にしたい場合は <code>coalesce(sum(...), 0)</code> を使えますが、分母0の率は未定義のままにします。</p>
+<h3 id="_6">依存関係</h3>
+<pre class="mermaid"><code>flowchart TD
+    raw["raw_tasks (CSV seed)"] --&gt; staging["stg_tasks (view)"]
+    statuses["task_statuses (CSV seed)"] --&gt; dim["dim_task_status (table)"]
+    staging --&gt; fact["fct_tasks (table)"]
+    dim --&gt; fact
+    dim --&gt; summary["task_status_summary (table)"]
+    fact --&gt; summary</code></pre>
+<p><strong>次へ:</strong> <a href="tutorial/">ゼロから作るハンズオン</a> では、この DAG を1段ずつ構築し、
+テスト失敗・復旧、更新、ローカル Docs / lineage を体験します。
+完成版の CSV を直接編集せず、作業用コピーで演習します。
+この図はデータの依存を表す DAG です。すべての node は同じ DuckDB 内にあり、
+矢印はネットワーク転送や別の DB サーバーを意味しません。</p>
+<h2 id="dbt-task-api">dbt 生成 Task を API で操作する</h2>
+<p><code>dbt build</code> 後、dbt Docs・エディターのクエリ・その他の DB 接続を停止します。
+前述の <code>DBT_PROJECT_DIR</code> を設定したリポジトリルートのターミナルで起動します。</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">DUCKDB_PATH</span><span class="o">=</span><span class="s2">"</span><span class="nv">$DBT_PROJECT_DIR</span><span class="s2">/task_analytics.duckdb"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TELEMETRY_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>duckdb
+</code></pre></div>
+<p>別のターミナルで確認します。</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span>http://127.0.0.1:8000/tasks<span class="w"> </span><span class="p">|</span>
+<span class="w">  </span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">import json</span>
+<span class="s1">import sys</span>
+
+<span class="s1">tasks = json.load(sys.stdin)</span>
+<span class="s1">assert len(tasks) == 6</span>
+<span class="s1">assert all(set(task) == {"id", "title", "description", "status"} for task in tasks)</span>
+<span class="s1">print("6 Tasks, unchanged API schema")</span>
+<span class="s1">'</span>
+</code></pre></div>
+<p>InMemory / Cosmos と同じ非同期 TaskRepository 契約と HTTP API を使います。
+DUCKDB_PATH は必須で、既存ファイルと物理テーブル main.fct_tasks の列を検証します。
+API は dbt を実行せず、空 DB も初期化しません。
+API の既定値は引き続き <strong>in-memory</strong>、<strong>dbt 教材</strong>の既定の接続先が <code>type: duckdb</code> です。</p>
+<!-- mermaid-checked: quoted labels, unique ids, closed subgraphs -->
+<pre class="mermaid"><code>flowchart TD
+    apiCrud["Task API"] --&gt;|"同じ CRUD port"| duckRepo["DuckDB Repository"]
+    duckRepo --&gt;|"CRUD と完了フラグ"| duckFact[("main.fct_tasks")]
+    duckBuild["dbt build"] --&gt;|"raw から再構築"| duckFact
+    duckFact --&gt;|"dbt 再構築時のみ"| duckSummary[("task_status_summary")]</code></pre>
+<p>API 更新で is_completed は維持しますが、CSV・raw・保存済み集計表は更新しません。
+この図は CRUD と再構築のデータフローであり、両方を同時実行する指示ではありません。
+dbt 再構築で API 更新は上書きされます。同じ DB を開く dbt コマンドの前に API を停止します。
+1ファイルに1つの書き込みアプリ／Repository インスタンスとし、複数 writer / API worker を使わないでください。
+<a href="tutorial/#api-persistence-exercise">ハンズオン</a>で CRUD・再起動後の永続性・古い集計・意図的なテスト失敗・再構築の復旧を検証します。
+<a href="backends/">拡張ガイド</a>では実装の読み方と、将来の Cosmos / 分析基盤との境界を説明します。</p>
+<h2 id="_7">仕様・設計判断・期待値を区別する</h2>
+<table>
+<thead>
+<tr>
+<th>種類</th>
+<th>この教材での例</th>
+<th>確かめる場所</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ツールの仕様</td>
+<td><code>ref()</code> が依存を宣言する、v2 の DuckDB adapter は内蔵</td>
+<td>本文中の公式 reference</td>
+</tr>
+<tr>
+<td>教材の設計判断</td>
+<td>staging を view、mart を table にする、status を dimension に分ける</td>
+<td>ハンズオンの選択理由</td>
+</tr>
+<tr>
+<td>入力に依存する実測値</td>
+<td>6件、状態別2件、42 data tests、完了率33.33%</td>
+<td>同梱 CSV・SQL・YAML と実行結果</td>
+</tr>
+</tbody>
+</table>
+<p>42 tests が成功したことは、すべての業務要件を満たした証明ではありません。
+この教材では「品質ルールを満たす」と「固定入力に対して期待値が合う」を別々に確認します。</p>
+<h2 id="_8">参考資料</h2>
+<ul>
+<li><a href="https://docs.getdbt.com/guides/dbt?step=4&amp;version=2">公式 dbt v2 quickstart</a></li>
+<li><a href="https://docs.getdbt.com/docs/local/connect-data-platform/duckdb-setup">DuckDB と dbt v2 の接続</a></li>
+<li><a href="https://docs.getdbt.com/docs/build/data-tests">dbt data tests</a></li>
+<li><a href="https://docs.getdbt.com/reference/commands/cmd-docs?version=2.0">dbt Docs v2</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f", "clipboard.copy": "\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u3078\u30b3\u30d4\u30fc", "search.result.more.one": "\u3053\u306e\u30da\u30fc\u30b8\u5185\u306b\u3082\u30461\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.more.other": "\u3053\u306e\u30da\u30fc\u30b8\u5185\u306b\u3042\u3068#\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.none": "\u4f55\u3082\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f", "search.result.one": "1\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.other": "#\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.placeholder": "\u691c\u7d22\u30ad\u30fc\u30ef\u30fc\u30c9\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044", "search.result.term.missing": "\u691c\u7d22\u306b\u542b\u307e\u308c\u306a\u3044", "select.version": "\u30d0\u30fc\u30b8\u30e7\u30f3\u5207\u308a\u66ff\u3048"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

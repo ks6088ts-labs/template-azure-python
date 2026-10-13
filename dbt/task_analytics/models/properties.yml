@@ -1,0 +1,86 @@
+version: 2
+
+models:
+  - name: stg_tasks
+    description: "One row per current Task; normalize text without filtering invalid records."
+    columns:
+      - name: task_id
+        description: "Task UUID serialized as text; primary key at Task grain."
+        data_tests: [not_null, unique]
+      - name: task_title
+        description: "Trimmed title, nonempty and at most 200 characters."
+        data_tests: [not_null]
+      - name: task_description
+        description: "Trimmed description, at most 2000 characters; empty text is allowed."
+        data_tests: [not_null]
+      - name: status
+        description: "Unmodified TaskStatus value."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["todo", "in_progress", "done"]
+  - name: dim_task_status
+    description: "One row per allowed status, including statuses with no current Tasks."
+    columns:
+      - name: status
+        description: "Status primary key."
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: ["todo", "in_progress", "done"]
+      - name: status_label
+        description: "Human-readable label."
+        data_tests: [not_null]
+      - name: status_order
+        description: "Ordering key for reports."
+        data_tests: [not_null, unique]
+      - name: is_completed
+        description: "Completion flag; true if and only if status is done."
+        data_tests: [not_null]
+  - name: fct_tasks
+    description: "One row per current Task, enriched with a completion flag; not a transition log."
+    columns:
+      - name: task_id
+        description: "Task primary key, retained through the join."
+        data_tests: [not_null, unique]
+      - name: task_title
+        description: "Normalized Task title."
+        data_tests: [not_null]
+      - name: task_description
+        description: "Normalized Task description."
+        data_tests: [not_null]
+      - name: status
+        description: "Foreign key to the status dimension."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_task_status')
+                field: status
+      - name: is_completed
+        description: "Completion flag from the status dimension."
+        data_tests: [not_null]
+  - name: task_status_summary
+    description: "One row per allowed status; counts current Tasks and keeps zero-count statuses."
+    columns:
+      - name: status
+        description: "Report grain and primary key."
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_task_status')
+                field: status
+      - name: status_label
+        description: "Display label from the dimension."
+        data_tests: [not_null]
+      - name: status_order
+        description: "Explicit report order; SQL tables have no implicit ordering."
+        data_tests: [not_null, unique]
+      - name: task_count
+        description: "Number of current Tasks, not number of status transitions."
+        data_tests: [not_null]

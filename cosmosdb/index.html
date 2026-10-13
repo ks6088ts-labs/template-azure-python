@@ -1,0 +1,1617 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/cosmosdb/">
+      
+      
+        <link rel="prev" href="../foundry/">
+      
+      
+        <link rel="next" href="../messaging/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+          <link rel="alternate" href="../ja/cosmosdb/" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Azure Cosmos DB - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#azure-cosmos-db" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Azure Cosmos DB
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../ja/cosmosdb/" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt and DuckDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task analytics hands-on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage and analytics extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure samples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure samples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-prepare-the-endpoint-and-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Prepare the endpoint and access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-store-an-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Store an item
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-the-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read the item
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-query-by-category" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Query by category
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#change-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task-api-persistence-and-container-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task API persistence and container management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Task API persistence and container management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings-and-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings and permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-and-inspect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create and inspect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-and-verify-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start and verify the API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-the-api-fails-to-start-with-cosmos-db" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting: the API fails to start with Cosmos DB
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting: the API fails to start with Cosmos DB">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-check-the-apis-effective-storage-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Check the API's effective storage settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-inspect-the-account-database-and-containers-in-azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Inspect the account, database, and containers in Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-the-missing-task-container-in-the-correct-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create the missing Task container in the correct account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-rerun-the-launch-command-and-verify-the-http-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Rerun the launch command and verify the HTTP response
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#if-the-error-differs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        If the error differs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-after-stopping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delete after stopping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and logs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-prepare-the-endpoint-and-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Prepare the endpoint and access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-store-an-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Store an item
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-the-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read the item
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-query-by-category" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Query by category
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#change-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task-api-persistence-and-container-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task API persistence and container management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Task API persistence and container management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings-and-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings and permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-and-inspect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create and inspect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-and-verify-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start and verify the API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-the-api-fails-to-start-with-cosmos-db" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting: the API fails to start with Cosmos DB
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting: the API fails to start with Cosmos DB">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-check-the-apis-effective-storage-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Check the API's effective storage settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-inspect-the-account-database-and-containers-in-azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Inspect the account, database, and containers in Azure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-the-missing-task-container-in-the-correct-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create the missing Task container in the correct account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-rerun-the-launch-command-and-verify-the-http-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Rerun the launch command and verify the HTTP response
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#if-the-error-differs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        If the error differs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-after-stopping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delete after stopping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="azure-cosmos-db">Azure Cosmos DB</h1>
+<p>Store and retrieve sample data in Azure Cosmos DB for NoSQL.
+The <code>scripts.cli_cosmosdb</code> CLI exposes the operations from the
+<a href="https://learn.microsoft.com/en-us/azure/cosmos-db/quickstart-python">Python quickstart</a>.</p>
+<h2 id="1-prepare-the-endpoint-and-access">1. Prepare the endpoint and access</h2>
+<p>Complete the <a href="../scripts/">development and common Azure setup</a> and prepare a
+Cosmos DB for NoSQL account. Set the actual endpoint in <code>.env</code>:</p>
+<div class="highlight"><pre><span></span><code>AZURE_COSMOS_DB_ENDPOINT=https://&lt;account-name&gt;.documents.azure.com:443/
+AZURE_COSMOS_DB_DATABASE=cosmicworks
+AZURE_COSMOS_DB_CONTAINER=products
+</code></pre></div>
+<p>Grant the calling identity the Cosmos DB permissions needed to create databases
+and containers and to write, read, and query items. Authentication uses <code>DefaultAzureCredential</code>.
+When using Cosmos DB native data-plane RBAC, ensure the role assignment scope covers
+the configured database. For example, an assignment scoped to <code>/dbs/playground</code>
+requires <code>AZURE_COSMOS_DB_DATABASE=playground</code>; otherwise the SDK returns a 403
+for <code>Microsoft.DocumentDB/databaseAccounts/readMetadata</code>.</p>
+<p><strong>Use test data.</strong> Each command creates the database and container if needed.
+<code>upsert-item</code> replaces an existing item with the same ID and category.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Database</td>
+<td><code>cosmicworks</code></td>
+</tr>
+<tr>
+<td>Container</td>
+<td><code>products</code></td>
+</tr>
+<tr>
+<td>Partition key, which groups data</td>
+<td><code>/category</code></td>
+</tr>
+<tr>
+<td>Item ID</td>
+<td><code>aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb</code></td>
+</tr>
+<tr>
+<td>Category</td>
+<td><code>gear-surf-surfboards</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-store-an-item">2. Store an item</h2>
+<p>Run this from the root of this Python repository:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>upsert-item
+</code></pre></div>
+<p>The saved surfboard item appears as JSON.
+To supply its values explicitly:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>upsert-item<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--item-id<span class="w"> </span>aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--category<span class="w"> </span>gear-surf-surfboards<span class="w"> </span>--name<span class="w"> </span><span class="s2">"Yamba Surfboard"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--quantity<span class="w"> </span><span class="m">12</span><span class="w"> </span>--no-sale
+</code></pre></div>
+<h2 id="3-read-the-item">3. Read the item</h2>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>read-item<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--item-id<span class="w"> </span>aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--category<span class="w"> </span>gear-surf-surfboards
+</code></pre></div>
+<p>This retrieves one item by ID and category, known as a point read.
+Check that <code>id</code>, <code>category</code>, and <code>name</code> match the item you saved.</p>
+<h2 id="4-query-by-category">4. Query by category</h2>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>query-items<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--category<span class="w"> </span>gear-surf-surfboards
+</code></pre></div>
+<p>The matching items appear as a JSON array.
+The query uses parameters and searches only that partition.</p>
+<h2 id="change-settings">Change settings</h2>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>CLI option</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Account URL</td>
+<td><code>--endpoint</code></td>
+</tr>
+<tr>
+<td>Database name</td>
+<td><code>--database</code></td>
+</tr>
+<tr>
+<td>Container name</td>
+<td><code>--container</code></td>
+</tr>
+<tr>
+<td>Dedicated throughput for a new container</td>
+<td><code>--throughput</code> (RU/s)</td>
+</tr>
+</tbody>
+</table>
+<p>Dedicated throughput is not set by default. Omit <code>--throughput</code> for serverless
+or shared-throughput configurations. This option applies only when creating a new container.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>--help
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>upsert-item<span class="w"> </span>--help
+</code></pre></div>
+<h2 id="task-api-persistence-and-container-management">Task API persistence and container management</h2>
+<p>Switching the API backend does not migrate existing Tasks or change dbt's input.
+See <a href="../dbt/backends/">storage and analytics extensions</a> for the existing Repository pattern
+and future Cosmos export / analytical source design.</p>
+<p>Separate from the product CLI above, the Task API uses the async SDK and a <strong>dedicated <code>/id</code> container</strong>.
+The API never creates databases/containers. Prepare them with the management CLI before startup.
+Select an existing account and resource group. Management calls Azure CLI Core <code>az cosmosdb sql</code>,
+so install Azure CLI and sign in with <code>az login</code> or another supported CLI login.
+No additional management SDK is required.</p>
+<h3 id="settings-and-permissions">Settings and permissions</h3>
+<p>Add nonsecret settings to <code>.env</code>:</p>
+<div class="highlight"><pre><span></span><code>TASK_REPOSITORY=in-memory
+AZURE_COSMOS_DB_ENDPOINT=https://&lt;account-name&gt;.documents.azure.com:443/
+AZURE_COSMOS_DB_DATABASE=cosmicworks
+AZURE_COSMOS_DB_TASK_CONTAINER=tasks
+AZURE_COSMOS_DB_ACCOUNT_NAME=&lt;account-name&gt;
+AZURE_SUBSCRIPTION_ID=&lt;subscription-uuid&gt;
+AZURE_RESOURCE_GROUP=&lt;resource-group-name&gt;
+</code></pre></div>
+<ul>
+<li><strong>Management CLI identity</strong>: Azure control-plane RBAC to manage databases/containers in the selected
+  account, for example Cosmos DB Operator. Cosmos data-plane roles alone cannot create/delete these resources.
+  Entra data SDK management operations fail with 403 / substatus 5300.</li>
+<li><strong>API identity</strong>: <code>DefaultAzureCredential</code> and Cosmos native data-plane RBAC permitting metadata reads,
+  Task CRUD, and queries at the selected database/container, for example Cosmos DB Built-in Data Contributor.
+  The API needs no management privileges.</li>
+<li>Always specify a subscription with <code>--subscription</code> or <code>AZURE_SUBSCRIPTION_ID</code>.
+  The wrapper does not silently fall back to the CLI's default subscription.</li>
+<li>The product setting <code>AZURE_COSMOS_DB_CONTAINER=products</code> is not used for Task storage/management.
+  Verify that the account name and endpoint refer to the same account.</li>
+</ul>
+<h3 id="create-and-inspect">Create and inspect</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>tasks<span class="w"> </span>create-container
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>tasks<span class="w"> </span>show-container
+</code></pre></div>
+<p>Only missing resources are created, with partition key <code>/id</code>.
+Reruns leave compatible containers unchanged and return <code>false</code> for
+<code>database_created</code> / <code>container_created</code>. A different partition key fails without deleting,
+recreating, or migrating the container.
+<code>show-container</code> returns safe management metadata such as the resource ID and partition key, not Task data.</p>
+<p>Override settings with <code>--subscription</code>, <code>--resource-group</code>, <code>--account-name</code>, <code>--database</code>, and <code>--container</code>.
+Use <code>create-container --throughput 400</code> only to request dedicated RU/s on a new container.
+Omitting throughput passes no throughput argument to az, supporting serverless/shared database throughput.
+Existing container throughput is never changed. Creating resources may incur charges.</p>
+<h3 id="start-and-verify-the-api">Start and verify the API</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>cosmosdb
+<span class="c1"># For Functions:</span>
+<span class="c1"># uv run --locked python -m scripts.template serve-functions --repository cosmosdb</span>
+</code></pre></div>
+<p>Create a Task in another terminal, stop/restart the API with the same storage settings, and verify it persists:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"title":"Persist this Task"}'</span><span class="w"> </span>http://127.0.0.1:8000/tasks
+curl<span class="w"> </span>--fail<span class="w"> </span>http://127.0.0.1:8000/tasks
+</code></pre></div>
+<p>Set <code>TASK_REPOSITORY=cosmosdb</code> to omit the launch option.
+Explicit CLI selection overrides environment/dotenv; the default is <code>in-memory</code>.
+Startup checks connectivity, container existence, and partitioning and fails visibly on errors.
+Runtime storage failures return HTTP 503 with <code>{"detail":"Task storage is unavailable"}</code> and produce logs.
+Lists read all cross-partition pages, consuming RUs/memory. Pagination and ETag concurrency protection
+are not implemented; updates are last-writer-wins. HTTP authentication is not added.</p>
+<p><a id="task-api-startup-troubleshooting"></a></p>
+<h3 id="troubleshooting-the-api-fails-to-start-with-cosmos-db">Troubleshooting: the API fails to start with Cosmos DB</h3>
+<p>Follow these steps when the following launch command fails with the log messages below.
+<code>serve-container-apps</code> runs Uvicorn locally; it does not deploy to Azure Container Apps.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>cosmosdb
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Task storage lifespan failed (CosmosResourceNotFoundError, status=404)
+...
+TaskRepositoryError: Task storage is unavailable
+ERROR:    Application startup failed. Exiting.
+</code></pre></div>
+<p>This <strong>Cosmos DB 404</strong> means a resource such as the database/container referenced during startup
+was not found. It is separate from the HTTP API returning 404 at <code>/</code>.
+<code>Task storage is unavailable</code> alone does not identify the cause; also inspect the preceding
+exception name and status. The API reads the database and Task container before starting
+and never creates them automatically.</p>
+<p>For example, if <code>.env</code> sets <code>AZURE_COSMOS_DB_DATABASE=playground</code> and
+<code>AZURE_COSMOS_DB_CONTAINER=products</code>, but the database contains only <code>products</code> and <code>documents</code>,
+the Task API cannot start even if the product CLI works.
+When <code>AZURE_COSMOS_DB_TASK_CONTAINER</code> is omitted, the API looks for the default <code>playground/tasks</code>.
+Setting <code>AZURE_COSMOS_DB_CONTAINER</code> does not change Task storage.</p>
+<h4 id="1-check-the-apis-effective-storage-settings">1. Check the API's effective storage settings</h4>
+<p>Run from the repository root. This prints only nonsecret storage target fields,
+not credentials or other services' settings:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s1">'</span>
+<span class="s1">from template_azure_python.settings import get_azure_settings</span>
+<span class="s1">settings = get_azure_settings().cosmos_db</span>
+<span class="s1">print(f"endpoint={settings.endpoint}")</span>
+<span class="s1">print(f"database={settings.database}")</span>
+<span class="s1">print(f"task_container={settings.task_container}")</span>
+<span class="s1">'</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Task API setting</th>
+<th>When omitted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AZURE_COSMOS_DB_ENDPOINT</code></td>
+<td>Required; missing values fail input validation before startup</td>
+</tr>
+<tr>
+<td><code>AZURE_COSMOS_DB_DATABASE</code></td>
+<td><code>cosmicworks</code></td>
+</tr>
+<tr>
+<td><code>AZURE_COSMOS_DB_TASK_CONTAINER</code></td>
+<td><code>tasks</code>; partition key must be <code>/id</code></td>
+</tr>
+</tbody>
+</table>
+<p>OS environment variables override <code>.env</code>. If the output differs from <code>.env</code>,
+check for exported variables with the same names.
+Update only the necessary settings; do not overwrite an existing <code>.env</code> with <code>.env.template</code>.</p>
+<h4 id="2-inspect-the-account-database-and-containers-in-azure">2. Inspect the account, database, and containers in Azure</h4>
+<p>Sign in to Azure CLI and replace the values below with your own.
+<code>COSMOS_ACCOUNT</code> must name the account corresponding to the endpoint in step 1.
+Match the database/container to step 1's output; this example inspects <code>playground/tasks</code>.
+<strong><code>az</code> does not read <code>.env</code></strong>, so supply these shell variables separately.</p>
+<div class="highlight"><pre><span></span><code>az<span class="w"> </span>login
+<span class="nv">SUBSCRIPTION_ID</span><span class="o">=</span><span class="s2">"&lt;subscription-uuid&gt;"</span>
+<span class="nv">COSMOS_ACCOUNT</span><span class="o">=</span><span class="s2">"&lt;account-name&gt;"</span>
+<span class="nv">COSMOS_DATABASE</span><span class="o">=</span><span class="s2">"playground"</span>
+<span class="nv">TASK_CONTAINER</span><span class="o">=</span><span class="s2">"tasks"</span>
+
+az<span class="w"> </span>cosmosdb<span class="w"> </span>list<span class="w"> </span>--subscription<span class="w"> </span><span class="s2">"</span><span class="nv">$SUBSCRIPTION_ID</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s2">"[?name=='</span><span class="nv">$COSMOS_ACCOUNT</span><span class="s2">'].{account:name,resourceGroup:resourceGroup,endpoint:documentEndpoint}"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>table
+</code></pre></div>
+<p>Verify that the returned endpoint refers to the same account as step 1, then use its
+<code>resourceGroup</code> below. If no account is returned, check the subscription and account name.
+Even if <code>AZURE_RESOURCE_GROUP</code> is set to a monitoring or another service's group,
+<strong>Task management commands need the resource group containing the Cosmos DB account</strong>.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">COSMOS_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">"&lt;cosmos-account-resource-group&gt;"</span>
+
+az<span class="w"> </span>cosmosdb<span class="w"> </span>sql<span class="w"> </span>database<span class="w"> </span>show<span class="w"> </span>--subscription<span class="w"> </span><span class="s2">"</span><span class="nv">$SUBSCRIPTION_ID</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span>--account-name<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_ACCOUNT</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_DATABASE</span><span class="s2">"</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">"resource.id"</span><span class="w"> </span>--output<span class="w"> </span>tsv
+
+az<span class="w"> </span>cosmosdb<span class="w"> </span>sql<span class="w"> </span>container<span class="w"> </span>list<span class="w"> </span>--subscription<span class="w"> </span><span class="s2">"</span><span class="nv">$SUBSCRIPTION_ID</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span>--account-name<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_ACCOUNT</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--database-name<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_DATABASE</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s2">"[].{container:resource.id,partition_key:resource.partitionKey.paths}"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>json
+</code></pre></div>
+<p>List containers only after the database check succeeds.
+If a check fails, read Azure CLI's error and distinguish sign-in, permission, or target errors
+from a missing resource. Do not interpret every failed check as absence and start creating resources.</p>
+<h4 id="3-create-the-missing-task-container-in-the-correct-account">3. Create the missing Task container in the correct account</h4>
+<p>After verifying the target, use the existing Task management CLI.
+Explicit options below override management settings in <code>.env</code>, so they work even when
+the account name is unset or the configured resource group belongs to another service.
+Creating resources may incur charges.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>tasks<span class="w"> </span>create-container<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--subscription<span class="w"> </span><span class="s2">"</span><span class="nv">$SUBSCRIPTION_ID</span><span class="s2">"</span><span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--account-name<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_ACCOUNT</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--database<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_DATABASE</span><span class="s2">"</span><span class="w"> </span>--container<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_CONTAINER</span><span class="s2">"</span>
+
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>tasks<span class="w"> </span>show-container<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--subscription<span class="w"> </span><span class="s2">"</span><span class="nv">$SUBSCRIPTION_ID</span><span class="s2">"</span><span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--account-name<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_ACCOUNT</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--database<span class="w"> </span><span class="s2">"</span><span class="nv">$COSMOS_DATABASE</span><span class="s2">"</span><span class="w"> </span>--container<span class="w"> </span><span class="s2">"</span><span class="nv">$TASK_CONTAINER</span><span class="s2">"</span>
+</code></pre></div>
+<p>When only the missing container is created in an existing database, the result contains
+<code>database_created: false</code> and <code>container_created: true</code>.
+Check that <code>show-container</code> reports the same <code>database</code> / <code>container</code> as step 1
+and <code>partition_key: ["/id"]</code>.
+Rerunning against the same target leaves compatible resources unchanged and returns both creation flags as <code>false</code>.</p>
+<p>There is no need to delete/rename <code>products</code> or <code>documents</code>, or point the Task API at the
+product container with partition key <code>/category</code>.
+Management fails if an existing container has a different partition key.
+Preserve its data, prepare a separate dedicated container, and set
+<code>AZURE_COSMOS_DB_TASK_CONTAINER</code> to that name.</p>
+<p><strong>Management command options do not carry over to API startup settings.</strong>
+Match the endpoint, database, and Task container in environment variables or <code>.env</code> as well.
+To omit management options in future, also set <code>AZURE_COSMOS_DB_ACCOUNT_NAME</code>,
+<code>AZURE_SUBSCRIPTION_ID</code>, and <code>AZURE_RESOURCE_GROUP</code> correctly.
+The account name is not inferred from the endpoint.
+If other services share the resource group setting, keep the common setting unchanged
+and use the explicit management options above.</p>
+<h4 id="4-rerun-the-launch-command-and-verify-the-http-response">4. Rerun the launch command and verify the HTTP response</h4>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.template<span class="w"> </span>serve-container-apps<span class="w"> </span>--repository<span class="w"> </span>cosmosdb
+</code></pre></div>
+<p>After <code>Application startup complete.</code> appears, check from another terminal:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span>--write-out<span class="w"> </span><span class="s1">'\nHTTP %{http_code}\n'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>http://127.0.0.1:8000/tasks
+</code></pre></div>
+<p>HTTP 200 and a JSON array of Tasks confirm success.
+A new empty container returns <code>[]</code>; a populated container returns its existing Tasks.
+Press <code>Ctrl+C</code> in the server terminal to stop it after verification.
+Functions uses the same storage settings. With <code>serve-functions --repository cosmosdb</code>,
+change the verification URL to the default port <code>7071</code>.</p>
+<h4 id="if-the-error-differs">If the error differs</h4>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>What to check next</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Missing option '--account-name'</code> / <code>--subscription</code> / <code>--resource-group</code></td>
+<td>Required management settings are missing. Supply step 3's explicit options; the endpoint alone does not resolve the management target</td>
+</tr>
+<tr>
+<td>Management CLI exits nonzero</td>
+<td><code>az login</code>, subscription, the Cosmos DB resource group, and control-plane RBAC. Use step 2's <code>az</code> commands for details; do not treat failure as resource absence</td>
+</tr>
+<tr>
+<td>API startup logs status 403</td>
+<td>API identity, Cosmos native data-plane RBAC, and the database/container scope. Successful management commands do not prove that the API has data-plane access</td>
+</tr>
+<tr>
+<td><code>Task container must use partition key /id</code></td>
+<td>The selected container is not suitable for Tasks. Preserve existing data and prepare a dedicated <code>/id</code> container with matching settings</td>
+</tr>
+<tr>
+<td>Cosmos DB 404 persists after creation</td>
+<td>Compare step 1's effective target with the creation result again. Check environment overrides and whether management and the API point to different accounts/databases/containers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="delete-after-stopping">Delete after stopping</h3>
+<p><strong>All Tasks in the container are deleted.</strong> Stop the API and check the displayed target:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>tasks<span class="w"> </span>delete-container
+<span class="c1"># Explicit approval for noninteractive use such as CI:</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_cosmosdb<span class="w"> </span>tasks<span class="w"> </span>delete-container<span class="w"> </span>--yes
+</code></pre></div>
+<p>Declining returns <code>cancelled: true</code>; confirmed completed deletion returns <code>deleted: true</code>.
+The database and account are never deleted. Missing resources, insufficient permissions,
+missing sign-in/az, timeouts, and invalid JSON are explicit failures.
+Input errors exit 2; operation failures exit 1.
+Deletion also checks <code>/id</code> and refuses other partition keys such as the product container's <code>/category</code>.
+If database creation succeeds but container creation fails, partial completion is reported and the database
+is retained. Inspect resources with <code>show-container</code>/Azure portal, resolve the cause, and rerun.
+No schema/container/throughput migrations, database deletion, or account creation are provided.</p>
+<p>See Microsoft's <a href="https://learn.microsoft.com/azure/cosmos-db/troubleshoot-forbidden#nondata-operations-arent-allowed">nondata operation restrictions with Entra ID</a>
+for the reason management uses the control plane.</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

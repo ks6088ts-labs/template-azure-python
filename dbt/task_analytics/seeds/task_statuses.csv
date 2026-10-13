@@ -1,0 +1,4 @@
+status,status_label,status_order,is_completed
+todo,To do,1,false
+in_progress,In progress,2,false
+done,Done,3,true

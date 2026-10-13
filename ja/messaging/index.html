@@ -1,0 +1,1653 @@
+
+<!doctype html>
+<html lang="ja" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://ks6088ts-labs.github.io/template-azure-python/ja/messaging/">
+      
+      
+        <link rel="prev" href="../cosmosdb/">
+      
+      
+        <link rel="next" href="../monitoring/">
+      
+      
+        
+          <link rel="alternate" href="../../messaging/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="ja">
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>メッセージング - template-azure-python</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-0ZTKFXVQ5K"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-0ZTKFXVQ5K",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-0ZTKFXVQ5K",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          コンテンツにスキップ
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="ヘッダー">
+    <a href="../" title="template-azure-python" class="md-header__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            template-azure-python
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              メッセージング
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="言語切り替え">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../messaging/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="ja" class="md-select__link">
+              日本語
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ks6088ts-labs/template-azure-python" title="リポジトリへ" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="ナビゲーション" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../" title="template-azure-python" class="md-nav__button md-logo" aria-label="template-azure-python" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    template-azure-python
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ks6088ts-labs/template-azure-python" title="リポジトリへ" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ks6088ts-labs/template-azure-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    はじめに
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ローカル開発
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    アーキテクチャ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    データエンジニアリング
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    データエンジニアリング
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt と DuckDB 入門
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task 分析ハンズオン
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dbt/backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    保存先と分析基盤の拡張
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM 評価
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure サンプル
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Azure サンプル
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../foundry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microsoft Foundry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cosmosdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure Cosmos DB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    メッセージング
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    メッセージング
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 接続先を設定する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. アクセス権を確認する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 使うサービスのコマンドを実行する
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 使うサービスのコマンドを実行する">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#event-grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Grid: イベントを発行する
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event Grid: イベントを発行する">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        入力スキーマを合わせる
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-hubs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Hubs: イベントを送受信する
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-bus-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Bus: Queue に送受信する
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#queue-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queue Storage: 検証用キューで一連の操作を試す
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Queue Storage: 検証用キューで一連の操作を試す">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 作成・送信・取得
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. メッセージを更新
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. メッセージと検証用キューを削除
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        オプションと出力の要点
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        困ったとき
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        補足: 設定値を Azure から取得する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考資料
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    監視とログ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    デプロイ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目次">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目次
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 接続先を設定する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. アクセス権を確認する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 使うサービスのコマンドを実行する
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 使うサービスのコマンドを実行する">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#event-grid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Grid: イベントを発行する
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event Grid: イベントを発行する">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        入力スキーマを合わせる
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-hubs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Hubs: イベントを送受信する
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-bus-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Bus: Queue に送受信する
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#queue-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queue Storage: 検証用キューで一連の操作を試す
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Queue Storage: 検証用キューで一連の操作を試す">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 作成・送信・取得
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. メッセージを更新
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. メッセージと検証用キューを削除
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        オプションと出力の要点
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        困ったとき
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#azure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        補足: 設定値を Azure から取得する
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考資料
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="_1">メッセージング</h1>
+<p>Azure の 4 サービスで、イベントやメッセージを送受信します。
+<strong>使いたいサービスだけ選んで実行してください。</strong></p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>このサンプルでできること</th>
+<th>受信時の動作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Event Grid</td>
+<td>Basic Custom Topic にイベントを発行</td>
+<td>受信コマンドなし</td>
+</tr>
+<tr>
+<td>Event Hubs</td>
+<td>イベントを送受信</td>
+<td>削除しない。読み取り位置も保存しない</td>
+</tr>
+<tr>
+<td>Service Bus</td>
+<td>Queue にメッセージを送受信</td>
+<td><strong>表示後に削除する</strong></td>
+</tr>
+<tr>
+<td>Queue Storage</td>
+<td>キューとメッセージを作成・取得・更新・削除</td>
+<td>一時的に非表示にする。削除は別操作</td>
+</tr>
+</tbody>
+</table>
+<p>Service Bus の受信と Queue Storage の削除には、検証用キューを使ってください。
+既存アプリのキューで試すと、必要なメッセージを失うおそれがあります。</p>
+<h2 id="1">1. 接続先を設定する</h2>
+<p><a href="../scripts/">開発環境と Azure の共通準備</a>を済ませ、使用するサービスのリソースを用意します。
+<a href="https://github.com/ks6088ts/template-terraform/tree/main/infra/scenarios/azure_messaging"><code>azure_messaging</code> Terraform シナリオ</a>
+を使う場合、サービスはすべて既定で無効です。同リポジトリの手順で必要なものだけ有効にします。
+この Python リポジトリで Terraform を変更する必要はありません。</p>
+<p>Terraform リポジトリのチェックアウト先で、設定値を取得します。</p>
+<div class="highlight"><pre><span></span><code>terraform<span class="w"> </span>-chdir<span class="o">=</span>infra/scenarios/azure_messaging<span class="w"> </span>output
+terraform<span class="w"> </span>-chdir<span class="o">=</span>infra/scenarios/azure_messaging<span class="w"> </span>output<span class="w"> </span>-raw<span class="w"> </span>event_grid_topic_endpoint
+</code></pre></div>
+<p>Python リポジトリの <code>.env</code> に、使うサービスの出力を設定します。
+無効なサービスの <code>null</code> や未表示の値は使いません。</p>
+<table>
+<thead>
+<tr>
+<th>Terraform 出力</th>
+<th><code>.env</code> 変数</th>
+<th>上書きする CLI オプション</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event_grid_topic_endpoint</code></td>
+<td><code>AZURE_EVENT_GRID_TOPIC_ENDPOINT</code></td>
+<td><code>--endpoint</code></td>
+</tr>
+<tr>
+<td><code>event_hubs_namespace_fqdn</code></td>
+<td><code>AZURE_EVENT_HUBS_FULLY_QUALIFIED_NAMESPACE</code></td>
+<td><code>--fully-qualified-namespace</code></td>
+</tr>
+<tr>
+<td><code>event_hub_name</code></td>
+<td><code>AZURE_EVENT_HUB_NAME</code></td>
+<td><code>--event-hub</code></td>
+</tr>
+<tr>
+<td><code>event_hub_consumer_group_name</code></td>
+<td><code>AZURE_EVENT_HUB_CONSUMER_GROUP</code></td>
+<td><code>--consumer-group</code></td>
+</tr>
+<tr>
+<td><code>service_bus_namespace_fqdn</code></td>
+<td><code>AZURE_SERVICE_BUS_FULLY_QUALIFIED_NAMESPACE</code></td>
+<td><code>--fully-qualified-namespace</code></td>
+</tr>
+<tr>
+<td><code>service_bus_queue_name</code></td>
+<td><code>AZURE_SERVICE_BUS_QUEUE_NAME</code></td>
+<td><code>--queue</code></td>
+</tr>
+<tr>
+<td><code>queue_storage_endpoint</code></td>
+<td><code>AZURE_QUEUE_STORAGE_ENDPOINT</code></td>
+<td><code>--endpoint</code></td>
+</tr>
+<tr>
+<td><code>queue_storage_queue_name</code></td>
+<td><code>AZURE_QUEUE_STORAGE_QUEUE_NAME</code></td>
+<td><code>--queue</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>名前空間には <code>&lt;namespace&gt;.servicebus.windows.net</code> のような<strong>ホスト名だけ</strong>を設定します。</li>
+<li>Event Grid と Queue Storage には HTTPS URL を設定します。Storage は Blob / DFS ではなく Queue の URL です。</li>
+<li><code>$Default</code> はそのままの文字列です。シェルでは <code>'$Default'</code> と引用します。</li>
+<li>認証は <code>DefaultAzureCredential</code> のみです。接続文字列・共有キー・SAS は使いません。
+  Terraform シナリオも共有キーによるデータ操作を無効にしています。</li>
+</ul>
+<h2 id="2">2. アクセス権を確認する</h2>
+<p>シナリオは、<code>operator_principal_id</code> の ID に次のロールを付与します。
+既定の ID は Terraform 実行者です。実行時の ID が違う場合は、管理者に付与を依頼します。</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>必要なロール</th>
+<th>付与先（Terraform 出力）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Event Grid</td>
+<td><code>EventGrid Data Sender</code></td>
+<td>Topic (<code>event_grid_topic_id</code>)</td>
+</tr>
+<tr>
+<td>Event Hubs</td>
+<td><code>Azure Event Hubs Data Sender</code>, <code>Azure Event Hubs Data Receiver</code></td>
+<td>名前空間 (<code>event_hubs_namespace_id</code>)</td>
+</tr>
+<tr>
+<td>Service Bus</td>
+<td><code>Azure Service Bus Data Sender</code>, <code>Azure Service Bus Data Receiver</code></td>
+<td>名前空間 (<code>service_bus_namespace_id</code>)</td>
+</tr>
+<tr>
+<td>Queue Storage</td>
+<td><code>Storage Queue Data Contributor</code></td>
+<td>Storage アカウント (<code>queue_storage_account_id</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><code>Owner</code> / <code>Contributor</code> だけでは、これらのデータ操作の権限を満たしません。
+次のプレースホルダーを置き換え、実行 ID の割り当てを確認します。</p>
+<div class="highlight"><pre><span></span><code>az<span class="w"> </span>account<span class="w"> </span>show<span class="w"> </span>--query<span class="w"> </span><span class="s2">"{subscription:name,tenantId:tenantId,user:user.name}"</span><span class="w"> </span>--output<span class="w"> </span>table
+<span class="nv">MESSAGING_SCOPE</span><span class="o">=</span><span class="s2">"&lt;resource-ID-from-the-table&gt;"</span>
+<span class="nv">PRINCIPAL_ID</span><span class="o">=</span><span class="s2">"&lt;calling-principal-object-ID&gt;"</span>
+az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>list<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--scope<span class="w"> </span><span class="s2">"</span><span class="nv">$MESSAGING_SCOPE</span><span class="s2">"</span><span class="w"> </span>--include-inherited<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s2">"[?principalId=='</span><span class="si">${</span><span class="nv">PRINCIPAL_ID</span><span class="si">}</span><span class="s2">'].{role:roleDefinitionName,scope:scope}"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>table
+</code></pre></div>
+<p>Azure で動かす場合は、そのマネージド ID を確認します。
+新しいロールの反映には数分かかります。</p>
+<h2 id="3">3. 使うサービスのコマンドを実行する</h2>
+<p>以降の CLI は、この Python リポジトリのルートで実行します。
+各コマンドに <code>--help</code> を付けると、全オプションと既定値を確認できます。</p>
+<h3 id="event-grid">Event Grid: イベントを発行する</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_event_grid<span class="w"> </span>publish-event
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_event_grid<span class="w"> </span>publish-events<span class="w"> </span>--count<span class="w"> </span><span class="m">3</span>
+</code></pre></div>
+<p>単一イベント、またはイベントのリストを 1 回の送信で発行します。
+結果は <code>schema</code>・<code>count</code>・<code>ids</code> を含む 1 行の JSON です。
+発行成功だけでは配信先は作成されません。シナリオはイベントサブスクリプションを作成しません。</p>
+<h4 id="_2">入力スキーマを合わせる</h4>
+<table>
+<thead>
+<tr>
+<th>Topic の <code>inputSchema</code></th>
+<th>CLI の指定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EventGridSchema</code>（Terraform の既定値）</td>
+<td>省略、または <code>--schema event-grid</code></td>
+</tr>
+<tr>
+<td><code>CloudEventSchemaV1_0</code></td>
+<td><code>--schema cloud-event</code></td>
+</tr>
+</tbody>
+</table>
+<p>スキーマが違うと <code>BadRequest</code> になります。CLI で Topic のスキーマは変更できません。
+CloudEvent を使う場合は、先にシナリオで
+<code>event_grid_input_schema = "CloudEventSchemaV1_0"</code> を適用します。
+その Topic に対して、次の例を実行します。</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_event_grid<span class="w"> </span>publish-event<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--schema<span class="w"> </span>cloud-event<span class="w"> </span>--source<span class="w"> </span><span class="s2">"/samples/orders"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--subject<span class="w"> </span><span class="s2">"orders/42"</span><span class="w"> </span>--event-type<span class="w"> </span><span class="s2">"Sample.OrderCreated"</span><span class="w"> </span>--data<span class="w"> </span><span class="s1">'{"orderId":42}'</span>
+</code></pre></div>
+<p><code>--data</code> は JSON オブジェクトのみです。<code>--data-version</code> は Event Grid スキーマ用で、
+CloudEvent のバージョン指定ではありません。<code>CustomEventSchema</code> と
+Namespace の受信・確認・ロック操作は対象外です。</p>
+<h3 id="event-hubs">Event Hubs: イベントを送受信する</h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_event_hubs<span class="w"> </span>send-events
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_event_hubs<span class="w"> </span>receive-events<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--consumer-group<span class="w"> </span><span class="s1">'$Default'</span><span class="w"> </span>--starting-position<span class="w"> </span><span class="s1">'-1'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max-events<span class="w"> </span><span class="m">3</span><span class="w"> </span>--max-wait-time<span class="w"> </span><span class="m">30</span>
+</code></pre></div>
+<p>既定の送信は 3 イベントを 1 つの SDK batch で送ります。
+本文を変えるには <code>--message "First event" --message '{"orderId":42}'</code> のように指定します。
+送信結果は <code>{"sent": N}</code>、受信結果はイベントごとの JSON と最後の <code>{"received": N}</code> です。</p>
+<table>
+<thead>
+<tr>
+<th>受信オプション</th>
+<th>既定値・意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--max-events</code></td>
+<td>100 件。指定範囲は 1～10,000</td>
+</tr>
+<tr>
+<td><code>--max-wait-time</code></td>
+<td>15 秒。全パーティションでイベントが届かない時間の上限</td>
+</tr>
+<tr>
+<td><code>--starting-position</code></td>
+<td><code>-1</code>（保持中のイベントの先頭）。<code>@latest</code> は接続後の新しいイベントだけ</td>
+</tr>
+<tr>
+<td><code>--consumer-group</code></td>
+<td><code>$Default</code></td>
+</tr>
+</tbody>
+</table>
+<p>受信は上限件数または無受信のタイムアウトで終了します。イベントが届くたびに
+タイムアウトをリセットするため、空のパーティションだけを理由に終了しません。
+初回の待機時間には認証・接続・パーティション探索も含まれます。</p>
+<p>イベントの JSON は <code>body</code>・<code>partition_id</code>・<code>offset</code>・<code>sequence_number</code>・
+<code>enqueued_time</code> を含みます。0 件でも最後に <code>{"received": 0}</code> を表示します。
+受信は非破壊ですが、<strong>checkpoint（読み取り位置）は保存しません</strong>。
+再実行すると同じイベントを読むことがあります。シナリオに Blob container と
+<code>Storage Blob Data Contributor</code> がないため、Blob checkpoint store は対象外です。</p>
+<h3 id="service-bus-queue">Service Bus: Queue に送受信する</h3>
+<p><strong>受信したメッセージは表示後に complete され、キューから削除されます。</strong>
+<code>.env</code> の接続先が検証用キューであることを確認してください。</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_service_bus<span class="w"> </span>send-message
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_service_bus<span class="w"> </span>send-message-list
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_service_bus<span class="w"> </span>send-message-batch
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_service_bus<span class="w"> </span>receive-messages<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max-messages<span class="w"> </span><span class="m">10</span><span class="w"> </span>--max-wait-time<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>送信コマンド</th>
+<th>動作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>send-message</code></td>
+<td>1 件送信</td>
+</tr>
+<tr>
+<td><code>send-message-list</code></td>
+<td>リストを 1 回で送信（既定は 3 件）</td>
+</tr>
+<tr>
+<td><code>send-message-batch</code></td>
+<td>SDK batch で送信（既定は 3 件）</td>
+</tr>
+</tbody>
+</table>
+<p><code>--message</code> で本文、<code>--count</code> で list / batch の件数を変更できます。
+batch の容量を超えるとエラーになります。件数または本文サイズを減らしてください。
+送信は <code>{"sent": N}</code>、受信は各メッセージの <code>body</code>・<code>message_id</code>・メタデータと、
+最後に <code>{"received": N}</code> を 1 行ずつ表示します。受信の既定値は最大 10 件・待機 5 秒です。
+シナリオの Topic / Subscription は、この Queue 専用 CLI の対象外です。</p>
+<h3 id="queue-storage">Queue Storage: 検証用キューで一連の操作を試す</h3>
+<p>ここでは一意なキューを作り、すべての操作で <code>--queue</code> を指定します。
+<strong>Terraform 管理下のキューに置き換えないでください。</strong>
+キュー名には小文字英数字とハイフンを使います。</p>
+<h4 id="1_1">1. 作成・送信・取得</h4>
+<div class="highlight"><pre><span></span><code><span class="nv">SCRATCH_QUEUE</span><span class="o">=</span><span class="s2">"messaging-cli-scratch-</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="s2">"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>create-queue<span class="w"> </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>send-message<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span><span class="w"> </span>--message<span class="w"> </span><span class="s2">"Please update me"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>peek-messages<span class="w"> </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>get-queue-length<span class="w"> </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>receive-messages<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span><span class="w"> </span>--max-messages<span class="w"> </span><span class="m">1</span><span class="w"> </span>--visibility-timeout<span class="w"> </span><span class="m">120</span>
+</code></pre></div>
+<p><code>peek</code> は表示だけです。<code>receive</code> はこの例では 120 秒間非表示にしますが、削除しません。
+受信結果は <code>{"received": N, "messages": [...]}</code>、空なら <code>{"received": 0, "messages": []}</code> です。
+キュー長は概算値で、現在見えるメッセージだけの件数ではありません。</p>
+<h4 id="2_1">2. メッセージを更新</h4>
+<p>受信結果の<strong>同じメッセージ</strong>から <code>id</code> と <code>pop_receipt</code> をコピーし、
+非表示時間内に実行します。</p>
+<div class="highlight"><pre><span></span><code><span class="nv">MESSAGE_ID</span><span class="o">=</span><span class="s2">"&lt;message-ID-from-receive&gt;"</span>
+<span class="nv">POP_RECEIPT</span><span class="o">=</span><span class="s2">"&lt;matching-pop-receipt-from-receive&gt;"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>update-message<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span><span class="w"> </span>--message-id<span class="w"> </span><span class="s2">"</span><span class="nv">$MESSAGE_ID</span><span class="s2">"</span><span class="w"> </span>--pop-receipt<span class="w"> </span><span class="s2">"</span><span class="nv">$POP_RECEIPT</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--message<span class="w"> </span><span class="s2">"Updated content"</span><span class="w"> </span>--visibility-timeout<span class="w"> </span><span class="m">120</span>
+</code></pre></div>
+<p>更新すると新しい <code>pop_receipt</code> が返ります。再受信でも値が変わるため、
+更新・削除には常に最新の値を使います。</p>
+<h4 id="3_1">3. メッセージと検証用キューを削除</h4>
+<p>更新結果の receipt を使ってメッセージを削除し、確認に同意してキューを削除します。
+<strong>キュー削除は残りの全メッセージも削除します。</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nv">POP_RECEIPT</span><span class="o">=</span><span class="s2">"&lt;new-pop-receipt-from-update&gt;"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>delete-message<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span><span class="w"> </span>--message-id<span class="w"> </span><span class="s2">"</span><span class="nv">$MESSAGE_ID</span><span class="s2">"</span><span class="w"> </span>--pop-receipt<span class="w"> </span><span class="s2">"</span><span class="nv">$POP_RECEIPT</span><span class="s2">"</span>
+uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.cli_queue_storage<span class="w"> </span>delete-queue<span class="w"> </span>--queue<span class="w"> </span><span class="s2">"</span><span class="nv">$SCRATCH_QUEUE</span><span class="s2">"</span>
+</code></pre></div>
+<p>確認を拒否すると、Azure API を呼ばずにキャンセルします。
+非対話実行では <code>delete-queue --queue "$SCRATCH_QUEUE" --yes</code> と明示してください。</p>
+<h4 id="_3">オプションと出力の要点</h4>
+<ul>
+<li>peek / receive は既定 1 件、<code>--max-messages</code> は 1～32 です。</li>
+<li>receive の既定の非表示時間は 30 秒、send / update は 0 秒です。
+  <code>--visibility-timeout</code> は残りの有効期間より短くします。メッセージの既定の有効期間は 7 日です。</li>
+<li>send / update は <code>id</code> と <code>pop_receipt</code> を含む JSON を返します。peek は receipt を含みません。
+  各結果は 1 行の JSON です。削除しないメッセージは、非表示時間が過ぎると再び取得できます。</li>
+</ul>
+<h2 id="_4">困ったとき</h2>
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>対処</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>必須オプションがない</td>
+<td>対応する <code>.env</code> 変数を設定します。既存ファイルは上書きしません</td>
+</tr>
+<tr>
+<td><code>.env</code> を直しても値が変わらない</td>
+<td>古いシェルの環境変数を削除するか、CLI オプションで指定します</td>
+</tr>
+<tr>
+<td>Terraform のプラグイン不足</td>
+<td>Terraform 側で <code>terraform -chdir=infra/scenarios/azure_messaging init</code> を実行します</td>
+</tr>
+<tr>
+<td>unauthorized / forbidden</td>
+<td>実行 ID・テナント・上記ロール・ネットワーク制限を確認します</td>
+</tr>
+<tr>
+<td>Event Hubs が 0 件を返す</td>
+<td><code>--max-wait-time 30 --starting-position '-1'</code> で再実行し、接続先と受信権限を確認します</td>
+</tr>
+<tr>
+<td>Event Grid がスキーマを拒否する</td>
+<td>Topic の <code>inputSchema</code> と <code>--schema</code> を合わせます</td>
+</tr>
+<tr>
+<td>Queue Storage の更新・削除に失敗する</td>
+<td>同じメッセージの最新の <code>pop_receipt</code> を使います</td>
+</tr>
+</tbody>
+</table>
+<h2 id="azure">補足: 設定値を Azure から取得する</h2>
+<p>Terraform の出力を使えない場合は、次の読み取りコマンドでも設定値を取得できます。
+サインインとサブスクリプションの選択を済ませ、<strong>使うサービスのコマンドだけ</strong>実行します。
+設定の取得や CLI の検証に <code>terraform apply</code> は不要です。</p>
+<div class="highlight"><pre><span></span><code><span class="nv">RESOURCE_GROUP</span><span class="o">=</span><span class="s2">"&lt;messaging-resource-group&gt;"</span>
+<span class="nv">EVENT_HUBS_NAMESPACE</span><span class="o">=</span><span class="s2">"&lt;event-hubs-namespace&gt;"</span>
+<span class="nv">EVENT_HUB</span><span class="o">=</span><span class="s2">"&lt;event-hub-name&gt;"</span>
+<span class="nv">SERVICE_BUS_NAMESPACE</span><span class="o">=</span><span class="s2">"&lt;service-bus-namespace&gt;"</span>
+<span class="nv">STORAGE_ACCOUNT</span><span class="o">=</span><span class="s2">"&lt;queue-storage-account&gt;"</span>
+
+az<span class="w"> </span>eventgrid<span class="w"> </span>topic<span class="w"> </span>list<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s1">'[].{name:name,endpoint:endpoint,inputSchema:inputSchema}'</span><span class="w"> </span>--output<span class="w"> </span>table
+az<span class="w"> </span>eventhubs<span class="w"> </span>namespace<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span><span class="s2">"</span><span class="nv">$EVENT_HUBS_NAMESPACE</span><span class="s2">"</span><span class="w"> </span>--query<span class="w"> </span>serviceBusEndpoint<span class="w"> </span>--output<span class="w"> </span>tsv
+az<span class="w"> </span>eventhubs<span class="w"> </span>eventhub<span class="w"> </span>list<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace-name<span class="w"> </span><span class="s2">"</span><span class="nv">$EVENT_HUBS_NAMESPACE</span><span class="s2">"</span><span class="w"> </span>--query<span class="w"> </span><span class="s1">'[].name'</span><span class="w"> </span>--output<span class="w"> </span>tsv
+az<span class="w"> </span>eventhubs<span class="w"> </span>eventhub<span class="w"> </span>consumer-group<span class="w"> </span>list<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace-name<span class="w"> </span><span class="s2">"</span><span class="nv">$EVENT_HUBS_NAMESPACE</span><span class="s2">"</span><span class="w"> </span>--eventhub-name<span class="w"> </span><span class="s2">"</span><span class="nv">$EVENT_HUB</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s1">'[].name'</span><span class="w"> </span>--output<span class="w"> </span>tsv
+az<span class="w"> </span>servicebus<span class="w"> </span>namespace<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span><span class="s2">"</span><span class="nv">$SERVICE_BUS_NAMESPACE</span><span class="s2">"</span><span class="w"> </span>--query<span class="w"> </span>serviceBusEndpoint<span class="w"> </span>--output<span class="w"> </span>tsv
+az<span class="w"> </span>servicebus<span class="w"> </span>queue<span class="w"> </span>list<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace-name<span class="w"> </span><span class="s2">"</span><span class="nv">$SERVICE_BUS_NAMESPACE</span><span class="s2">"</span><span class="w"> </span>--query<span class="w"> </span><span class="s1">'[].name'</span><span class="w"> </span>--output<span class="w"> </span>tsv
+az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">"</span><span class="nv">$RESOURCE_GROUP</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span><span class="s2">"</span><span class="nv">$STORAGE_ACCOUNT</span><span class="s2">"</span><span class="w"> </span>--query<span class="w"> </span>primaryEndpoints.queue<span class="w"> </span>--output<span class="w"> </span>tsv
+az<span class="w"> </span>storage<span class="w"> </span>queue<span class="w"> </span>list<span class="w"> </span>--account-name<span class="w"> </span><span class="s2">"</span><span class="nv">$STORAGE_ACCOUNT</span><span class="s2">"</span><span class="w"> </span>--auth-mode<span class="w"> </span>login<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s1">'[].name'</span><span class="w"> </span>--output<span class="w"> </span>tsv
+</code></pre></div>
+<p>名前空間の出力が <code>https://example.servicebus.windows.net:443/</code> の場合は、
+<code>example.servicebus.windows.net</code> だけを設定します。Event Grid / Queue Storage は URL 全体を使います。
+キューの一覧取得にもデータ操作のロールが必要です。秘密情報やアカウントキーは不要です。</p>
+<h2 id="_5">参考資料</h2>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/python/api/overview/azure/eventgrid-readme?view=azure-python">Event Grid Python SDK</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-python-get-started-send?tabs=passwordless%2Croles-azure-portal">Event Hubs Python クイックスタート</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-python-how-to-use-queues?tabs=passwordless">Service Bus Queue Python クイックスタート</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/storage/queues/storage-quickstart-queues-python?tabs=passwordless%2Croles-azure-portal%2Cenvironment-variable-windows%2Csign-in-azure-cli">Queue Storage Python クイックスタート</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/ks6088ts/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ks6088ts" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/ks6088ts" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f", "clipboard.copy": "\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u3078\u30b3\u30d4\u30fc", "search.result.more.one": "\u3053\u306e\u30da\u30fc\u30b8\u5185\u306b\u3082\u30461\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.more.other": "\u3053\u306e\u30da\u30fc\u30b8\u5185\u306b\u3042\u3068#\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.none": "\u4f55\u3082\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f", "search.result.one": "1\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.other": "#\u4ef6\u898b\u3064\u304b\u308a\u307e\u3057\u305f", "search.result.placeholder": "\u691c\u7d22\u30ad\u30fc\u30ef\u30fc\u30c9\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044", "search.result.term.missing": "\u691c\u7d22\u306b\u542b\u307e\u308c\u306a\u3044", "select.version": "\u30d0\u30fc\u30b8\u30e7\u30f3\u5207\u308a\u66ff\u3048"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
